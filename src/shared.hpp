@@ -8,4 +8,5 @@ int printASCII(FILE* file, int y, int x);
 int wprintASCII(WINDOW* win, FILE* file, int y, int x);
 int getASCIILength(FILE* file);
 int getASCIIHeight(FILE* file);
+void dummy();
 #endif
