@@ -1,14 +1,14 @@
 #include "muse_server.hpp"
 
-int main(int argc, char** argv){
-	if(argc == 2){
-		serve(argv[1]);
-	}
-	else{
-		serve(DEFAULT_PORT);
-	}
-	return 0;
-}
+// int main(int argc, char** argv){
+// 	if(argc == 2){
+// 		serve(argv[1]);
+// 	}
+// 	else{
+// 		serve(DEFAULT_PORT);
+// 	}
+// 	return 0;
+// }
 
 int serve(char* port){
 	//Set up signals so that it cleans up properly
@@ -23,6 +23,6 @@ int serve(char* port){
 }
 
 void stop(int sig){
-	close(sockfd);
+	close(sock_fd);
 	exit(0);
 }

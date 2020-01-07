@@ -71,7 +71,7 @@ void cleanup(){
 	exit(0);
 }
 
-void cleanupServ(int sockfd){
+void cleanupServ(){
 	kill(muse_pid, SIGTERM);
 	cleanup();
 }

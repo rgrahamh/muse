@@ -10,9 +10,11 @@
 
 #include "../shared.hpp"
 
-#define DEFAULT_PORT 2442
+#define DEFAULT_PORT "2442"
 
-int sockfd;
+int sock_fd;
 
 int serve(char* port);
 void stop(int sig);
+
+#endif
