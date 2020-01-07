@@ -1,10 +1,69 @@
-#include "muse_server_TUI.hpp"
+#include "muse_server_tui.hpp"
 
 int main(int argc, char** argv) {
 	int last_char;
 	ITEM** items;
-	MENU* menus;
+	MENU* menu;
 	WINDOW* win;
+	int n_choices;
+
+	/* Initialize curses */
+	initscr();
+	cbreak();
+	noecho();
+	keypad(stdscr, TRUE);
+
+	/* Initialize date members */
+	main_page.label_arr = main_label_arr;
+	main_page.option_arr = main_option_arr;
+	main_page.funct_arr = main_funct_arr;
+
+	/* Create items */
+	n_choices = ARR_SIZE(main_page.option_arr);
+	items = (ITEM**) calloc(n_choices, sizeof(ITEM*));
+	for( int i = 0; i < n_choices; ++i ) {
+		items[i] = new_item(main_page.label_arr[i], main_page.option_arr[i]);
+	}
+
+	/* Create menu */
+	menu = new_menu((ITEM**) items);
+
+	/* Create menu window */
+	win = newwin(20, 80, 2, 2);
+	keypad(win, TRUE);
+
+	/* Set menu window and sub window */
+	set_menu_win(menu, win);
+	set_menu_sub(menu, derwin(win, 20, 78, 10, 1));
+	set_menu_mark(menu, ">");
+
+	/* Decorate menu */
+	refresh();
+
+	post_menu(menu);
+	wrefresh(win);
+
+	while((last_char = wgetch(win)) != KEY_F(1))
+	{
+		switch(last_char) {
+			case KEY_DOWN:
+				menu_driver(menu, REQ_DOWN_ITEM);
+				break;
+			case KEY_UP:
+				menu_driver(menu, REQ_UP_ITEM);
+				break;
+		}
+		wrefresh(win);
+	}
+	/* Unpost and free all the memory taken up */
+    unpost_menu(menu);
+    free_menu(menu);
+
+    for( int i = 0; i < n_choices; ++i ) {
+        free_item(items[i]);
+	}
+
+	endwin();
 }
 
 void cleanup(){
@@ -13,12 +72,8 @@ void cleanup(){
 }
 
 void cleanupServ(int sockfd){
-	kill(pid, SIGTERM);
+	kill(muse_pid, SIGTERM);
 	cleanup();
-}
-
-void refresh(){
-	return;
 }
 
 void backgroundProc(){
@@ -44,7 +99,7 @@ void start(bool background){
 	refresh();
 }
 
-void updatePort(int new_port){
+void updatePort(char* new_port){
 	port = new_port;
 }
 
@@ -57,12 +112,12 @@ int addLibPath(char* lib_path){
 }
 
 int removeLibPath(int idx){
-	int i;
-	if(lib_paths[i][0] != '\0'){
-		for(i = idx; lib_paths[i][0] != '\0' && i < lib_path_num; i++){
+	int i = 0;
+	if( lib_paths[i][0] != '\0' ){
+		for( i = idx; lib_paths[i][0] != '\0' && i < lib_path_num; i++ ) {
 			lib_paths[i] = lib_paths[i+1];
 		}
-		if(i == lib_path_num){
+		if( i == lib_path_num ) {
 			memset(lib_paths[i], 0, 255);
 		}
 		lib_path_num--;

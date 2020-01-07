@@ -1,11 +1,13 @@
 #include "muse_server.hpp"
 
-int serve(int port){
+int serve(char* port){
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
+
+	return 0;
 }
 
-void stop(){
+void stop(int sig){
 	close(sockfd);
 	exit(0);
 }

@@ -6,5 +6,5 @@
 
 int sockfd;
 
-int serve(int port);
-void stop();
+int serve(char* port);
+void stop(int sig);
