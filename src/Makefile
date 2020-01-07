@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-Wall -lmenu -lncurses -g
+CFLAGS=-Wall -Wno-write-strings -lmenu -lncurses -g
 
 SERVER=shared.cpp \
 	   server/muse_server.cpp \
@@ -10,3 +10,6 @@ muse_server:
 
 muse_client:
 	$(CC) shared.cpp -o client/muse_client $(CFLAGS)
+
+muse_server_test:
+	$(CC) shared.cpp server/muse_server.cpp -o server/server_test $(CFLAGS) -DTEST

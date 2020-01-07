@@ -2,6 +2,7 @@
 #define MUSE_SERVER_HPP
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <sys/types.h>
@@ -12,9 +13,8 @@
 
 #define DEFAULT_PORT "2442"
 
-int sock_fd;
-
 int serve(char* port);
+int handleRequest();
 void stop(int sig);
 
 #endif
