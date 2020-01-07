@@ -4,40 +4,43 @@ int main(int argc, char** argv) {
 	int last_char;
 	ITEM** items;
 	MENU* menu;
-	WINDOW* win;
-	int n_choices;
+	WINDOW* win, *subwin;
 
 	/* Initialize curses */
 	initscr();
 	cbreak();
 	noecho();
+	curs_set(0);
 	keypad(stdscr, TRUE);
+	// resizeterm(24, 80);
 
-	/* Initialize date members */
-	main_page.label_arr = main_label_arr;
-	main_page.option_arr = main_option_arr;
-	main_page.funct_arr = main_funct_arr;
+	FILE* ascii = fopen("../assets/banner.ascii", "r");
 
 	/* Create items */
-	n_choices = ARR_SIZE(main_page.option_arr);
+	int n_choices = ARR_SIZE(page_select[curr_page]);
 	items = (ITEM**) calloc(n_choices, sizeof(ITEM*));
 	for( int i = 0; i < n_choices; ++i ) {
-		items[i] = new_item(main_page.label_arr[i], main_page.option_arr[i]);
+		items[i] = new_item(page_select[curr_page][i].label, page_select[curr_page][i].option);
 	}
 
 	/* Create menu */
 	menu = new_menu((ITEM**) items);
 
 	/* Create menu window */
-	win = newwin(20, 80, 2, 2);
+	win = newwin(LINES, COLS, 0, 0);
+	subwin = derwin(win, 6, 78, getASCIIHeight(ascii)+2, 1);
 	keypad(win, TRUE);
 
 	/* Set menu window and sub window */
 	set_menu_win(menu, win);
-	set_menu_sub(menu, derwin(win, 20, 78, 10, 1));
-	set_menu_mark(menu, ">");
+	set_menu_sub(menu, subwin);
+	set_menu_mark(menu, " > ");
 
 	/* Decorate menu */
+	wprintASCII(win, ascii, 1, (COLS / 2) - (getASCIILength(ascii) / 2));
+	mvwhline(win, getASCIIHeight(ascii)+1, 1, ACS_HLINE, COLS);
+	box(win, 0, 0);
+	fclose(ascii);
 	refresh();
 
 	post_menu(menu);
@@ -63,6 +66,8 @@ int main(int argc, char** argv) {
         free_item(items[i]);
 	}
 
+	/* show the cursor again before exiting */
+	curs_set(2);
 	endwin();
 }
 
@@ -84,9 +89,9 @@ void start(bool background){
 	//If the child process
 	if(!(muse_pid = fork())){
 		//If serve returns anything but zero
-		if(serve(port)){
+		if(/* serve(port) */ TRUE){
 			//Spit them out to the main page if something goes wrong in MUSE itself
-			curr_page = MAIN_PAGE;
+			// curr_page = MAIN_PAGE;
 		}
 	}
 	if(background){
@@ -94,7 +99,7 @@ void start(bool background){
 		backgroundProc();
 	}
 	else{
-		curr_page = SERVER_PAGE;
+		// curr_page = SERVER_PAGE;
 	}
 	refresh();
 }

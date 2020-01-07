@@ -1,8 +1,7 @@
 CC=g++
-CFLAGS=-Wall -lmenu -lncurses -g
+CFLAGS=-Wall -Wno-write-strings -lmenu -lncurses -g
 
 SERVER=shared.cpp \
-	   server/muse_server.cpp \
 	   server/muse_server_tui.cpp
 
 muse_server:
