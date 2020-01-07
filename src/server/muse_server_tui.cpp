@@ -17,11 +17,12 @@ int main(int argc, char** argv) {
 	FILE* ascii = fopen("../assets/banner.ascii", "r");
 
 	/* Create items */
-	int n_choices = ARR_SIZE(page_select[curr_page]);
-	items = (ITEM**) calloc(n_choices, sizeof(ITEM*));
+	int n_choices = page_length[curr_page];
+	items = (ITEM**) calloc(n_choices+1, sizeof(ITEM*));
 	for( int i = 0; i < n_choices; ++i ) {
 		items[i] = new_item(page_select[curr_page][i].label, page_select[curr_page][i].option);
 	}
+	items[n_choices] = NULL;
 
 	/* Create menu */
 	menu = new_menu((ITEM**) items);

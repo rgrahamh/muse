@@ -30,7 +30,7 @@ struct MenuItem {
 char* port = "2442";
 char* lib_paths[64];
 int lib_path_num;
-int curr_page = MAIN_PAGE;
+int curr_page = LIBRARY_PAGE;
 int muse_pid;
 
 void cleanup();
@@ -66,5 +66,6 @@ struct MenuItem server_page[] = {
 };
 
 struct MenuItem* page_select[] = { main_page, port_page, library_page, server_page };
+int page_length[] = { ARR_SIZE(main_page), ARR_SIZE(port_page), ARR_SIZE(library_page), ARR_SIZE(server_page) };
 
 #endif
