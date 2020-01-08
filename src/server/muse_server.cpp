@@ -1,7 +1,12 @@
 #include "muse_server.hpp"
 
 //This is here because we were having linker issues when it was in the hpp
+//Socket file descriptor
 int sockfd;
+
+//Integer to keep track of the max file size and a buffer to keep the max file.
+int max_file_size;
+char* file_buff;
 
 #ifdef TEST
  int main(int argc, char** argv){
@@ -23,6 +28,10 @@ int serve(char* port){
 	//Set up signals so that it cleans up properly
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
+
+	//Initialize the file buffer
+	max_file_size = 8388608
+	file_buff = (char*)calloc(max_file_size, 1);
 
 	struct addrinfo seed;
 	struct addrinfo* host;
@@ -87,6 +96,8 @@ int handleRequest(int new_sockfd){
 	char* outgoing = (char*)calloc(BUFF_SIZE, 1);
 	//The incoming character buffer; this will be recieved from the client
 	char* incoming = (char*)calloc(BUFF_SIZE, 1);
+	//Holds the buffer for SQL queries
+	char* query = (char*)calloc(500, 1);
 
 	//Holds the ougoing flags
 	char outgoing_flags = 0;
@@ -103,15 +114,15 @@ int handleRequest(int new_sockfd){
 		incoming_msg = incoming + 1;
 
 		if(incoming_flags & REQ_TYPE_MASK != TERMCON){
+			sqlite3 db;
+			//Open the database connection
+			if(sqlite3_open("./muse.db", &db) != SQLITE_OK){
+				printf("Could not open the sqlite database!\n");
+			}
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
-					sqlite3 db;
-					//Open the database connection
-					if(sqlite3_open("./muse.db", &db) != SQLITE_OK){
-						printf("Could not open the sqlite database!\n");
-					}
-					sprintf()
-					amnt_sent = sendSong(new_sockfd, *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT file_path FROM song\nWHERE song_id=%lu;", *((unsigned long*)incoming_msg));
+					sqlite3_exec(&db, query, sendSongCallback, new_sockfd, NULL);
 					sqlite3_close(&db);
 					break;
 
@@ -133,13 +144,17 @@ int handleRequest(int new_sockfd){
 				case QWRYGNRSNG:
 					break;
 			}
+			sqlite3_close(&db);
+
 
 			//Clear the buffers
 			memset(outgoing, 0, BUFF_SIZE);
 			memset(incoming, 0, BUFF_SIZE);
+			memset(query, 0, BUFF_SIZE);
 		}
 	}while((incoming & REQ_TYPE) != TERMCON);
 
+	free(query);
 	free(incoming);
 	free(outgoing);
 
@@ -148,15 +163,61 @@ int handleRequest(int new_sockfd){
 
 /**Sends a song over TCP
  * @param new_sockfd The socket fd to send the song over
- * @param song_id The song ID
+ * @param song_id The number of columns returned
  */
-int sendSong(int new_sockfd, unsigned long song_id, sqlite* db){
-	
+int sendSongCallback(void* unused, int colNum, char** column, char** result){
+	if(colNum == 0){
+		printf("Could not find the key!\n");
+		return 0;
+	}
+	//Open the file for reading
+	FILE* file = fopen(path, result[0]);
 
-	//Close the database connection
-	FILE* file = fopen(path, "r");
+	fseek(file, 0UL, SEEK_END);
+	unsigned long file_size = ftell(file);
+	if(file_size > max_file_size){
+		max_file_size = file_size;
+		file_buff = (char*)realloc(max_file_size);
+	}
+	rewind(file)
 
-	return send(new_sockfd, outgoing, strlen(outgoing), 0);
+	char* tmp_buff = file_buff;
+	//I'm pulling a block at a time on my system (block size is 4096)
+	while(unsigned long i = 0; i < file_size - 4096; i++){
+		fread(tmp_buff, 1, 4096, file);
+		tmp_buff += 4096;
+	}
+	if(file_size % 4096){
+		fread(tmp_buff, 1, file_size % 4096, file);
+	}
+	fclose(file);
+	return !send(new_sockfd, file_buff, file_size, 0);
+}
+
+/**Scans the file system for mp3s and updates the database based upon that
+ * @param lib_paths The library paths to search
+ * @param num_paths The number of library paths passed in
+ * @return The number of files successfully scanned in
+ */
+int scan(char** lib_paths, int num_paths){
+	DIR* dir;
+	struct durent* file_info;
+	//For every path passed in,
+	for(int i = 0; i < num_paths, i++){
+		//Open the directory stream
+		if((dir = opendir(lib_paths[i]) != NULL){
+			//Read in the file information
+			while((file_info = readdir(dir) != NULL){
+				int file_name_len = strlen(file_info->d_name);
+
+				//Checking to see if the file is an mp3
+				if(strcmp((file_info->d_name + (file_name_len - 4)), "mp3")){
+					printf("Found an mp3 file: %s", file_info->d_name);
+					//TODO: Parse info
+				}
+			}
+		}
+	}
 }
 
 /**Stops the server

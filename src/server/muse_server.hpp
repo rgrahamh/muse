@@ -1,6 +1,8 @@
 #ifndef MUSE_SERVER_HPP
 #define MUSE_SERVER_HPP
+#include <dirent.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -18,7 +20,7 @@
 
 int serve(char* port);
 int handleRequest(int new_sockfd);
-int sendSong(int new_sockfd, unsigned long song_id);
+int sendSongCallback(void* unused, int colNum, char** column, char** result);
 void stop(int sig);
 
 #endif
