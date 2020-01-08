@@ -18,6 +18,7 @@
 
 int serve(char* port);
 int handleRequest(int new_sockfd);
+int sendSong(int new_sockfd, unsigned long song_id);
 void stop(int sig);
 
 #endif
