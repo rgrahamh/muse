@@ -136,12 +136,15 @@ void writeInfoWindow(WINDOW* &win, int y, int x) {
 	/* Write the network information */
 	char* ip_label = "IP: ";
 	char* port_label = "Port: ";
+	char* exit_label = "Press F1 to exit.";
 
 	mvwaddstr(win, y, x, ip_label);
 	mvwaddstr(win, y, x+strlen(ip_label), ip);
 
 	mvwaddstr(win, y, x+strlen(ip_label)+strlen(ip)+1, port_label);
 	mvwaddstr(win, y, x+strlen(ip_label)+strlen(ip)+strlen(port_label)+1, port);
+
+	mvwaddstr(win, LINES - 2, COLS - strlen(exit_label)-1, exit_label);
 
 	/* Draw the vertical seperator line */
 	mvwvline(win, y, x - 1, ACS_VLINE, LINES - y - 1);
