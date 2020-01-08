@@ -1,4 +1,4 @@
-CC=g++
+CC=gcc
 CFLAGS=-Wall -Wno-write-strings -lmenu -lncurses -g
 
 SERVER=shared.cpp \

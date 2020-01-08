@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
-#include <iostream>
 
 #include "../shared.hpp"
 #include "muse_server.hpp"
@@ -15,56 +14,64 @@
 
 enum pages {
 	MAIN_PAGE,
-	PORT_PAGE,
+	NETWORK_PAGE,
 	LIBRARY_PAGE,
 	SERVER_PAGE
 };
 
 struct MenuItem {
-	MenuItem(char* l, char* o, void* f) : label(l), option(o), funct(f) { }
+	MenuItem(char* l, char* o, void* f, int p) :
+			label(l), option(o), funct(f), chng_pg_to(p) { }
 	char* label;
 	char* option;
 	void* funct;
+	int chng_pg_to;
 };
 
-char* port = "2442";
+char port[5];
+char ip[16];
 char* lib_paths[64];
 int lib_path_num;
 int curr_page = MAIN_PAGE;
 int muse_pid;
 
-void changePage(WINDOW* &window, MENU* &menu, int page_num);
+void changePage(MENU* &menu, int page_num);
+void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index);
+void writeInfoWindow(WINDOW* &win, int y, int x);
+int confirmSelection(WINDOW* &win);
+void exitMuse(WINDOW* &win, MENU* &menu);
 void cleanup(MENU* menu);
 void cleanupServ();
 void backgroundProc();
-void updatePort(char* new_port);
+void updateIP(WINDOW* &win);
+void updatePort(WINDOW* &win);
 void refreshDatabase();
 int addLibPath(char* lib_path);
 int removeLibPath(int idx);
 
 const struct MenuItem main_page[] = {
-	MenuItem("1.", "Start In Background", (void*)backgroundProc),
-	MenuItem("2.", "Change Port", (void*)changePage),
-	MenuItem("3.", "Library Location", (void*)changePage),
-	MenuItem("4.", "Refresh Database", (void*)refreshDatabase),
-	MenuItem("5.", "Start Server", (void*)changePage),
-	MenuItem("6.", "Exit", (void*)cleanup)
+	MenuItem("1.", "Network Options", (void*)changePage, NETWORK_PAGE),
+	MenuItem("2.", "Library Locations", (void*)changePage, LIBRARY_PAGE),
+	MenuItem("3.", "Refresh Database", (void*)refreshDatabase, -1),
+	MenuItem("4.", "Start Server", (void*)changePage, SERVER_PAGE),
+	MenuItem("5.", "Exit Muse", (void*)exitMuse, -1)
 };
 
 const struct MenuItem port_page[] = {
-	MenuItem("1.", "Specify Port", (void*)updatePort),
-	MenuItem("2.", "Back", (void*)changePage)
+	MenuItem("1.", "Specify IP", (void*)updateIP, -1),
+	MenuItem("2.", "Specify Port", (void*)updatePort, -1),
+	MenuItem("3.", "Back", (void*)changePage, MAIN_PAGE)
 };
 
 const struct MenuItem library_page[] = {
-	MenuItem("1.", "Add Path", (void*)addLibPath),
-	MenuItem("2.", "Remove Path", (void*)removeLibPath),
-	MenuItem("3.", "Back", (void*)changePage)
+	MenuItem("1.", "Add Path", (void*)addLibPath, -1),
+	MenuItem("2.", "Remove Path", (void*)removeLibPath, -1),
+	MenuItem("3.", "Back", (void*)changePage, MAIN_PAGE)
 };
 
 const struct MenuItem server_page[] = {
-	MenuItem("1.", "Kill Server", (void*)cleanupServ),
-	MenuItem("2.", "Run In Background", (void*)backgroundProc)
+	MenuItem("1.", "Kill Server", (void*)cleanupServ, MAIN_PAGE),
+	MenuItem("2.", "Run In Background", (void*)backgroundProc, -1)
 };
 
 const struct MenuItem* page_select[] = { main_page, port_page, library_page, server_page };
