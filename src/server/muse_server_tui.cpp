@@ -2,7 +2,6 @@
 
 int main(int argc, char** argv) {
 	int last_char;
-	ITEM** items;
 	MENU* menu;
 	WINDOW* win, *subwin;
 
@@ -12,20 +11,13 @@ int main(int argc, char** argv) {
 	noecho();
 	curs_set(0);
 	keypad(stdscr, TRUE);
-	// resizeterm(24, 80);
 
 	FILE* ascii = fopen("../assets/banner.ascii", "r");
 
-	/* Create items */
-	int n_choices = page_length[curr_page];
-	items = (ITEM**) calloc(n_choices+1, sizeof(ITEM*));
-	for( int i = 0; i < n_choices; ++i ) {
-		items[i] = new_item(page_select[curr_page][i].label, page_select[curr_page][i].option);
-	}
-	items[n_choices] = NULL;
-
 	/* Create menu */
-	menu = new_menu((ITEM**) items);
+	ITEM** empty_item_list = (ITEM**) calloc(1, sizeof(ITEM*));
+	empty_item_list[0] = NULL;
+	menu = new_menu((ITEM**) empty_item_list);
 
 	/* Create menu window */
 	win = newwin(LINES, COLS, 0, 0);
@@ -44,6 +36,8 @@ int main(int argc, char** argv) {
 	fclose(ascii);
 	refresh();
 
+	changePage(win, menu, MAIN_PAGE);
+
 	post_menu(menu);
 	wrefresh(win);
 
@@ -56,46 +50,90 @@ int main(int argc, char** argv) {
 			case KEY_UP:
 				menu_driver(menu, REQ_UP_ITEM);
 				break;
+			case KEY_F(2):
+				changePage(win, menu, MAIN_PAGE);
+				break;
+			case KEY_F(3):
+				changePage(win, menu, PORT_PAGE);
+				break;
+			case KEY_F(4):
+				changePage(win, menu, LIBRARY_PAGE);
+				break;
+			case KEY_F(5):
+				changePage(win, menu, SERVER_PAGE);
+				break;
 		}
 		wrefresh(win);
 	}
-	/* Unpost and free all the memory taken up */
-    unpost_menu(menu);
-    free_menu(menu);
 
-    for( int i = 0; i < n_choices; ++i ) {
-        free_item(items[i]);
+	cleanup(menu);
+}
+
+void changePage(WINDOW* &win, MENU* &menu, int page_num) {
+	/* Cleanup old list of items */
+	ITEM** old_items = menu_items(menu);
+	int n_old_items = item_count(menu);
+
+	for( int i = 0; i < n_old_items; ++i ) {
+		free_item(old_items[i]);
 	}
+
+	/* Unpost and free all the memory taken up */
+	unpost_menu(menu);
+
+	/* Create a new list of items */
+	int n_choices = page_length[page_num];
+	ITEM** new_items = (ITEM**) calloc(n_choices+1, sizeof(ITEM*));
+	for( int i = 0; i < n_choices; ++i ) {
+		new_items[i] = new_item(page_select[page_num][i].label, page_select[page_num][i].option);
+	}
+	new_items[n_choices] = NULL;
+
+	/* Update menu */
+	set_menu_items(menu, new_items);
+	post_menu(menu);
+}
+
+
+void cleanup(MENU* menu) {
+	/* Cleanup old list of items */
+	ITEM** old_items = menu_items(menu);
+	int n_old_items = item_count(menu);
+
+	for( int i = 0; i < n_old_items; ++i ) {
+		free_item(old_items[i]);
+	}
+
+	/* Unpost and free all the memory taken up */
+	unpost_menu(menu);
+	free_menu(menu);
 
 	/* show the cursor again before exiting */
 	curs_set(2);
-	endwin();
-}
 
-void cleanup(){
 	endwin();
 	exit(0);
 }
 
-void cleanupServ(){
+void cleanupServ() {
 	kill(muse_pid, SIGTERM);
-	cleanup();
+	// cleanup();
 }
 
-void backgroundProc(){
+void backgroundProc() {
 	return;
 }
 
-void start(bool background){
+void start(bool background) {
 	//If the child process
-	if(!(muse_pid = fork())){
+	if(!(muse_pid = fork())) {
 		//If serve returns anything but zero
-		if(/* serve(port) */ TRUE){
+		if(/* serve(port) */ TRUE) {
 			//Spit them out to the main page if something goes wrong in MUSE itself
 			// curr_page = MAIN_PAGE;
 		}
 	}
-	if(background){
+	if(background) {
 		//backgroundProc
 		backgroundProc();
 	}
@@ -105,21 +143,21 @@ void start(bool background){
 	refresh();
 }
 
-void updatePort(char* new_port){
+void updatePort(char* new_port) {
 	port = new_port;
 }
 
-int addLibPath(char* lib_path){
-	if(lib_path_num < 64){
+int addLibPath(char* lib_path) {
+	if(lib_path_num < 64) {
 		lib_paths[lib_path_num++] = lib_path;
 		return 0;
 	}
 	return 1;
 }
 
-int removeLibPath(int idx){
+int removeLibPath(int idx) {
 	int i = 0;
-	if( lib_paths[i][0] != '\0' ){
+	if( lib_paths[i][0] != '\0' ) {
 		for( i = idx; lib_paths[i][0] != '\0' && i < lib_path_num; i++ ) {
 			lib_paths[i] = lib_paths[i+1];
 		}
@@ -130,4 +168,8 @@ int removeLibPath(int idx){
 		return 0;
 	}
 	return 1;
+}
+
+void refreshDatabase() {
+	return;
 }

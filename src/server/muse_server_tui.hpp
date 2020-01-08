@@ -30,42 +30,44 @@ struct MenuItem {
 char* port = "2442";
 char* lib_paths[64];
 int lib_path_num;
-int curr_page = LIBRARY_PAGE;
+int curr_page = MAIN_PAGE;
 int muse_pid;
 
-void cleanup();
+void changePage(WINDOW* &window, MENU* &menu, int page_num);
+void cleanup(MENU* menu);
 void cleanupServ();
 void backgroundProc();
 void updatePort(char* new_port);
+void refreshDatabase();
 int addLibPath(char* lib_path);
 int removeLibPath(int idx);
 
-struct MenuItem main_page[] = {
+const struct MenuItem main_page[] = {
 	MenuItem("1.", "Start In Background", (void*)backgroundProc),
-	MenuItem("2.", "Change Port", (void*)refresh),
-	MenuItem("3.", "Library Location", (void*)refresh),
-	MenuItem("4.", "Refresh Database", (void*)refresh),
-	MenuItem("5.", "Start Server", (void*)refresh),
+	MenuItem("2.", "Change Port", (void*)changePage),
+	MenuItem("3.", "Library Location", (void*)changePage),
+	MenuItem("4.", "Refresh Database", (void*)refreshDatabase),
+	MenuItem("5.", "Start Server", (void*)changePage),
 	MenuItem("6.", "Exit", (void*)cleanup)
 };
 
-struct MenuItem port_page[] = {
+const struct MenuItem port_page[] = {
 	MenuItem("1.", "Specify Port", (void*)updatePort),
-	MenuItem("2.", "Back", (void*)refresh)
+	MenuItem("2.", "Back", (void*)changePage)
 };
 
-struct MenuItem library_page[] = {
+const struct MenuItem library_page[] = {
 	MenuItem("1.", "Add Path", (void*)addLibPath),
 	MenuItem("2.", "Remove Path", (void*)removeLibPath),
-	MenuItem("3.", "Back", (void*)refresh)
+	MenuItem("3.", "Back", (void*)changePage)
 };
 
-struct MenuItem server_page[] = {
+const struct MenuItem server_page[] = {
 	MenuItem("1.", "Kill Server", (void*)cleanupServ),
 	MenuItem("2.", "Run In Background", (void*)backgroundProc)
 };
 
-struct MenuItem* page_select[] = { main_page, port_page, library_page, server_page };
-int page_length[] = { ARR_SIZE(main_page), ARR_SIZE(port_page), ARR_SIZE(library_page), ARR_SIZE(server_page) };
+const struct MenuItem* page_select[] = { main_page, port_page, library_page, server_page };
+const int page_length[] = { ARR_SIZE(main_page), ARR_SIZE(port_page), ARR_SIZE(library_page), ARR_SIZE(server_page) };
 
 #endif
