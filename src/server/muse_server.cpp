@@ -58,10 +58,11 @@ int serve(char* port){
 			if(fork()){
 				printf("Child detected!\n");
 				handleRequest(new_sockfd);
+				close(new_sockfd);
 				exit(0);
 			}
 			else{
-				//printf("Connection detected!\n");
+				printf("Connection detected!\n");
 			}
 		}
 		else{
@@ -73,14 +74,18 @@ int serve(char* port){
 }
 
 int handleRequest(int new_sockfd){
+	sqlite3* db;
+	if(sqlite3_open("./muse.db", &db) != SQLITE_OK){
+		printf("Could not open the sqlite database!\n");
+	}
 	char* outgoing = (char*)calloc(BUFF_SIZE, 1);
 	char* incoming = (char*)malloc(BUFF_SIZE);
-	int amnt_sent, amnt_recvd;
+	int amnt_sent, amnt_recv;
 	while(1){
 		fgets(outgoing, BUFF_SIZE, stdin);
 		amnt_sent = send(new_sockfd, outgoing, strlen(outgoing), 0);
-		amnt_recvd = recv(new_sockfd, incoming, BUFF_SIZE, 0);
-		printf("Bytes sent out: %d\nBytes recieved:%d\n%s\n", amnt_sent, amnt_recvd, incoming);
+		amnt_recv = recv(new_sockfd, incoming, BUFF_SIZE, 0);
+		printf("Bytes sent out: %d\nBytes recieved:%d\n%s\n", amnt_sent, amnt_recv, incoming);
 	}
 }
 
