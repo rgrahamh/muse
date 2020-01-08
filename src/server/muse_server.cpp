@@ -55,11 +55,14 @@ int serve(char* port){
 	while(1){
 		new_sockfd = accept(sockfd, (struct sockaddr*)client, &addr_len);
 		if(new_sockfd != -1){
-			if(!fork()){
-				handleRequest();
+			if(fork()){
+				printf("Child detected!\n");
+				handleRequest(new_sockfd);
 				exit(0);
 			}
-			else(printf("Connection detected!\n"));
+			else{
+				//printf("Connection detected!\n");
+			}
 		}
 		else{
 			fprintf(stderr, "Error accepting the new connection!\n");
@@ -69,7 +72,16 @@ int serve(char* port){
 	return 0;
 }
 
-int handleRequest(){
+int handleRequest(int new_sockfd){
+	char* outgoing = (char*)calloc(BUFF_SIZE, 1);
+	char* incoming = (char*)malloc(BUFF_SIZE);
+	int amnt_sent, amnt_recvd;
+	while(1){
+		fgets(outgoing, BUFF_SIZE, stdin);
+		amnt_sent = send(new_sockfd, outgoing, strlen(outgoing), 0);
+		amnt_recvd = recv(new_sockfd, incoming, BUFF_SIZE, 0);
+		printf("Bytes sent out: %d\nBytes recieved:%d\n%s\n", amnt_sent, amnt_recvd, incoming);
+	}
 }
 
 void stop(int sig){

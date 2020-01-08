@@ -12,9 +12,10 @@
 #include "../shared.hpp"
 
 #define DEFAULT_PORT "2442"
+#define BUFF_SIZE 256
 
 int serve(char* port);
-int handleRequest();
+int handleRequest(int new_sockfd);
 void stop(int sig);
 
 #endif
