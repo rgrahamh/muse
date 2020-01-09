@@ -248,7 +248,62 @@ void start(bool background) {
  * @param win The window which prompts the user for input
  */
 void updateIP(WINDOW* &win) {
-	return;
+	/* Show the cursor */
+	curs_set(1);
+	int last_char;
+	char new_ip[16] = "";
+	int index = 0;
+
+	/* Move the cursor to the proper screen position */
+	int y = LINES - 3;
+	int x = 1;
+	wmove(win, y, x);
+
+	/* Write a prompt to the user */
+	mvwaddstr(win, y, x, "New IP (<ESC> to cancel): ");
+
+	/* User types in 3 digits at a time, auto-filling the period every 3 */
+	while( index < 15 && (last_char = wgetch(win)) != 27 /* ESC */ ) {
+		switch(last_char) {
+			case 48:
+			case 49:
+			case 50:
+			case 51:
+			case 52:
+			case 53:
+			case 54:
+			case 55:
+			case 56:
+			case 57: /* digits 0-9 */
+				waddch(win, last_char);
+				new_ip[index++] = last_char;
+				break;
+		}
+
+		if( (index % 4) - 3 == 0 && index != 0 && index != 15 ) { // autofill periods for user
+			waddch(win, '.');
+			new_ip[index++] = (int)'.';
+		} 
+
+		wrefresh(win);
+	}
+
+	/* If proper digits entered, ask for confirmation */
+	if( last_char != 27 /* ESC */ ) {
+		int confirmed = confirmSelection(win);
+		if( confirmed == 1 ) {
+			strncpy(ip, new_ip, sizeof(ip) - 1);
+		}
+	}
+
+	/* Clear the bottom two rows */
+	for( x = COLS - 2; x > 0; x-- ) {
+		mvwaddch(win, LINES - 3, x, ' ');
+	}
+
+	/* Reset cursor state and refresh window */
+	curs_set(0);
+	wrefresh(win);
 }
 
 /**Updates the port information with user prompt
@@ -267,7 +322,7 @@ void updatePort(WINDOW* &win) {
 	wmove(win, y, x);
 
 	/* Write a prompt to the user */
-	mvwaddstr(win, y, x, "New Port (<ESC> to cancel) : ");
+	mvwaddstr(win, y, x, "New Port (<ESC> to cancel): ");
 
 	/* User types in 4 digits */
 	while( index < 4 && (last_char = wgetch(win)) != 27 /* ESC */ ) {
