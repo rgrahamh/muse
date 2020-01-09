@@ -18,7 +18,7 @@ char* file_buff;
  		serve(DEFAULT_PORT);
  	}
  */
-	char* test[] = {"."};
+	char* test[] = {"/home/rhouck/Music"};
  	scan(test, 1);
  	return 0;
  }
@@ -199,22 +199,60 @@ int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result)
 int scan(char** lib_paths, int num_paths){
 	DIR* dir;
 	struct dirent* file_info;
+	struct stat stat_info;
+	char* curr_path = (char*)calloc(1, PATH_MAX);
+	char* start_path = (char*)calloc(1, PATH_MAX);
+	int subdir_num = 0;
+	int subdir_max = 32;
+	char** subdirs = (char**)malloc(32 * sizeof(char*));
+
+	getcwd(curr_path, PATH_MAX);
 	//For every path passed in,
 	for(int i = 0; i < num_paths; i++){
+		chdir(lib_paths[i]);
 		//Open the directory stream
 		if((dir = opendir(lib_paths[i])) != NULL){
 			//Read in the file information
 			while((file_info = readdir(dir)) != NULL){
-				int file_name_len = strlen(file_info->d_name);
+				lstat(file_info->d_name, &stat_info);
+				if(S_ISDIR(stat_info.st_mode)){
+				//If not the previous or current directory
+					if(strcmp(file_info->d_name, ".") != 0 && strcmp(file_info->d_name, "..") != 0){
+						if(subdir_num > subdir_max){
+							subdir_max *= 4;
+							subdirs = (char**)realloc(subdirs, subdir_max * sizeof(char*));
+						}
+						memset(start_path, 0, PATH_MAX);
+						getcwd(start_path, PATH_MAX);
+						char* subdir = (char*)malloc(strlen(start_path) + strlen(curr_path)+2);
+						strcpy(subdir, start_path);
+						strcat(subdir, "/");
+						strcat(subdir, file_info->d_name);
+						subdirs[subdir_num] = subdir;
+						subdir_num++;
+					}
+				}
+				else{
+					int file_name_len = strlen(file_info->d_name);
 
-				//Checking to see if the file is an mp3
-				if(strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0){
-					printf("Found an mp3 file: %s\n", file_info->d_name);
-					//TODO: Parse info
+					//Checking to see if the file is an mp3
+					if(strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0){
+						printf("Found an mp3 file: %s\n", file_info->d_name);
+						//TODO: Parse info
+					}
 				}
 			}
 		}
+		//Go back to original directory in case there's relative filepaths
+		chdir(curr_path);
 	}
+	if(subdir_num >= 1){
+		scan(subdirs, subdir_num);
+		for(int i = 0; i < subdir_num; i++){
+			free(subdirs[i]);
+		}
+	}
+	free(subdirs);
 	return 0;
 }
 
