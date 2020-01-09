@@ -4,6 +4,8 @@
 #include <menu.h>
 #include <stdlib.h>
 
+#define ARR_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+
 #define ORD_DIR_MASK 0x01
 
 /** An enum of if the client wants results in an ascending or descending order */

@@ -1,4 +1,4 @@
-CC=gcc
+CC=g++
 CFLAGS=-Wall -Wno-write-strings -lmenu -lncurses -lsqlite3 -g
 
 SERVER=shared.c \
@@ -12,4 +12,4 @@ muse_client:
 	$(CC) shared.c -o client/muse_client $(CFLAGS)
 
 muse_server_test:
-	$(CC) shared.c server/muse_server.c -o server/server_test $(CFLAGS) -lid3v2 -DTEST
+	$(CC) shared.c server/muse_server.c -o server/server_test $(CFLAGS) -ltag_c -ltag -DTEST

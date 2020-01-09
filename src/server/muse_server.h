@@ -7,18 +7,30 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <id3v2lib.h>
+#include <taglib/tag_c.h>
 
 #include <sqlite3.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <netdb.h>
 
 #include "../shared.h"
 
 #define DEFAULT_PORT "2442"
-#define BUFF_SIZE 256
+#define BUFF_SIZE PATH_MAX + 1
+
+struct dbsonginfo {
+	sqlite3* db,
+	char* title,
+	char* artist,
+	char* album,
+	char* comment,
+	int year,
+	int track_num,
+	char genre
+};
 
 int serve(char* port);
 int handleRequest(int new_sockfd);

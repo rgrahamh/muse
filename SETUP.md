@@ -11,3 +11,9 @@ After this, you have to install the sqlite development libraries. To do this, ru
 ```
 sudo apt-get install sqlite3 libsqlite3-dev
 ```
+Then, you have to install TagLib. Navigate to the libraries directory (or to https://taglib.org/) and follow the installation instructions. The flow of instructions should look something like:
+```
+cmake .
+make
+make install
+```

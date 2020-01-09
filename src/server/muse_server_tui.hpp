@@ -9,8 +9,6 @@
 #include "../shared.hpp"
 #include "muse_server.hpp"
 
-#define ARR_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
-
 enum pages {
 	MAIN_PAGE,
 	PORT_PAGE,

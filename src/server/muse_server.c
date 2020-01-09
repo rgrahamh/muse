@@ -122,7 +122,7 @@ int handleRequest(int new_sockfd){
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
 					sprintf(query, "SELECT file_path FROM song\nWHERE song_id=%lu;", *((unsigned long*)incoming_msg));
-					sqlite3_exec(db, query, sendSongCallback, (void*)new_sockfd, NULL);
+					sqlite3_exec(db, query, sendSongCallback, &new_sockfd, NULL);
 					break;
 
 				case QWRYSNG:
@@ -188,7 +188,39 @@ int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result)
 		fread(tmp_buff, 1, file_size % 4096, file);
 	}
 	fclose(file);
-	return !send((int)new_sockfd, file_buff, file_size, 0);
+	return !send(*((int*)new_sockfd), file_buff, file_size, 0);
+}
+
+int addSongCallback(void* sinfo, int colNum, char** column, char** result){
+	struct songinfo* song_info = (struct songinfo*)sinfo;
+	//If there were no columns returned
+	if(colNum == 0){
+		//Create new entries for the artist, song, and album
+		return 0;
+	}
+	else{
+		//Artist exists, so pull that in and check if the album exists
+		unsigned int artist_id = 0;
+		unsigned long album_id = 0;
+		for(int i = 0; i < colNum; i++){
+			//Pull in the artist.id
+			if(strcmp(column[i], "artist.id") == 0){
+				artist_id = strtoul(result[i], NULL, 10);
+			}
+			else if((strcmp(column[i], "album.name") == 0) && (strlen(result[i], song_info->album) == 0)){
+				album_id = strtoul(result[i], NULL, 10);
+			}
+		}
+		//Create new entry for the song and album, link the artist.
+		if(album_id == 0){
+			
+		}
+		//Create new entry for the song, link the artist and album FK's
+		else{
+			
+		}
+		return 0;
+	}
 }
 
 /**Scans the file system for mp3s and updates the database based upon that
@@ -201,10 +233,23 @@ int scan(char** lib_paths, int num_paths){
 	struct dirent* file_info;
 	struct stat stat_info;
 	char* curr_path = (char*)calloc(1, PATH_MAX);
-	char* start_path = (char*)calloc(1, PATH_MAX);
 	int subdir_num = 0;
 	int subdir_max = 32;
+	//Subdirectories that should be scanned
 	char** subdirs = (char**)malloc(32 * sizeof(char*));
+
+	//Variables that are re-used and are declared in this scope for the purpose of efficiency:
+	char* start_path = (char*)calloc(1, PATH_MAX);
+	char* query = (char*)calloc(1, 4096);
+	struct dbsonginfo* song_info = (struct dbsonginfo*)malloc(sizeof(dbsonginfo));
+
+	//SQLite database work
+	sqlite3* db;
+	song_info->db = db;
+	//Open the database connection
+	if(sqlite3_open("./muse.db", &db) != SQLITE_OK){
+		printf("Could not open the sqlite database!\n");
+	}
 
 	getcwd(curr_path, PATH_MAX);
 	//For every path passed in,
@@ -218,11 +263,10 @@ int scan(char** lib_paths, int num_paths){
 				if(S_ISDIR(stat_info.st_mode)){
 				//If not the previous or current directory
 					if(strcmp(file_info->d_name, ".") != 0 && strcmp(file_info->d_name, "..") != 0){
-						if(subdir_num > subdir_max){
+						while(subdir_num > subdir_max){
 							subdir_max *= 4;
 							subdirs = (char**)realloc(subdirs, subdir_max * sizeof(char*));
 						}
-						memset(start_path, 0, PATH_MAX);
 						getcwd(start_path, PATH_MAX);
 						char* subdir = (char*)malloc(strlen(start_path) + strlen(curr_path)+2);
 						strcpy(subdir, start_path);
@@ -238,7 +282,22 @@ int scan(char** lib_paths, int num_paths){
 					//Checking to see if the file is an mp3
 					if(strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0){
 						printf("Found an mp3 file: %s\n", file_info->d_name);
-						//TODO: Parse info
+						TagLib_File* tag_file = taglib_file_new(file_info->d_name);
+						TagLib_Tag* tag = taglib_file_tag(tag_file);
+
+						//Populating the songinfo struct
+						song_info->title = taglib_tag_title(tag);
+						song_info->artist = taglib_tag_artist(tag);
+						song_info->album= taglib_tag_album(tag);
+						song_info->comment = taglib_tag_comment(tag);
+						song_info->year = taglib_tag_year(tag);
+						song_info->track_num = taglib_tag_track(tag);
+
+						//Query for the artist's albums
+						sqlite3_exec(db, "SELECT album.name, album.id, artist.id\nFROM album INNER JOIN artist\nWHERE album.artist_id = artist.id;", addSongCallback, song_info, NULL);
+
+						//Free the taglib_file
+						taglib_file_free(tag_file);
 					}
 				}
 			}
@@ -246,6 +305,10 @@ int scan(char** lib_paths, int num_paths){
 		//Go back to original directory in case there's relative filepaths
 		chdir(curr_path);
 	}
+	//Close the db
+	sqlite3_close(db);
+
+	//Call scan recursively on subdirectories
 	if(subdir_num >= 1){
 		scan(subdirs, subdir_num);
 		for(int i = 0; i < subdir_num; i++){
