@@ -1,2 +1,3 @@
-src/server/muse_server
-src/server/test_server
+muse_server
+test_server
+*.mp3

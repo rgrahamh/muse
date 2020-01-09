@@ -18,8 +18,8 @@ char* file_buff;
  		serve(DEFAULT_PORT);
  	}
  */
-	char* test[] = {"../server", ".", ".."};
- 	scan(test, 3);
+	char* test[] = {"."};
+ 	scan(test, 1);
  	return 0;
  }
 #endif
@@ -201,18 +201,15 @@ int scan(char** lib_paths, int num_paths){
 	struct dirent* file_info;
 	//For every path passed in,
 	for(int i = 0; i < num_paths; i++){
-		printf("Got to the path!\n");
 		//Open the directory stream
-		if((dir = opendir(lib_paths[i]) != NULL)){
-			printf("Set dir!\n");
+		if((dir = opendir(lib_paths[i])) != NULL){
 			//Read in the file information
 			while((file_info = readdir(dir)) != NULL){
-				printf("Set file_info!\n");
 				int file_name_len = strlen(file_info->d_name);
 
 				//Checking to see if the file is an mp3
-				if(strcmp((file_info->d_name + (file_name_len - 4)), "mp3")){
-					printf("Found an mp3 file: %s", file_info->d_name);
+				if(strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0){
+					printf("Found an mp3 file: %s\n", file_info->d_name);
 					//TODO: Parse info
 				}
 			}
