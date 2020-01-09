@@ -1,11 +1,11 @@
-#include "shared.hpp"
+#include "shared.h"
 
 /**Prints ASCII art
  * @param file The file containing the ASCII art
  * @param y The y coordinate of the top left character
  * @param x The x coordinate of the top left character
  */
-void printASCII(FILE* file, int y = 0, int x = 0) {
+void printASCII(FILE* file, int y, int x) {
   //Get the x and y coordinates so it can return the cursor to its original location
   int old_y, old_x;
   getyx(curscr, old_y, old_x);
@@ -34,7 +34,7 @@ void printASCII(FILE* file, int y = 0, int x = 0) {
  * @param y The y coordinate of the top left character
  * @param x The x coordinate of the top left character
  */
-void wprintASCII(WINDOW* win, FILE* file, int y = 0, int x = 0) {
+void wprintASCII(WINDOW* win, FILE* file, int y, int x) {
   //Get the x and y coordinates so it can return the cursor to its original location
   int old_y, old_x;
   getyx(curscr, old_y, old_x);

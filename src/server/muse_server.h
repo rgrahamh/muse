@@ -7,20 +7,23 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <id3v2lib.h>
+
 #include <sqlite3.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 
-#include "../shared.hpp"
+#include "../shared.h"
 
 #define DEFAULT_PORT "2442"
 #define BUFF_SIZE 256
 
 int serve(char* port);
 int handleRequest(int new_sockfd);
-int sendSongCallback(void* unused, int colNum, char** column, char** result);
+int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result);
+int scan(char** lib_paths, int num_paths);
 void stop(int sig);
 
 #endif

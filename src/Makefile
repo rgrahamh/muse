@@ -1,15 +1,15 @@
 CC=gcc
-CFLAGS=-Wall -Wno-write-strings -lmenu -lncurses -g
+CFLAGS=-Wall -Wno-write-strings -lmenu -lncurses -lsqlite3 -g
 
-SERVER=shared.cpp \
-	   server/muse_server.cpp \
-	   server/muse_server_tui.cpp
+SERVER=shared.c \
+	   server/muse_server.c \
+	   server/muse_server_tui.c
 
 muse_server:
 	$(CC) $(SERVER) -o server/muse_server $(CFLAGS)
 
 muse_client:
-	$(CC) shared.cpp -o client/muse_client $(CFLAGS)
+	$(CC) shared.c -o client/muse_client $(CFLAGS)
 
 muse_server_test:
-	$(CC) shared.cpp server/muse_server.cpp -o server/server_test $(CFLAGS) -DTEST
+	$(CC) shared.c server/muse_server.c -o server/server_test $(CFLAGS) -lid3v2 -DTEST
