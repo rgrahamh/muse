@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <vector>
+#include <linux/limits.h>
 
 #include "../shared.hpp"
 #include "muse_server.hpp"
@@ -30,8 +32,7 @@ struct MenuItem {
 
 char port[5];
 char ip[16];
-char* lib_paths[64];
-int lib_path_num;
+std::vector<char*> lib_paths;
 int curr_page = MAIN_PAGE;
 int muse_pid;
 
@@ -46,8 +47,8 @@ void backgroundProc();
 void updateIP(WINDOW* &win);
 void updatePort(WINDOW* &win);
 void refreshDatabase();
-int addLibPath(char* lib_path);
-int removeLibPath(int idx);
+void addLibPath(WINDOW* win);
+void removeLibPath();
 
 const struct MenuItem main_page[] = {
 	MenuItem("1.", "Network Options", (void*)changePage, NETWORK_PAGE),

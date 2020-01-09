@@ -120,6 +120,8 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
 		updateIP(win);
 	} else if( callback == &updatePort ) {
 		updatePort(win);
+	} else if( callback == &addLibPath ) {
+		addLibPath(win);
 	} else if( callback == &exitMuse ) {
 		exitMuse(win, menu);
 	} else {
@@ -133,17 +135,26 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
  * @param x The x coordinate to act as an origin for information
  */
 void writeInfoWindow(WINDOW* &win, int y, int x) {
-	/* Write the network information */
+	/* Static labels */
 	char* ip_label = "IP: ";
 	char* port_label = "Port: ";
+	char* library_label = "Libraries: ";
 	char* exit_label = "Press F1 to exit.";
 
+	/* Network information */
 	mvwaddstr(win, y, x, ip_label);
 	mvwaddstr(win, y, x+strlen(ip_label), ip);
 
 	mvwaddstr(win, y, x+strlen(ip_label)+strlen(ip)+1, port_label);
 	mvwaddstr(win, y, x+strlen(ip_label)+strlen(ip)+strlen(port_label)+1, port);
 
+	/* Library information */
+	mvwaddstr(win, y+1, x, library_label);
+	for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
+		mvwaddstr(win, y+2+i, x+2, lib_paths.at(i));
+	}
+
+	/* Exit label */
 	mvwaddstr(win, LINES - 2, COLS - strlen(exit_label)-1, exit_label);
 
 	/* Draw the vertical seperator line */
@@ -226,22 +237,22 @@ void backgroundProc() {
 }
 
 void start(bool background) {
-	//If the child process
-	if(!(muse_pid = fork())) {
-		//If serve returns anything but zero
-		if(/* serve(port) */ TRUE) {
-			//Spit them out to the main page if something goes wrong in MUSE itself
-			// curr_page = MAIN_PAGE;
-		}
-	}
-	if(background) {
-		//backgroundProc
-		backgroundProc();
-	}
-	else{
-		// curr_page = SERVER_PAGE;
-	}
-	refresh();
+	// //If the child process
+	// if(!(muse_pid = fork())) {
+	// 	//If serve returns anything but zero
+	// 	if(/* serve(port) */ TRUE) {
+	// 		//Spit them out to the main page if something goes wrong in MUSE itself
+	// 		// curr_page = MAIN_PAGE;
+	// 	}
+	// }
+	// if(background) {
+	// 	//backgroundProc
+	// 	backgroundProc();
+	// }
+	// else{
+	// 	// curr_page = SERVER_PAGE;
+	// }
+	// refresh();
 }
 
 /**Updates the IP address with user prompt
@@ -264,20 +275,23 @@ void updateIP(WINDOW* &win) {
 
 	/* User types in 3 digits at a time, auto-filling the period every 3 */
 	while( index < 15 && (last_char = wgetch(win)) != 27 /* ESC */ ) {
-		switch(last_char) {
-			case 48:
-			case 49:
-			case 50:
-			case 51:
-			case 52:
-			case 53:
-			case 54:
-			case 55:
-			case 56:
-			case 57: /* digits 0-9 */
+		if( last_char >= 48 && last_char <= 57 /* 0-9 */ ) {
 				waddch(win, last_char);
 				new_ip[index++] = last_char;
-				break;
+		} else if( (last_char == KEY_BACKSPACE || last_char == KEY_DC || last_char == 127) && (index > 0) ) {
+			int cur_y, cur_x;
+			getyx(win, cur_y, cur_x);
+			mvwaddch(win, cur_y, cur_x-1, ' ');
+			wmove(win, cur_y, cur_x-1);
+			new_ip[--index] = '\0';
+
+			/* If we delete a number before a delimiter, delete the delimiter as well */
+			if( (index % 4) - 3 == 0 ) {
+				getyx(win, cur_y, cur_x);
+				mvwaddch(win, cur_y, cur_x-1, ' ');
+				wmove(win, cur_y, cur_x-1);
+				new_ip[--index] = '\0';
+			}
 		}
 
 		if( (index % 4) - 3 == 0 && index != 0 && index != 15 ) { // autofill periods for user
@@ -296,7 +310,7 @@ void updateIP(WINDOW* &win) {
 		}
 	}
 
-	/* Clear the bottom two rows */
+	/* Clear the entry rows */
 	for( x = COLS - 2; x > 0; x-- ) {
 		mvwaddch(win, LINES - 3, x, ' ');
 	}
@@ -326,20 +340,15 @@ void updatePort(WINDOW* &win) {
 
 	/* User types in 4 digits */
 	while( index < 4 && (last_char = wgetch(win)) != 27 /* ESC */ ) {
-		switch(last_char) {
-			case 48:
-			case 49:
-			case 50:
-			case 51:
-			case 52:
-			case 53:
-			case 54:
-			case 55:
-			case 56:
-			case 57: /* digits 0-9 */
-				waddch(win, last_char);
-				new_port[index++] = last_char;
-				break;
+		if( last_char >= 48 && last_char <= 57 /* 0-9 */ ) {
+			waddch(win, last_char);
+			new_port[index++] = last_char;
+		} else if( (last_char == KEY_BACKSPACE || last_char == KEY_DC || last_char == 127) && (index > 0) ) {
+			int cur_y, cur_x;
+			getyx(win, cur_y, cur_x);
+			mvwaddch(win, cur_y, cur_x-1, ' ');
+			wmove(win, cur_y, cur_x-1);
+			new_port[--index] = '\0';
 		}
 		wrefresh(win);
 	}
@@ -352,7 +361,7 @@ void updatePort(WINDOW* &win) {
 		}
 	}
 
-	/* Clear the bottom two rows */
+	/* Clear the entry row */
 	for( x = COLS - 2; x > 0; x-- ) {
 		mvwaddch(win, LINES - 3, x, ' ');
 	}
@@ -362,27 +371,77 @@ void updatePort(WINDOW* &win) {
 	wrefresh(win);
 }
 
-int addLibPath(char* lib_path) {
-	if(lib_path_num < 64) {
-		lib_paths[lib_path_num++] = lib_path;
-		return 0;
+void addLibPath(WINDOW* win) {
+	/* Show the cursor */
+	curs_set(1);
+	int last_char = 0;
+	char* new_lib_path = (char*) calloc(PATH_MAX, sizeof(char));
+	int index = 0;
+
+	/* Move the cursor to the proper screen position */
+	int y = LINES - 3;
+	int x = 1;
+	wmove(win, y, x);
+
+	/* Write a prompt to the user */
+	mvwaddstr(win, y, x, "New Library Path (<ESC> to cancel): ");
+	wmove(win, y+1, x);
+
+	/* Receive input from user */
+	while( index < PATH_MAX ) {
+		last_char = wgetch(win);
+
+		// TODO: LIMIT USER ENTRY TO PRINTABLE ASCII CHARACTERS
+		if( last_char == 27 /* ESC */ || last_char == 10 /* ENTER */ ) {
+			break; // exit the loop immediately
+		} else if( last_char == KEY_BACKSPACE || last_char == KEY_DC || last_char == 127 ) {
+			// delete a character from the screen
+			if( x+index <= (COLS / 2) && index > 0 ) { // if we don't have any text off-screen
+				int cur_y, cur_x;
+				getyx(win, cur_y, cur_x);
+				mvwaddch(win, cur_y, cur_x-1, ' ');
+				wmove(win, cur_y, cur_x-1);
+				new_lib_path[--index] = '\0';
+			} else if( index > 0 ) { // text has wrapped off-screen, so I need to wrap it back
+				int length_avail = (COLS / 2) - x;
+				for( int i = 0; i < length_avail; i++ ) {
+					mvwaddch(win, y+1, x+i, new_lib_path[(index - length_avail - 1) + i]);
+				}
+				new_lib_path[--index] = '\0';
+			}
+		} else { // write a new character to the screen
+			new_lib_path[index] = last_char;
+			if( x+index < (COLS / 2) ) { // write information until it has filled it's space
+				mvwaddch(win, y+1, x+index, last_char);
+			} else { // "wrap" text off screen
+				int length_avail = (COLS / 2) - x;
+				for( int i = 0; i < length_avail; i++ ) {
+					mvwaddch(win, y+1, x+i, new_lib_path[(index - length_avail + 1) + i]);
+				}
+			}
+			index++;
+		}
 	}
-	return 1;
+
+	if( last_char == 27 ) { /* If the last character was the ESC key, just exit without committing anything */
+		return;
+	} else if( last_char == 10 ) { /* If the last character was the ENTER key, add it to the list of library paths */
+		lib_paths.push_back(new_lib_path);
+	}
+
+	/* Clear the bottom two rows */
+	for( x = COLS - 2; x > 0; x-- ) {
+		mvwaddch(win, LINES - 3, x, ' ');
+		mvwaddch(win, LINES - 2, x, ' ');
+	}
+
+	/* Reset cursor state and refresh window */
+	curs_set(0);
+	wrefresh(win);
 }
 
-int removeLibPath(int idx) {
-	int i = 0;
-	if( lib_paths[i][0] != '\0' ) {
-		for( i = idx; lib_paths[i][0] != '\0' && i < lib_path_num; i++ ) {
-			lib_paths[i] = lib_paths[i+1];
-		}
-		if( i == lib_path_num ) {
-			memset(lib_paths[i], 0, 255);
-		}
-		lib_path_num--;
-		return 0;
-	}
-	return 1;
+void removeLibPath() {
+
 }
 
 void refreshDatabase() {
