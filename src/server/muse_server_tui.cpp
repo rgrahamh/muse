@@ -1,7 +1,7 @@
 #include "muse_server_tui.hpp"
 
 int main(int argc, char** argv) {
-	int last_char, ascii_height, ascii_length;
+	int last_char;
 	MENU* menu;
 	WINDOW *win, *menu_win;
 
@@ -122,6 +122,8 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
 		updatePort(win);
 	} else if( callback == &addLibPath ) {
 		addLibPath(win);
+	} else if( callback == &removeLibPath ) {
+		removeLibPath(win);
 	} else if( callback == &exitMuse ) {
 		exitMuse(win, menu);
 	} else {
@@ -136,6 +138,7 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
  */
 void writeInfoWindow(WINDOW* &win, int y, int x) {
 	unsigned int length_avail = COLS - (COLS / 2) - 5;
+	unsigned int height_avail = LINES - ascii_height - 5;
 
 	/* Static labels */
 	char* ip_label = "IP: ";
@@ -152,15 +155,32 @@ void writeInfoWindow(WINDOW* &win, int y, int x) {
 
 	/* Library information */
 	mvwaddstr(win, y+1, x, library_label);
-	for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
-		if( strlen(lib_paths.at(i)) < length_avail ) {
-			mvwaddstr(win, y+2+i, x+2, lib_paths.at(i));
-		} else {
-			for( unsigned int idx = 0; idx < length_avail; idx++ ) {
-				mvwaddch(win, y+2+i, x+2+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx]);
+	if( height_avail - 1 >= lib_paths.size() ) {
+		for( unsigned int i = 0; i < (  lib_paths.size()); i++ ) {
+			if( strlen(lib_paths.at(i)) < length_avail ) {
+				mvwaddstr(win, y+2+i, x+2, lib_paths.at(i));
+			} else {
+				for( unsigned int idx = 0; idx < length_avail; idx++ ) {
+					mvwaddch(win, y+2+i, x+2+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx]);
+				}
+				mvwaddstr(win, y+2+i, x+2, "...");
 			}
-			mvwaddstr(win, y+2+i, x+2, "...");
 		}
+	} else {
+		for( unsigned int i = 0; i < height_avail - 2; i++ ) {
+			if( strlen(lib_paths.at(i)) < length_avail ) {
+				mvwaddstr(win, y+2+i, x+2, lib_paths.at(i));
+			} else {
+				for( unsigned int idx = 0; idx < length_avail; idx++ ) {
+					mvwaddch(win, y+2+i, x+2+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx]);
+				}
+				mvwaddstr(win, y+2+i, x+2, "...");
+			}
+		}
+
+		char more_msg[30];
+		snprintf(more_msg, sizeof(more_msg), "... and %d more...", ((int)lib_paths.size() - height_avail + 2));
+		mvwaddstr(win, y+height_avail, x+2, more_msg);
 	}
 
 
@@ -436,7 +456,7 @@ void addLibPath(WINDOW* win) {
 
 	if( last_char == 27 ) { /* If the last character was the ESC key, just exit without committing anything */
 		// do nothing
-	} else if( last_char == 10 || index >= PATH_MAX-1 ) { /* If the last character was the ENTER key, add it to the list of library paths */
+	} else if( (last_char == 10 || index >= PATH_MAX-1) && strlen(new_lib_path) > 0 ) { /* If the last character was the ENTER key, add it to the list of library paths */
 		lib_paths.push_back(new_lib_path);
 	}
 
@@ -451,8 +471,189 @@ void addLibPath(WINDOW* win) {
 	wrefresh(win);
 }
 
-void removeLibPath() {
+void removeLibPath(WINDOW* win) {
+	int last_char;
+	int origin_y = ascii_height+4;
+	int origin_x = (COLS / 2)+4;
 
+	unsigned int length_avail = COLS - (COLS / 2) - 5;
+	unsigned int height_avail = LINES - ascii_height - 5;
+	unsigned int scrollfield_top = 0;
+	unsigned int scrollfield_bot = height_avail - 2;
+
+	unsigned int highlighted = 0;
+	char* elipsis = "...";
+
+	/* Print some help information */
+	if( lib_paths.size() > 0 ) {
+		char* help = "Press <ENTER> to select, <ESC> to cancel.";
+		mvwaddstr(win, LINES - 2, 1, help);
+	} else {
+		char* help = "There are no items to remove.";
+		mvwaddstr(win, LINES - 2, 1, help);
+		wrefresh(win);
+		while( true ) {
+			last_char = wgetch(win);
+			if( last_char == 10 || last_char == 27 ) {
+				break;
+			}
+		}
+		mvwaddstr(win, LINES - 2, 1, "                             ");
+		return;
+	}
+
+	/* Erase the subwindow so it can be repainted */
+	for( int y = origin_y; y < LINES - 2; y++ ) {
+		for( int x = origin_x - 2; x < COLS - 1; x++ ) {
+			mvwaddch(win, y, x, ' ');
+		}
+	}
+
+	/* Paint the selected option */
+	if( height_avail - 1 >= lib_paths.size() ) {
+		for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
+			if( strlen(lib_paths.at(i)) < length_avail ) {
+				for( unsigned int idx = 0; idx < strlen(lib_paths.at(i)); idx++ ) {
+					mvwaddch(win, origin_y+i, origin_x+idx, lib_paths.at(i)[idx] | (highlighted == i ? A_STANDOUT : 0));
+				}
+			} else {
+				for( unsigned int idx = 0; idx < length_avail; idx++ ) {
+					mvwaddch(win, origin_y+i, origin_x+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx] | (highlighted == i ? A_STANDOUT : 0));
+				}
+				for( unsigned int idx = 0; idx < strlen(elipsis); idx++ ) {
+					mvwaddch(win, origin_y+i, origin_x+idx, elipsis[idx] | (highlighted == i ? A_STANDOUT : 0));
+				}
+			}
+		}
+	} else {
+		for( unsigned int i = scrollfield_top; i <= scrollfield_bot; i++ ) {
+			if( strlen(lib_paths.at(i)) < length_avail ) {
+				for( unsigned int idx = 0; idx < strlen(lib_paths.at(i)); idx++ ) {
+					mvwaddch(win, origin_y+i-scrollfield_top, origin_x+idx, lib_paths.at(i)[idx] | (highlighted == i ? A_STANDOUT : 0));
+				}
+			} else {
+				for( unsigned int idx = 0; idx < length_avail; idx++ ) {
+					mvwaddch(win, origin_y+i-scrollfield_top, origin_x+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx] | (highlighted == i ? A_STANDOUT : 0));
+				}
+				for( unsigned int idx = 0; idx < strlen(elipsis); idx++ ) {
+					mvwaddch(win, origin_y+i-scrollfield_top, origin_x+idx, elipsis[idx] | (highlighted == i ? A_STANDOUT : 0));
+				}
+			}
+		}
+	}
+
+	/* Print scroll indicators */
+	if( scrollfield_top != 0 ) {
+		mvwaddch(win, origin_y, origin_x-2, '^');
+	}
+
+	if( scrollfield_bot != lib_paths.size()-1) {
+		mvwaddch(win, LINES - 3, origin_x-2, 'v');
+	}
+
+	wrefresh(win);
+
+	while( true ) {
+		last_char = wgetch(win);
+
+		switch(last_char) {
+			case KEY_DOWN:
+				if( highlighted < lib_paths.size() - 1 ) {
+					highlighted++;
+				}
+				if( highlighted > scrollfield_bot ) {
+					scrollfield_top++;
+					scrollfield_bot++;
+				}
+				break;
+			case KEY_UP:
+				if( highlighted > 0 ) {
+					highlighted--;
+				}
+				if( highlighted < scrollfield_top ) {
+					scrollfield_top--;
+					scrollfield_bot--;
+				}
+				break;
+			case 10: /* ENTER */
+				if(lib_paths.size() > 0) {
+					free(lib_paths.at(highlighted));
+					lib_paths.erase(lib_paths.begin() + highlighted);
+				}
+				break;
+			case 27: /* ESC */
+				break;
+		}
+
+		/* Exit the loop */
+		if( last_char == 27 || last_char == 10 ) {
+			break;
+		}
+
+		/* Erase the subwindow so it can be repainted */
+		for( int y = origin_y; y < LINES - 2; y++ ) {
+			for( int x = origin_x - 2; x < COLS - 1; x++ ) {
+				mvwaddch(win, y, x, ' ');
+			}
+		}
+
+		/* Print scroll indicators */
+		if( scrollfield_top != 0 ) {
+			mvwaddch(win, origin_y, origin_x-2, '^');
+		}
+
+		if( scrollfield_bot != lib_paths.size()-1) {
+			mvwaddch(win, LINES - 3, origin_x-2, 'v');
+		}
+
+		/* Paint the selected option */
+		if( height_avail - 1 >= lib_paths.size() ) {
+			for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
+				if( strlen(lib_paths.at(i)) < length_avail ) {
+					for( unsigned int idx = 0; idx < strlen(lib_paths.at(i)); idx++ ) {
+						mvwaddch(win, origin_y+i, origin_x+idx, lib_paths.at(i)[idx] | (highlighted == i ? A_STANDOUT : 0));
+					}
+				} else {
+					for( unsigned int idx = 0; idx < length_avail; idx++ ) {
+						mvwaddch(win, origin_y+i, origin_x+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx] | (highlighted == i ? A_STANDOUT : 0));
+					}
+					for( unsigned int idx = 0; idx < strlen(elipsis); idx++ ) {
+						mvwaddch(win, origin_y+i, origin_x+idx, elipsis[idx] | (highlighted == i ? A_STANDOUT : 0));
+					}
+				}
+			}
+		} else {
+			for( unsigned int i = scrollfield_top; i <= scrollfield_bot; i++ ) {
+				if( strlen(lib_paths.at(i)) < length_avail ) {
+					for( unsigned int idx = 0; idx < strlen(lib_paths.at(i)); idx++ ) {
+						mvwaddch(win, origin_y+i-scrollfield_top, origin_x+idx, lib_paths.at(i)[idx] | (highlighted == i ? A_STANDOUT : 0));
+					}
+				} else {
+					for( unsigned int idx = 0; idx < length_avail; idx++ ) {
+						mvwaddch(win, origin_y+i-scrollfield_top, origin_x+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx] | (highlighted == i ? A_STANDOUT : 0));
+					}
+					for( unsigned int idx = 0; idx < strlen(elipsis); idx++ ) {
+						mvwaddch(win, origin_y+i-scrollfield_top, origin_x+idx, elipsis[idx] | (highlighted == i ? A_STANDOUT : 0));
+					}
+				}
+			}
+		}
+		wrefresh(win);
+	}
+
+	/* Erase the subwindow so it can be repainted */
+	for( int y = origin_y; y < LINES - 2; y++ ) {
+		for( int x = origin_x - 2; x < COLS - 1; x++ ) {
+			mvwaddch(win, y, x, ' ');
+		}
+	}
+
+	/* Clear the help row */
+	for( int x = COLS - 2; x > 0; x-- ) {
+		mvwaddch(win, LINES - 2, x, ' ');
+	}
+
+	wrefresh(win);
 }
 
 void refreshDatabase() {
