@@ -22,14 +22,14 @@
 #define BUFF_SIZE PATH_MAX + 1
 
 struct dbsonginfo {
-	sqlite* db;
+	sqlite3* db;
 	char* title;
 	char* artist;
 	char* album;
 	char* comment;
 	int year;
 	int track_num;
-	char genre;
+	char* genre;
 };
 
 int serve(char* port);

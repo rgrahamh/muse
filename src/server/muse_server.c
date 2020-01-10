@@ -201,11 +201,12 @@ int addSongCallback(void* sinfo, int colNum, char** column, char** result){
 	}
 	else{
 		//Artist exists; parse the other fields.
-		unsigned int artist_id = 0;
+		unsigned long artist_id = 0;
 		unsigned long album_id = 0;
 		unsigned long next_artist = 0;
 		unsigned long next_album = 0;
 		for(int i = 0; i < colNum; i++){
+			printf("Column: %s\nResult:%s\n\n", column[i], result[i]);
 			if((strcmp(column[i], "artist.id") == 0) && strcmp(song_info->artist, result[i]) == 0){
 				artist_id = strtoul(result[i], NULL, 10);
 			}
@@ -213,26 +214,26 @@ int addSongCallback(void* sinfo, int colNum, char** column, char** result){
 				album_id = strtoul(result[i], NULL, 10);
 			}
 			else if((strcmp(column[i], "IDENT_CURRENT('artist')") == 0)){
-				next_artist = strtoul(result[i], NULL, 10);
+				next_artist = strtoul(result[i], NULL, 10) + 1;
 			}
 			else if((strcmp(column[i], "IDENT_CURRENT('album')") == 0)){
-				next_album = strtoul(result[i], NULL, 10);
+				next_album = strtoul(result[i], NULL, 10) + 1;
 			}
 		}
 		//Create new entry for the song and album, link the artist.
 		if(album_id == 0){
-			sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES(%s, %lu, %lu, %i, %c);\n\nINSERT INTO album(name, year) \nVALUES(%s, %i);", song_info->name, next_album, artist_id, song_info->track_num, song_info->genre, song_info->album, song_info->year);
-			sqlite3_exec(db, query, NULL, NULL, NULL);
+			sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES(%s, %lu, %lu, %i, %s);\n\nINSERT INTO album(name, year) \nVALUES(%s, %i);", song_info->title, next_album, artist_id, song_info->track_num, song_info->genre, song_info->album, song_info->year);
+			sqlite3_exec(song_info->db, query, NULL, NULL, NULL);
 		}
 		//Create new entry for the song and artist, link the album.
 		else if(artist_id == 0){
-			sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES(%s, %lu, %lu, %i, %c);\n\nINSERT INTO artist(name) \nVALUES(%s);", song_info->name, album_id, next_artist, song_info->track_num, song_info->genre, song_info->rtist);
-			sqlite3_exec(db, query, NULL, NULL, NULL);
+			sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES(%s, %lu, %lu, %i, %s);\n\nINSERT INTO artist(name) \nVALUES(%s);", song_info->title, album_id, next_artist, song_info->track_num, song_info->genre, song_info->artist);
+			sqlite3_exec(song_info->db, query, NULL, NULL, NULL);
 		}
 		//Create new entry for the song, link the artist and album FK's
-		else
-			sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES(%s, %lu, %lu, %i, %c);", song_info->name, album_id, artist_id, song_info->track_num, song_info->genre);
-			sqlite3_exec(db, query, NULL, NULL, NULL);
+		else{
+			sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES(%s, %lu, %lu, %i, %s);", song_info->title, album_id, artist_id, song_info->track_num, song_info->genre);
+			sqlite3_exec(song_info->db, query, NULL, NULL, NULL);
 		}
 	}
 	free(query);
@@ -257,7 +258,7 @@ int scan(char** lib_paths, int num_paths){
 	//Variables that are re-used and are declared in this scope for the purpose of efficiency:
 	char* start_path = (char*)calloc(1, PATH_MAX);
 	char* query = (char*)calloc(1, 4096);
-	struct dbsonginfo* song_info = (struct dbsonginfo*)malloc(sizeof(songinfo));
+	struct dbsonginfo* song_info = (struct dbsonginfo*)malloc(sizeof(dbsonginfo));
 
 	//SQLite database work
 	sqlite3* db;
@@ -297,7 +298,7 @@ int scan(char** lib_paths, int num_paths){
 
 					//Checking to see if the file is an mp3
 					if(strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0){
-						printf("Found an mp3 file: %s\n", file_info->d_name);
+						//printf("Found an mp3 file: %s\n", file_info->d_name);
 						TagLib_File* tag_file = taglib_file_new(file_info->d_name);
 						TagLib_Tag* tag = taglib_file_tag(tag_file);
 
@@ -311,8 +312,11 @@ int scan(char** lib_paths, int num_paths){
 						song_info->genre = taglib_tag_genre(tag);
 
 						//Query for the artist's albums
-						sprintf(query, "SELECT album.name, album.id, artist.name, artist.id, IDENT_CURRENT('artist'), IDENT_CURRENT('album')\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON song.artist_id = artist.id WHERE album.name = %s OR artist.name = %s;", song_info->album, song_info->artist);
-						sqlite3_exec(db, query, addSongCallback, song_info, NULL);
+						sprintf(query, "SELECT album.name, album.id, artist.name, artist.id\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON song.artist_id = artist.id WHERE album.name = %s OR artist.name = %s;", song_info->album, song_info->artist);
+						char** err = (char**)sqlite3_malloc(sizeof(char*));
+						sqlite3_exec(db, query, addSongCallback, song_info, err);
+						printf("%s\n", *err);
+						sqlite3_free(err);
 
 						//Free the taglib_file
 						taglib_file_free(tag_file);
