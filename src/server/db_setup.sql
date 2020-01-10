@@ -15,7 +15,7 @@ CREATE TABLE song(
 	album_id INTEGER,
 	artist_id INTEGER,
 	track_num INTEGER,
-	genre INTEGER,
+	genre VARCHER(256),
 	FOREIGN KEY (album_id) REFERENCES album(album_id),
 	FOREIGN KEY (artist_id) REFERENCES artist(artist_id)
 );

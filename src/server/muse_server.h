@@ -35,7 +35,8 @@ struct dbsonginfo {
 int serve(char* port);
 int handleRequest(int new_sockfd);
 int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result);
-int addSongCallback(void* sinfo, int colNum, char** column, char** result);
+int addSongCallback(void* sinfo, int colNum, char** result, char** column);
+int addAllCallback(void* sinfo, int colNum, char** result, char** column);
 int scan(char** lib_paths, int num_paths);
 void stop(int sig);
 

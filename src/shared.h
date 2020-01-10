@@ -3,6 +3,7 @@
 #include <curses.h>
 #include <menu.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define ARR_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
@@ -43,5 +44,6 @@ void printASCII(FILE* file, int y, int x);
 void wprintASCII(WINDOW* win, FILE* file, int y, int x);
 int getASCIILength(FILE* file);
 int getASCIIHeight(FILE* file);
+char* escapeApostrophe(char* str);
 void dummy();
 #endif
