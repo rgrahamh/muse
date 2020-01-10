@@ -7,7 +7,6 @@ int main(int argc, char** argv) {
 
 	/* Initialize the port */
 	strncpy(port, "2442", sizeof(port) - 1);
-	strncpy(ip, "192.168.122.231", sizeof(ip) - 1);
 
 	/* Initialize curses */
 	initscr();
@@ -116,8 +115,6 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
 	if( callback == &changePage ) {
 		int page_dest = page_select[curr_page][index].chng_pg_to;
 		changePage(menu, page_dest);
-	} else if( callback == &updateIP ) {
-		updateIP(win);
 	} else if( callback == &updatePort ) {
 		updatePort(win);
 	} else if( callback == &addLibPath ) {
@@ -141,17 +138,13 @@ void writeInfoWindow(WINDOW* &win, int y, int x) {
 	unsigned int height_avail = LINES - ascii_height - 5;
 
 	/* Static labels */
-	char* ip_label = "IP: ";
 	char* port_label = "Port: ";
 	char* library_label = "Libraries: ";
 	char* exit_label = "Press F1 to exit.";
 
 	/* Network information */
-	mvwaddstr(win, y, x, ip_label);
-	mvwaddstr(win, y, x+strlen(ip_label), ip);
-
-	mvwaddstr(win, y, x+strlen(ip_label)+strlen(ip)+1, port_label);
-	mvwaddstr(win, y, x+strlen(ip_label)+strlen(ip)+strlen(port_label)+1, port);
+	mvwaddstr(win, y, x, port_label);
+	mvwaddstr(win, y, x+strlen(port_label), port);
 
 	/* Library information */
 	mvwaddstr(win, y+1, x, library_label);
@@ -283,71 +276,6 @@ void start(bool background) {
 	// 	// curr_page = SERVER_PAGE;
 	// }
 	// refresh();
-}
-
-/**Updates the IP address with user prompt
- * @param win The window which prompts the user for input
- */
-void updateIP(WINDOW* &win) {
-	/* Show the cursor */
-	curs_set(1);
-	int last_char;
-	char new_ip[16] = "";
-	int index = 0;
-
-	/* Move the cursor to the proper screen position */
-	int y = LINES - 3;
-	int x = 1;
-	wmove(win, y, x);
-
-	/* Write a prompt to the user */
-	mvwaddstr(win, y, x, "New IP (<ESC> to cancel): ");
-
-	/* User types in 3 digits at a time, auto-filling the period every 3 */
-	while( index < 15 && (last_char = wgetch(win)) != 27 /* ESC */ ) {
-		if( last_char >= 48 && last_char <= 57 /* 0-9 */ ) {
-				waddch(win, last_char);
-				new_ip[index++] = last_char;
-		} else if( (last_char == KEY_BACKSPACE || last_char == KEY_DC || last_char == 127) && (index > 0) ) {
-			int cur_y, cur_x;
-			getyx(win, cur_y, cur_x);
-			mvwaddch(win, cur_y, cur_x-1, ' ');
-			wmove(win, cur_y, cur_x-1);
-			new_ip[--index] = '\0';
-
-			/* If we delete a number before a delimiter, delete the delimiter as well */
-			if( (index % 4) - 3 == 0 ) {
-				getyx(win, cur_y, cur_x);
-				mvwaddch(win, cur_y, cur_x-1, ' ');
-				wmove(win, cur_y, cur_x-1);
-				new_ip[--index] = '\0';
-			}
-		}
-
-		if( (index % 4) - 3 == 0 && index != 0 && index != 15 ) { // autofill periods for user
-			waddch(win, '.');
-			new_ip[index++] = (int)'.';
-		} 
-
-		wrefresh(win);
-	}
-
-	/* If proper digits entered, ask for confirmation */
-	if( last_char != 27 /* ESC */ ) {
-		int confirmed = confirmSelection(win);
-		if( confirmed == 1 ) {
-			strncpy(ip, new_ip, sizeof(ip) - 1);
-		}
-	}
-
-	/* Clear the entry rows */
-	for( x = COLS - 2; x > 0; x-- ) {
-		mvwaddch(win, LINES - 3, x, ' ');
-	}
-
-	/* Reset cursor state and refresh window */
-	curs_set(0);
-	wrefresh(win);
 }
 
 /**Updates the port information with user prompt
