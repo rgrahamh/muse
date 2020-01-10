@@ -6,9 +6,7 @@ CREATE TABLE artist(
 CREATE TABLE album(
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	name VARCHAR(256) NOT NULL,
-	artist_id INTEGER,
-	year INTEGER,
-	FOREIGN KEY (artist_id) REFERENCES artist(artist_id)
+	year INTEGER
 );
 
 CREATE TABLE song(
