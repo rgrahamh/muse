@@ -191,19 +191,6 @@ int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result)
 	return !send(*((int*)new_sockfd), file_buff, file_size, 0);
 }
 
-int addArtistCallback(void* sinfo, int colNum, char** column, char** result){
-	struct dbsonginfo* song_info = (struct dbsonginfo*)sinfo;
-	char* query = (char*)calloc(1, BUFF_SIZE);
-	if(strcmp(song_info->artist, result[0]) == 0){
-		//Artist is already there
-		return 0;
-	}
-	sprintf(query, "INSERT INTO artist(name)\nVALUES(%s)", song_info->artist);
-	sqlite3_exec(db, query, NULL, NULL, NULL);
-	
-	free(query);
-}
-
 int addSongCallback(void* sinfo, int colNum, char** column, char** result){
 	struct dbsonginfo* song_info = (struct dbsonginfo*)sinfo;
 	char* query = (char*)calloc(1, BUFF_SIZE);
