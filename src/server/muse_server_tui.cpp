@@ -135,6 +135,8 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
  * @param x The x coordinate to act as an origin for information
  */
 void writeInfoWindow(WINDOW* &win, int y, int x) {
+	unsigned int length_avail = COLS - (COLS / 2) - 5;
+
 	/* Static labels */
 	char* ip_label = "IP: ";
 	char* port_label = "Port: ";
@@ -151,8 +153,16 @@ void writeInfoWindow(WINDOW* &win, int y, int x) {
 	/* Library information */
 	mvwaddstr(win, y+1, x, library_label);
 	for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
-		mvwaddstr(win, y+2+i, x+2, lib_paths.at(i));
+		if( strlen(lib_paths.at(i)) < length_avail ) {
+			mvwaddstr(win, y+2+i, x+2, lib_paths.at(i));
+		} else {
+			for( unsigned int idx = 0; idx < length_avail; idx++ ) {
+				mvwaddch(win, y+2+i, x+2+idx, lib_paths.at(i)[(strlen(lib_paths.at(i)) - length_avail) + idx]);
+			}
+			mvwaddstr(win, y+2+i, x+2, "...");
+		}
 	}
+
 
 	/* Exit label */
 	mvwaddstr(win, LINES - 2, COLS - strlen(exit_label)-1, exit_label);
@@ -388,10 +398,9 @@ void addLibPath(WINDOW* win) {
 	wmove(win, y+1, x);
 
 	/* Receive input from user */
-	while( index < PATH_MAX ) {
+	while( index < PATH_MAX-1 ) {
 		last_char = wgetch(win);
 
-		// TODO: LIMIT USER ENTRY TO PRINTABLE ASCII CHARACTERS
 		if( last_char == 27 /* ESC */ || last_char == 10 /* ENTER */ ) {
 			break; // exit the loop immediately
 		} else if( last_char == KEY_BACKSPACE || last_char == KEY_DC || last_char == 127 ) {
@@ -409,7 +418,7 @@ void addLibPath(WINDOW* win) {
 				}
 				new_lib_path[--index] = '\0';
 			}
-		} else { // write a new character to the screen
+		} else if( last_char >= 32 && last_char <= 176 /* printable chars */ ) { // write a new character to the screen
 			new_lib_path[index] = last_char;
 			if( x+index < (COLS / 2) ) { // write information until it has filled it's space
 				mvwaddch(win, y+1, x+index, last_char);
@@ -423,9 +432,11 @@ void addLibPath(WINDOW* win) {
 		}
 	}
 
+	new_lib_path[index] = '\0';
+
 	if( last_char == 27 ) { /* If the last character was the ESC key, just exit without committing anything */
-		return;
-	} else if( last_char == 10 ) { /* If the last character was the ENTER key, add it to the list of library paths */
+		// do nothing
+	} else if( last_char == 10 || index >= PATH_MAX-1 ) { /* If the last character was the ENTER key, add it to the list of library paths */
 		lib_paths.push_back(new_lib_path);
 	}
 
