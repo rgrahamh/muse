@@ -197,6 +197,7 @@ int addSongCallback(void* sinfo, int colNum, char** result, char** column){
 	calledback = 1;
 	struct dbsonginfo* song_info = (struct dbsonginfo*)sinfo;
 	char* query = (char*)calloc(1, BUFF_SIZE);
+	char* add_song = (char*)calloc(1, BUFF_SIZE);
 
 	unsigned long album_id = 0;
 	unsigned long artist_id = 0;
@@ -211,7 +212,7 @@ int addSongCallback(void* sinfo, int colNum, char** result, char** column){
 			printf("Found album_id: %lu\n", strtoul(result[i], NULL, 10));
 			album_id = strtoul(result[i], NULL, 10);
 		}
-		else if(strcmp(column[i], "ARTIST_ID") == 0 && (strcmp(result[i+1], song_info->album) == 0)){
+		else if(strcmp(column[i], "ARTIST_ID") == 0 && (strcmp(result[i+1], song_info->artist) == 0)){
 			printf("Found artist_id: %lu\n", strtoul(result[i], NULL, 10));
 			artist_id = strtoul(result[i], NULL, 10);
 		}
@@ -229,28 +230,30 @@ int addSongCallback(void* sinfo, int colNum, char** result, char** column){
 	//Create new entry for the song and artist, link the album.
 	else if(artist_id == 0){
 		printf("Creating new artist!\n");
-		sprintf(query, "INSERT INTO artist(name)\nVALUES(%s);", song_info->artist);
+		sprintf(query, "INSERT INTO artist(name)\nVALUES(%s);\n\n", song_info->artist);
 		sqlite3_exec(song_info->db, query, NULL, NULL, NULL);
 		artist_id = ++song_info->next_artist;
 	}
 	//Create new entry for the song, link the artist and album FK's
 	printf("Creating new song!\n");
-	sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %lu, %lu, %i, '%s', '%s');", song_info->title, album_id, artist_id, song_info->track_num, song_info->filepath, song_info->genre);
+	sprintf(add_song, "INSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %lu, %lu, %i, '%s', '%s');", song_info->title, album_id, artist_id, song_info->track_num, song_info->filepath, song_info->genre);
+	strcpy(query, add_song);
 	printf("%s\n", query);
 	sqlite3_exec(song_info->db, query, NULL, NULL, NULL);
-	printf("Got past the exec!\n");
 	
 	free(query);
-	return 0;
+	free(add_song);
+	return 1;
 }
 
 int initAlbumID(void* sinfo, int colNum, char** result, char** column){
-	((struct dbsonginfo*)sinfo)->next_album = colNum + 1;
+	((struct dbsonginfo*)sinfo)->next_album = strtoul(result[0], NULL, 10);
 	return 0;
 }
 
 int initArtistID(void* sinfo, int colNum, char** result, char** column){
-	((struct dbsonginfo*)sinfo)->next_artist = colNum + 1;
+	((struct dbsonginfo*)sinfo)->next_artist = strtoul(result[0], NULL, 10);
+	printf("%i\n", colNum);
 	return 0;
 }
 
@@ -276,14 +279,16 @@ int scan(char** lib_paths, int num_paths){
 
 	//SQLite database work
 	sqlite3* db;
-	song_info->db = db;
 	//Open the database connection
 	if(sqlite3_open("./muse.db", &db) != SQLITE_OK){
 		printf("Could not open the sqlite database!\n");
 	}
+	song_info->db = db;
 
-	sqlite3_exec(db, "SELECT album.id FROM album;", initAlbumID, song_info, NULL);
-	sqlite3_exec(db, "SELECT artist.id FROM artist;", initArtistID, song_info, NULL);
+	song_info->next_album = 0;
+	song_info->next_artist = 0;
+	sqlite3_exec(song_info->db, "SELECT COUNT(album.id) FROM album;", initAlbumID, song_info, NULL);
+	sqlite3_exec(db, "SELECT COUNT(artist.id) FROM artist;", initArtistID, song_info, NULL);
 
 	getcwd(curr_path, PATH_MAX);
 	//For every path passed in,
@@ -347,7 +352,7 @@ int scan(char** lib_paths, int num_paths){
 						song_info->genre = safe_genre;
 
 						//Query for the artist and album
-						sprintf(query, "SELECT album.id AS ALBUM_ID, album.name AS ALBUM_NAME, artist.id AS ARTIST_ID\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON song.artist_id = artist.id\nWHERE album.name = '%s' OR artist.name = '%s';", song_info->album, song_info->artist);
+						sprintf(query, "SELECT album.id AS ALBUM_ID, album.name AS ALBUM_NAME, artist.id AS ARTIST_ID, artist.name AS ARTIST_NAME\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON song.artist_id = artist.id\nWHERE album.name = '%s' OR artist.name = '%s';", song_info->album, song_info->artist);
 						char** err = (char**)calloc(1, sizeof(char**));
 						int error_code = 5;
 						sqlite3_exec(db, query, addSongCallback, song_info, err);
