@@ -1,5 +1,5 @@
-#ifndef SHARED_HPP
-#define SHARED_HPP
+#ifndef SHARED_H
+#define SHARED_H
 #include <curses.h>
 #include <menu.h>
 #include <stdlib.h>

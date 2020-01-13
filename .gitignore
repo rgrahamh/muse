@@ -1,3 +1,4 @@
-muse_server
-test_server
+**/muse_server
+**/muse.state
+**/test_server
 *.mp3

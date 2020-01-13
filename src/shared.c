@@ -67,6 +67,8 @@ int getASCIILength(FILE* file) {
   for(; c != '\n' && c != EOF; i++) {
     c = getc(file);
   }
+
+  rewind(file);
   return i;
 }
 
@@ -81,6 +83,8 @@ int getASCIIHeight(FILE* file) {
       i++;
     }
   }
+  
+  rewind(file);
   return i;
 }
 
