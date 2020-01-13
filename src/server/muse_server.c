@@ -183,8 +183,7 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 		tmp_buff += 4096;
 	}
 	if(file_size % 4096){
-		fread(tmp_buff, 1, file_size % 4096, file);
-	}
+		fread(tmp_buff, 1, file_size % 4096, file); }
 	fclose(file);
 	return !send(*((int*)new_sockfd), file_buff, file_size, 0);
 }
@@ -213,6 +212,9 @@ int getAlbumArtist(void* sinfo, int colNum, char** result, char** column){
 			song_info->artist_id = strtoul(result[i], NULL, 10);
 		}
 	}
+	if(song_info->artist_id != 0 && song_info->album_id != 0){
+		return 1;
+	}
 
 	return 0;
 }
@@ -238,14 +240,13 @@ int scan(char** lib_paths, int num_paths){
 	struct stat stat_info;
 	char* curr_path = (char*)calloc(1, PATH_MAX);
 	int subdir_num = 0;
-	int subdir_max = 32;
 	//Subdirectories that should be scanned
-	char** subdirs = (char**)malloc(32 * sizeof(char*));
+	char** subdirs = (char**)malloc(62980 * sizeof(char*));
 
 	//Variables that are re-used and are declared in this scope for the purpose of efficiency:
 	char* start_path = (char*)calloc(1, PATH_MAX);
 	char* query = (char*)calloc(1, 4096);
-	struct dbsonginfo* song_info = (struct dbsonginfo*)malloc(sizeof(dbsonginfo));
+	struct dbsonginfo* song_info = (struct dbsonginfo*)malloc(sizeof(struct dbsonginfo));
 
 	//SQLite database work
 	sqlite3* db;
@@ -272,17 +273,12 @@ int scan(char** lib_paths, int num_paths){
 				if(S_ISDIR(stat_info.st_mode)){
 				//If not the previous or current directory
 					if(strcmp(file_info->d_name, ".") != 0 && strcmp(file_info->d_name, "..") != 0){
-						while(subdir_num > subdir_max){
-							subdir_max *= 4;
-							subdirs = (char**)realloc(subdirs, subdir_max * sizeof(char*));
-						}
 						getcwd(start_path, PATH_MAX);
-						char* subdir = (char*)malloc(strlen(start_path) + strlen(curr_path)+2);
+						char* subdir = (char*)malloc(strlen(start_path) + strlen(file_info->d_name)+2);
 						strcpy(subdir, start_path);
 						strcat(subdir, "/");
 						strcat(subdir, file_info->d_name);
-						subdirs[subdir_num] = subdir;
-						subdir_num++;
+						subdirs[subdir_num++] = subdir;
 					}
 				}
 				else{
@@ -330,7 +326,7 @@ int scan(char** lib_paths, int num_paths){
 						//If there were no columns returned
 						if(calledback == 0){
 							//Create new entries for the artist, song, and album
-							sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\nINSERT INTO album(name, year)\nVALUES('%s', %i);\n\nINSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES('%s', %lu, %lu, %i, '%s');", song_info->artist, song_info->album, song_info->year, song_info->title, ++song_info->next_album, ++song_info->next_artist, song_info->track_num, song_info->genre);
+							sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\nINSERT INTO album(name, year)\nVALUES('%s', %i);\n\nINSERT INTO song(name, album_id, artist_id, track_num, genre)\nVALUES('%s', %lu, %lu, %i, '%s');", song_info->artist, song_info->album, song_info->year, song_info->title, ++(song_info->next_album), ++(song_info->next_artist), song_info->track_num, song_info->genre);
 							printf("%s\n", query);
 							sqlite3_exec(db, query, NULL, NULL, NULL);
 						}
@@ -340,14 +336,14 @@ int scan(char** lib_paths, int num_paths){
 								printf("Creating new album!\n");
 								sprintf(query, "INSERT INTO album(name, year)\nVALUES(%s, %i);\n\n", song_info->album, song_info->year);
 								sqlite3_exec(db, query, NULL, NULL, NULL);
-								song_info->album_id = ++song_info->next_album;
+								song_info->album_id = ++(song_info->next_album);
 							}
 							//Create new entry for the song and artist, link the album.
 							else if(song_info->artist_id == 0){
 								printf("Creating new artist!\n");
 								sprintf(query, "INSERT INTO artist(name)\nVALUES(%s);\n\n", song_info->artist);
 								sqlite3_exec(db, query, NULL, NULL, NULL);
-								song_info->artist_id = ++song_info->next_artist;
+								song_info->artist_id = ++(song_info->next_artist);
 							}
 							//Create new entry for the song, link the artist and album FK's
 							printf("Creating new song!\n");
@@ -357,6 +353,11 @@ int scan(char** lib_paths, int num_paths){
 							printf("%s\n", query);
 							sqlite3_exec(db, query, NULL, NULL, NULL);
 
+							free(song_info->title);
+							free(song_info->artist);
+							free(song_info->album);
+							free(song_info->comment);
+							free(song_info->genre);
 							free(add_song);
 						}
 
@@ -379,8 +380,6 @@ int scan(char** lib_paths, int num_paths){
 			free(subdirs[i]);
 		}
 	}
-
-	//Free allocated space
 	free(dir);
 	free(file_info);
 	free(song_info);
