@@ -8,6 +8,9 @@ int main(int argc, char** argv) {
 	/* Initialize the state */
 	readStateFromFile();
 
+	/* Scan new mp3s into database */
+	scan(&lib_paths.at(0), lib_paths.size());
+
 	/* Initialize curses */
 	initscr();
 	cbreak();

@@ -118,7 +118,7 @@ int handleRequest(int new_sockfd){
 		if((incoming_flags & REQ_TYPE_MASK) != TERMCON){
 			sqlite3* db;
 			//Open the database connection
-			if(sqlite3_open("./muse.db", &db) != SQLITE_OK){
+			if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
 				printf("Could not open the sqlite database!\n");
 			}
 			switch(incoming_flags & REQ_TYPE_MASK){
@@ -259,7 +259,7 @@ int scan(char** lib_paths, int num_paths){
 	//SQLite database work
 	sqlite3* db;
 	//Open the database connection
-	if(sqlite3_open("./muse.db", &db) != SQLITE_OK){
+	if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
 		printf("Could not open the sqlite database!\n");
 	}
 	song_info->db = db;
