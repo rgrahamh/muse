@@ -230,6 +230,9 @@ void exitMuse(WINDOW* &win, MENU* &menu) {
  * @param menu The menu which needs to be cleaned
  */
 void cleanup(MENU* menu) {
+	/* Write program's state down */
+	writeStateToFile();
+
 	/* Cleanup old list of items */
 	ITEM** old_items = menu_items(menu);
 	int n_old_items = item_count(menu);
@@ -242,55 +245,60 @@ void cleanup(MENU* menu) {
 	unpost_menu(menu);
 	free_menu(menu);
 
-	/* show the cursor again before exiting */
+
+
+	/* Free all of the lib_paths memory */
+	for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
+		free(lib_paths.at(i));
+	}
+
+	/* Show the cursor again before exiting */
 	curs_set(1);
 
 	endwin();
-
-	writeStateToFile();
 	exit(0);
 }
 
 void writeStateToFile() {
-	FILE* muse_state = fopen("muse.state", "w");
-	if( muse_state != NULL ) {
-		fputs("Port:", muse_state);
-		fputs(port, muse_state);
-		fputs("\n", muse_state);
+	std::ofstream state_file;
+	state_file.open("muse.state");
+	
+	if( state_file.good() ) {
+		/* Write the port information */
+		state_file << "p:" << port << std::endl;
+
+
+		/* Write library information */
+		for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
+			state_file << "l:" << lib_paths.at(i) << std::endl;
+		}
 	}
-	fclose(muse_state);
+	
+	state_file.close();
 }
 
 void readStateFromFile() {
-	FILE* muse_state = fopen("muse.state", "r");
-	char* state = (char*) calloc(STATE_FILE_SIZE, sizeof(char));
-	if( muse_state != NULL ) {
-		fseek(muse_state, 0, SEEK_END);
-		int nbytes = ftell(muse_state);
-		rewind(muse_state);
+	std::ifstream  state_file;
+	state_file.open("muse.state");
 
-		if( nbytes < STATE_FILE_SIZE - 1 ) {
-			fread(state, sizeof(char), nbytes, muse_state);
-			state[nbytes] = '\0';
-		}
+	if( state_file.good() ) {
+		/* Parse based on simple language */
+		std::string line;
+		while( std::getline(state_file, line) ) {
+			if( line[0] == 'p' ) {
+				strncpy( port, &line[2], sizeof(port) - 1 );
+			} else if( line[0] == 'l' ) {
+				std::string lib = line.substr(2);
+				char* new_lib_path = (char*) calloc(PATH_MAX, sizeof(char));
 
-		for( unsigned int i = 0; i < strlen(state); i++ ) {
-			if( state[i] == ':' ) {
-				port[0] = state[i+1];
-				port[1] = state[i+2];
-				port[2] = state[i+3];
-				port[3] = state[i+4];
-				port[4] = '\0';
-				break;
+				strncpy(new_lib_path, lib.c_str(), lib.length());
+
+				lib_paths.push_back(new_lib_path);
 			}
 		}
-
-	} else {
-		strncpy(port, "2442", sizeof(port) - 1);
 	}
 
-	fclose(muse_state);
-	free(state);
+	state_file.close();
 }
 
 void cleanupServ() {
@@ -427,8 +435,8 @@ void addLibPath(WINDOW* win) {
 	new_lib_path[index] = '\0';
 
 	if( last_char == 27 ) { /* If the last character was the ESC key, just exit without committing anything */
-		// do nothing
-	} else if( (last_char == 10 || index >= PATH_MAX-1) && strlen(new_lib_path) > 0 ) { /* If the last character was the ENTER key, add it to the list of library paths */
+	    free(new_lib_path);
+    } else if( (last_char == 10 || index >= PATH_MAX-1) && strlen(new_lib_path) > 0 ) { /* If the last character was the ENTER key, add it to the list of library paths */
 		lib_paths.push_back(new_lib_path);
 	}
 

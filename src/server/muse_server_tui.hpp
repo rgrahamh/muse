@@ -9,6 +9,8 @@
 #include <vector>
 #include <linux/limits.h>
 #include <unistd.h>
+#include <iostream>
+#include <fstream>
 
 #include "../shared.hpp"
 #include "muse_server.hpp"
