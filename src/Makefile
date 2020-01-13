@@ -3,7 +3,7 @@ CFLAGS=-Wall -Wno-write-strings -lmenu -lncurses -lsqlite3 -g
 
 SERVER=shared.c \
 	   server/muse_server.c \
-	   server/muse_server_tui.c
+	   server/muse_server_tui.cpp
 
 muse_server:
 	$(CC) $(SERVER) -o server/muse_server $(CFLAGS)
