@@ -5,8 +5,8 @@ int main(int argc, char** argv) {
 	MENU* menu;
 	WINDOW *win, *menu_win;
 
-	/* Initialize the port */
-	strncpy(port, "2442", sizeof(port) - 1);
+	/* Initialize the state */
+	readStateFromFile();
 
 	/* Initialize curses */
 	initscr();
@@ -246,7 +246,51 @@ void cleanup(MENU* menu) {
 	curs_set(1);
 
 	endwin();
+
+	writeStateToFile();
 	exit(0);
+}
+
+void writeStateToFile() {
+	FILE* muse_state = fopen("muse.state", "w");
+	if( muse_state != NULL ) {
+		fputs("Port:", muse_state);
+		fputs(port, muse_state);
+		fputs("\n", muse_state);
+	}
+	fclose(muse_state);
+}
+
+void readStateFromFile() {
+	FILE* muse_state = fopen("muse.state", "r");
+	char* state = (char*) calloc(STATE_FILE_SIZE, sizeof(char));
+	if( muse_state != NULL ) {
+		fseek(muse_state, 0, SEEK_END);
+		int nbytes = ftell(muse_state);
+		rewind(muse_state);
+
+		if( nbytes < STATE_FILE_SIZE - 1 ) {
+			fread(state, sizeof(char), nbytes, muse_state);
+			state[nbytes] = '\0';
+		}
+
+		for( unsigned int i = 0; i < strlen(state); i++ ) {
+			if( state[i] == ':' ) {
+				port[0] = state[i+1];
+				port[1] = state[i+2];
+				port[2] = state[i+3];
+				port[3] = state[i+4];
+				port[4] = '\0';
+				break;
+			}
+		}
+
+	} else {
+		strncpy(port, "2442", sizeof(port) - 1);
+	}
+
+	fclose(muse_state);
+	free(state);
 }
 
 void cleanupServ() {
