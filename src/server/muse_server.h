@@ -25,8 +25,10 @@ struct dbsonginfo {
 	sqlite3* db;
 	char* title;
 	char* artist;
+	unsigned long artist_id;
 	unsigned long next_artist;
 	char* album;
+	unsigned long album_id;
 	unsigned long next_album;
 	char* comment;
 	int year;
@@ -38,11 +40,11 @@ struct dbsonginfo {
 int serve(char* port);
 int handleRequest(int new_sockfd);
 int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result);
-int addSongCallback(void* sinfo, int colNum, char** result, char** column);
-int addNewSongCallback(void* sinfo, int colNum, char** result, char** column);
+int getAlbumArtist(void* sinfo, int colNum, char** result, char** column);
 int addAllCallback(void* sinfo, int colNum, char** result, char** column);
 int initAlbumID(void* sinfo, int colNum, char** result, char** column);
 int initArtistID(void* sinfo, int colNum, char** result, char** column);
+int returnOne(void* sinfo, int colNum, char** result, char** column);
 int scan(char** lib_paths, int num_paths);
 void stop(int sig);
 
