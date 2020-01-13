@@ -12,10 +12,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "../shared.hpp"
-#include "muse_server.hpp"
+#include "../shared.h"
+#include "muse_server.h"
 
-#define ARR_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #define STATE_FILE_SIZE 4096
 
 enum pages {
