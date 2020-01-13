@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
 	readStateFromFile();
 
 	/* Scan new mp3s into database */
-	scan(&lib_paths.at(0), lib_paths.size());
+	refreshDatabase();
 
 	/* Initialize curses */
 	initscr();
@@ -122,6 +122,8 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
 		updatePort(win);
 	} else if( callback == &addLibPath ) {
 		addLibPath(win);
+	} else if ( callback == &refreshDatabase ) {
+		refreshDatabase();
 	} else if( callback == &removeLibPath ) {
 		removeLibPath(win);
 	} else if( callback == &exitMuse ) {
@@ -268,7 +270,8 @@ void writeStateToFile() {
 	
 	if( state_file.good() ) {
 		/* Write the port information */
-		state_file << "p:" << port << std::endl;
+		if( strlen(port) > 0 )
+			state_file << "p:" << port << std::endl;
 
 
 		/* Write library information */
@@ -640,5 +643,9 @@ void removeLibPath(WINDOW* win) {
 }
 
 void refreshDatabase() {
+	/* Call backend routine */
+	if(lib_paths.size() > 0) {
+		scan(&lib_paths.at(0), lib_paths.size());
+	}
 	return;
 }
