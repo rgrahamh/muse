@@ -8,9 +8,6 @@ int main(int argc, char** argv) {
 	/* Initialize the state */
 	readStateFromFile();
 
-	/* Scan new mp3s into database */
-	refreshDatabase();
-
 	/* Initialize curses */
 	initscr();
 	cbreak();
@@ -122,10 +119,10 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
 		updatePort(win);
 	} else if( callback == &addLibPath ) {
 		addLibPath(win);
-	} else if ( callback == &refreshDatabase ) {
-		refreshDatabase();
 	} else if( callback == &removeLibPath ) {
 		removeLibPath(win);
+	} else if( callback == &startServer ) {
+		startServer(menu);
 	} else if( callback == &exitMuse ) {
 		exitMuse(win, menu);
 	} else {
@@ -271,12 +268,19 @@ void writeStateToFile() {
 	if( state_file.good() ) {
 		/* Write the port information */
 		if( strlen(port) > 0 )
+			// port
 			state_file << "p:" << port << std::endl;
 
 
 		/* Write library information */
 		for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
+			// library
 			state_file << "l:" << lib_paths.at(i) << std::endl;
+		}
+		
+		if( muse_pid != -1 ) {
+			// identifier (pid)
+			state_file << "i:" << muse_pid << std::endl;
 		}
 	}
 	
@@ -300,8 +304,14 @@ void readStateFromFile() {
 				strncpy(new_lib_path, lib.c_str(), lib.length());
 
 				lib_paths.push_back(new_lib_path);
+			} else if( line[0] == 'i' ) {
+				muse_pid = atoi(&line[2]);
 			}
 		}
+	}
+
+	if( muse_pid != -1 ) {
+		// TODO: navigate somewhere special?
 	}
 
 	state_file.close();
@@ -317,23 +327,29 @@ void backgroundProc() {
 	return;
 }
 
-void start(bool background) {
-	// //If the child process
-	// if(!(muse_pid = fork())) {
-	// 	//If serve returns anything but zero
-	// 	if(/* serve(port) */ TRUE) {
-	// 		//Spit them out to the main page if something goes wrong in MUSE itself
-	// 		// curr_page = MAIN_PAGE;
-	// 	}
-	// }
-	// if(background) {
-	// 	//backgroundProc
-	// 	backgroundProc();
-	// }
-	// else{
-	// 	// curr_page = SERVER_PAGE;
-	// }
-	// refresh();
+void startServer(MENU* &menu) {
+	/* Change page */
+	changePage(menu, SERVER_PAGE);
+
+	/* Update the database */
+	refreshDatabase();
+
+	/* Start the server */
+	if( muse_pid == -1 && port[0] != '\0' && port != NULL ) {
+		if( (muse_pid = fork()) == 0 ) {
+			/* CHILD */
+			serve(port);
+		} else if( muse_pid < 0 ) {
+			/* ERROR */
+			// TODO: something went wrong message?
+			exit(EXIT_FAILURE);
+		} else {
+			/* PARENT */
+			cleanup(menu);
+		}
+	} else {
+		/* Muse is already running; re-attach? */
+	}
 }
 
 /**Updates the port information with user prompt
@@ -647,5 +663,4 @@ void refreshDatabase() {
 	if(lib_paths.size() > 0) {
 		scan(&lib_paths.at(0), lib_paths.size());
 	}
-	return;
 }

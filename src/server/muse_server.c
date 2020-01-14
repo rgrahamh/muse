@@ -35,7 +35,10 @@ int serve(char* port){
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
 
-	//Initialize the file buffer
+	//Open up a log file
+	FILE* log_file = fopen("/tmp/muse_server.log", "w");
+
+	//Initialize the file bexit(EXIT_SUCCESS);uffer
 	max_file_size = 8388608;
 	file_buff = (char*)calloc(max_file_size, 1);
 
@@ -54,17 +57,23 @@ int serve(char* port){
 
 	//Open the socket
 	if((sockfd = socket(host->ai_family, host->ai_socktype, host->ai_protocol)) == -1){
-		fprintf(stderr, "Error opening a socket!\n");
+		fprintf(log_file, "Error opening a socket!\n");
+		fclose(log_file);
+		exit(EXIT_FAILURE);
 	}
 
 	//Bind the socket to a port
 	if(bind(sockfd, host->ai_addr, host->ai_addrlen)){
-		fprintf(stderr, "Error binding a socket!\n");
+		fprintf(log_file, "Error binding a socket!\n");
+		fclose(log_file);
+		exit(EXIT_FAILURE);
 	}
 
 	//Set up the socket to listen
 	if(listen(sockfd, 20)){
-		fprintf(stderr, "Couldn't set up to listen!\n");
+		fprintf(log_file, "Couldn't set up to listen!\n");
+		fclose(log_file);
+		exit(EXIT_FAILURE);
 	}
 
 	freeaddrinfo(host);

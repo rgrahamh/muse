@@ -36,7 +36,7 @@ struct MenuItem {
 char port[5];
 std::vector<char*> lib_paths;
 int curr_page = MAIN_PAGE;
-int muse_pid;
+int muse_pid = -1;
 int ascii_height, ascii_length;
 
 void changePage(MENU* &menu, int page_num);
@@ -53,13 +53,13 @@ void addLibPath(WINDOW* win);
 void removeLibPath(WINDOW* win);
 void writeStateToFile();
 void readStateFromFile();
+void startServer(MENU* &menu);
 
 const struct MenuItem main_page[] = {
 	MenuItem("1.", "Network Options", (void*)changePage, NETWORK_PAGE),
 	MenuItem("2.", "Library Locations", (void*)changePage, LIBRARY_PAGE),
-	MenuItem("3.", "Refresh Database", (void*)refreshDatabase, -1),
-	MenuItem("4.", "Start Server", (void*)changePage, SERVER_PAGE),
-	MenuItem("5.", "Exit Muse", (void*)exitMuse, -1)
+	MenuItem("3.", "Start Server", (void*)startServer, -1),
+	MenuItem("4.", "Exit Muse", (void*)exitMuse, -1)
 };
 
 const struct MenuItem port_page[] = {
