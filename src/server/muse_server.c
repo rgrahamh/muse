@@ -12,16 +12,16 @@ int calledback = 0;
 
 #ifdef TEST
  int main(int argc, char** argv){
- /*
  	if(argc == 2){
  		serve(argv[1]);
  	}
  	else{
  		serve(DEFAULT_PORT);
  	}
+ /*
+	char* test[] = {"/home/rhouck/Music", "."};
+ 	scan(test, 2);
  */
-	char* test[] = {"/home/rhouck/Music"};
- 	scan(test, 1);
  	return 0;
  }
 #endif
@@ -34,6 +34,7 @@ int serve(char* port){
 	//Set up signals so that it cleans up properly
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
+	signal(SIGUSR1, stop);
 
 	//Initialize the file buffer
 	max_file_size = 8388608;
@@ -93,15 +94,35 @@ int serve(char* port){
 	return 0;
 }
 
+void insertLinkedStr(struct linkedStr* last, char* element){
+	linkedStr* new_ls = (linkedStr*)malloc(sizeof(linkedStr));
+	new_ls->str = element;
+	new_ls->next = last->next;
+	last->next = new_ls;
+}
+
+void freeLinkedStr(struct linkedStr* last){
+	while(last != last->next){
+		struct linkedStr* death_row = last->next;
+		free(death_row->str);
+		last->next = death_row->next;
+		free(death_row);
+	}
+	free(last->str);
+	free(last);
+}
+
 /**Handles the request 
  * @param new_sockfd The new socket file descriptor gotten through accept()
  * @return If the connection ended normally
  */
 int handleRequest(int new_sockfd){
 	//The incoming character buffer; this will be recieved from the client
-	char* incoming = (char*)calloc(BUFF_SIZE, 1);
+	char* incoming = (char*)malloc(BUFF_SIZE);
 	//Holds the buffer for SQL queries
-	char* query = (char*)calloc(500, 1);
+	char* query = (char*)malloc(500);
+	char* order_dir = (char*)calloc(5, 1);
+
 
 	//Holds the incoming flags
 	char incoming_flags = 0;
@@ -110,6 +131,10 @@ int handleRequest(int new_sockfd){
 	//Holds the amount of bytes recieved
 	int amnt_recv = 0;
 	do{
+		//Re-clear the memory
+		memset(incoming, 0, BUFF_SIZE);
+		memset(query, 0, BUFF_SIZE);
+
 		//Recieve the request, set the amount to the transferred data minus the flags.
 		amnt_recv = recv(new_sockfd, incoming, BUFF_SIZE, 0) - 1;
 		incoming_flags = *incoming;
@@ -121,36 +146,75 @@ int handleRequest(int new_sockfd){
 			if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
 				printf("Could not open the sqlite database!\n");
 			}
+
+			//Set the order
+			if((incoming_flags & ORD_DIR_MASK) == ASC){
+				strcpy(order_dir, "ASC");
+			}
+			else{
+				strcpy(order_dir, "DESC");
+			}
+
+			struct linkedStr* results = (struct linkedStr*)malloc(sizeof(struct linkedStr));
+
+			//Parse the packet type
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
-					sprintf(query, "SELECT file_path FROM song\nWHERE song_id='%lu';", *((unsigned long*)incoming_msg));
+					//Read everything past the flags as a 
+					sprintf(query, "SELECT song.filepath FROM song\nWHERE song.id='%lu';", *((unsigned long*)incoming_msg));
 					sqlite3_exec(db, query, sendSongCallback, &new_sockfd, NULL);
-					break;
+					sqlite3_close(db);
+					freeLinkedStr(results);
+					continue;
 
 				case QWRYSNG:
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY song.name %s;", order_dir);
 					break;
 
 				case QWRYALBM:
+					sprintf(query, "SELECT album.id, album.name, artist.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
+					break;
+
+				case QWRYALBMSNG:
+					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on ALUBM.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num ASC;", *((unsigned long*)incoming_msg));
 					break;
 
 				case QWRYART:
+					sprintf(query, "SELECT artist.id, artist.name\nFROM artist\nORDER BY artist.name %s;", order_dir);
 					break;
 
-				case QWRYARTSNG:
+				case QWRYARTALBM:
+					sprintf(query, "SELECT album.id, album.name\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year%s;", *((unsigned long*)incoming_msg), order_dir);
 					break;
 
 				case QWRYGNR:
+					sprintf(query, "SELECT song.genre\nFROM song\nORDER BY song.genre %s;", order_dir);
 					break;
 
 				case QWRYGNRSNG:
+					char* safe_genre = escapeApostrophe(incoming_msg);
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM song\nWHERE song.genre = '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
+					free(safe_genre);
 					break;
 			}
+			sqlite3_exec(db, query, sendInfo, results, NULL);
+
+			struct linkedStr* cursor = results;
+			unsigned result_str_len = 0;
+			while(cursor != results){
+				result_str_len += strlen(cursor->str);
+				cursor = cursor->next;
+			}
+			char* result_str = (char*)calloc(result_str_len + 1, 1);
+			while(cursor != results){
+				strcpy(result_str, cursor->str);
+				cursor = cursor->next;
+			}
+			send(new_sockfd, result_str, result_str_len, 0);
+
+			freeLinkedStr(results);
+
 			sqlite3_close(db);
-
-
-			//Clear the buffers
-			memset(incoming, 0, BUFF_SIZE);
-			memset(query, 0, BUFF_SIZE);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
 
@@ -186,6 +250,56 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 		fread(tmp_buff, 1, file_size % 4096, file); }
 	fclose(file);
 	return !send(*((int*)new_sockfd), file_buff, file_size, 0);
+}
+
+int sendInfo(void* , int colNum, char** column, char** result){
+	
+
+	return 0;
+}
+
+int cullSongCallback(void* datab, int colNum, char** result, char** column){
+	sqlite3* db = (sqlite3*)datab;
+	char* query = (char*)calloc(1, 4096);
+	char album_still_exists = 0;
+	char artist_still_exists = 0;
+	if(access(result[0], F_OK | R_OK)){
+		sprintf(query, "DELETE FROM song\nWHERE song.id = %lu;", strtoul(result[1], NULL, 10));
+		sqlite3_exec(db, query, NULL, NULL, NULL);
+		for(int i = 0; i < colNum; i++){
+			if(strcmp("ALBUM_ID", column[i]) == 0){
+				unsigned long album_id = strtoul(result[i], NULL, 10);
+				sprintf(query, "SELECT album.id\nFROM album INNER JOIN song ON album.id = song.album_id\nWHERE song.album_id = %lu;", album_id);
+				sqlite3_exec(db, query, deleteAlbum, &album_still_exists, NULL);
+				if(!album_still_exists){
+					sprintf(query, "DELETE FROM album\nWHERE album.id = %lu;", album_id);
+					sqlite3_exec(db, query, NULL, NULL, NULL);
+				}
+			}
+			else if(strcmp("ARTIST_ID", column[i]) == 0){
+				unsigned long artist_id = strtoul(result[i], NULL, 10);
+				sprintf(query, "SELECT artist.id\nFROM artist INNER JOIN song ON artist.id = song.artist_id\nWHERE song.artist_id = %lu;", artist_id);
+				sqlite3_exec(db, query, deleteArtist, &artist_still_exists, NULL);
+				if(!artist_still_exists){
+					sprintf(query, "DELETE FROM artist\nWHERE artist.id = %lu;", artist_id);
+					sqlite3_exec(db, query, NULL, NULL, NULL);
+				}
+			}
+		}
+	}
+	free(query);
+
+	return 0;
+}
+
+int deleteArtist(void* artist_still_exists, int colNum, char** result, char** column){
+	*((char*)artist_still_exists) = 1;
+	return 0;
+}
+
+int deleteAlbum(void* album_still_exists, int colNum, char** result, char** column){
+	*((char*)album_still_exists) = 1;
+	return 0;
 }
 
 void printSongInfo(struct dbsonginfo* song_info){
@@ -264,9 +378,11 @@ int scan(char** lib_paths, int num_paths){
 	}
 	song_info->db = db;
 
+	sqlite3_exec(db, "SELECT song.filepath AS FILEPATH, song.id AS SONG_ID, artist.id AS ARTIST_ID, album.id AS ALBUM_ID\nFROM song INNER JOIN artist ON artist.id = song.artist_id INNER JOIN album ON song.album_id = album.id;", cullSongCallback, db, NULL);
+
 	song_info->next_album = 0;
 	song_info->next_artist = 0;
-	sqlite3_exec(song_info->db, "SELECT COUNT(album.id) FROM album;", initAlbumID, song_info, NULL);
+	sqlite3_exec(db, "SELECT COUNT(album.id) FROM album;", initAlbumID, song_info, NULL);
 	sqlite3_exec(db, "SELECT COUNT(artist.id) FROM artist;", initArtistID, song_info, NULL);
 
 	getcwd(curr_path, PATH_MAX);
@@ -275,7 +391,6 @@ int scan(char** lib_paths, int num_paths){
 		chdir(lib_paths[i]);
 		//Open the directory stream
 		if((dir = opendir(lib_paths[i])) != NULL){
-
 			//Read in the file information
 			while((file_info = readdir(dir)) != NULL){
 				lstat(file_info->d_name, &stat_info);

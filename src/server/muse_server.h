@@ -37,11 +37,23 @@ struct dbsonginfo {
 	char* genre;
 };
 
+struct linkedStr{
+	char* str;
+	struct linkedStr* next;
+};
+
+void insertLinkedStr(struct linkedStr* last, char* element);
+void freeLinkedStr(struct linkedStr* last, char* element);
+
 int serve(char* port);
 int handleRequest(int new_sockfd);
 int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result);
+int sendInfo(void* new_sockfd, int colNum, char** column, char** result);
 int getAlbumArtist(void* sinfo, int colNum, char** result, char** column);
 int addAllCallback(void* sinfo, int colNum, char** result, char** column);
+int cullSongCallback(void* datab, int colNum, char** result, char** column);
+int deleteArtist(void* artist_still_exists, int colNum, char** result, char** column);
+int deleteAlbum(void* album_still_exists, int colNum, char** result, char** column);
 int initAlbumID(void* sinfo, int colNum, char** result, char** column);
 int initArtistID(void* sinfo, int colNum, char** result, char** column);
 int returnOne(void* sinfo, int colNum, char** result, char** column);
