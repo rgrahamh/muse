@@ -12,16 +12,49 @@ int calledback = 0;
 
 #ifdef TEST
  int main(int argc, char** argv){
+	/*
  	if(argc == 2){
  		serve(argv[1]);
  	}
  	else{
  		serve(DEFAULT_PORT);
  	}
- /*
+	*/
+
+	/*
+	//Test code for the linkedStr struct
+	linkedStr* last = (linkedStr*)calloc(1,sizeof(struct linkedStr));
+
+	char* str1 = (char*)malloc(256);
+	char* str2 = (char*)malloc(256);
+	char* str3 = (char*)malloc(256);
+	char* str4 = (char*)malloc(256);
+	char* str5 = (char*)malloc(256);
+
+	strcpy(str1, "First element!");
+	strcpy(str2, "Second element!");
+	strcpy(str3, "Third element!");
+	strcpy(str4, "Fourth element!");
+	strcpy(str5, "Fifth element!");
+
+	insertLinkedStr(last, str1);
+	insertLinkedStr(last, str2);
+	insertLinkedStr(last, str3);
+	insertLinkedStr(last, str4);
+	insertLinkedStr(last, str5);
+	struct linkedStr* cursor = last->next;
+
+	while(cursor != last){
+		printf("%s\n", cursor->str);
+		cursor = cursor->next;
+	}
+	
+	freeLinkedStr(last);
+	//End test code
+	*/
+
 	char* test[] = {"/home/rhouck/Music", "."};
  	scan(test, 2);
- */
  	return 0;
  }
 #endif
@@ -95,20 +128,24 @@ int serve(char* port){
 }
 
 void insertLinkedStr(struct linkedStr* last, char* element){
-	linkedStr* new_ls = (linkedStr*)malloc(sizeof(linkedStr));
+	linkedStr* new_ls = (linkedStr*)malloc(sizeof(struct linkedStr));
 	new_ls->str = element;
-	new_ls->next = last->next;
+	if(last->next != NULL){
+		new_ls->next = last->next;
+	}
+	else{
+		new_ls->next = last;
+	}
 	last->next = new_ls;
 }
 
 void freeLinkedStr(struct linkedStr* last){
-	while(last != last->next){
+	while(last != last->next && last->next != NULL){
 		struct linkedStr* death_row = last->next;
 		free(death_row->str);
 		last->next = death_row->next;
 		free(death_row);
 	}
-	free(last->str);
 	free(last);
 }
 
@@ -199,7 +236,7 @@ int handleRequest(int new_sockfd){
 			}
 			sqlite3_exec(db, query, sendInfo, results, NULL);
 
-			struct linkedStr* cursor = results;
+			struct linkedStr* cursor = results->next;
 			unsigned result_str_len = 0;
 			while(cursor != results){
 				result_str_len += strlen(cursor->str);
@@ -252,8 +289,18 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 	return !send(*((int*)new_sockfd), file_buff, file_size, 0);
 }
 
-int sendInfo(void* , int colNum, char** column, char** result){
-	
+int sendInfo(void* result_list, int colNum, char** column, char** result){
+	unsigned int str_size;
+	for(int i = 0; i < colNum; i++){
+		str_size += strlen(result[i]) + 1;
+	}
+	char* new_result = (char*)calloc(str_size + 3, 1);
+	for(int i = 0; i < colNum; i++){
+		strcat(new_result, result[i]);
+		strcat(new_result, "\n");
+	}
+	strcat(new_result, "\n\n");
+	insertLinkedStr((struct linkedStr*)result_list, new_result);
 
 	return 0;
 }
