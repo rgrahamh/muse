@@ -2,3 +2,4 @@
 **/muse.state
 **/test_server
 *.mp3
+**/.vscode

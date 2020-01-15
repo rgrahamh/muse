@@ -62,13 +62,13 @@ int calledback = 0;
  * @param port The port you wish to open the server on
  * @return If the server exited normally
  */
-int serve(char* port){
+int serve(char* port, FILE* log_file){
 	//Set up signals so that it cleans up properly
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
 	signal(SIGUSR1, stop);
 
-	//Initialize the file buffer
+	//Initialize the file bexit(EXIT_SUCCESS);uffer
 	max_file_size = 8388608;
 	file_buff = (char*)calloc(max_file_size, 1);
 
@@ -85,19 +85,25 @@ int serve(char* port){
 	//Get our info
 	getaddrinfo(NULL, port, &seed, &host);
 
+	//Log information
+	fprintf(log_file, "Port number is: %s.\nAttempting server startup...\n", port);
+
 	//Open the socket
 	if((sockfd = socket(host->ai_family, host->ai_socktype, host->ai_protocol)) == -1){
-		fprintf(stderr, "Error opening a socket!\n");
+		fprintf(log_file, "Error opening a socket!\n");
+		return 1;
 	}
 
 	//Bind the socket to a port
 	if(bind(sockfd, host->ai_addr, host->ai_addrlen)){
-		fprintf(stderr, "Error binding a socket!\n");
+		fprintf(log_file, "Error binding a socket!\n");
+		return 1;
 	}
 
 	//Set up the socket to listen
 	if(listen(sockfd, 20)){
-		fprintf(stderr, "Couldn't set up to listen!\n");
+		fprintf(log_file, "Couldn't set up to listen!\n");
+		return 1;
 	}
 
 	freeaddrinfo(host);
@@ -110,19 +116,19 @@ int serve(char* port){
 		if(new_sockfd != -1){
 			//Spawn a new child process
 			if(!fork()){
-				handleRequest(new_sockfd);
-				close(new_sockfd);
+				// handleRequest(new_sockfd);
+				// close(new_sockfd);
 				exit(0);
 			}
 			else{
-				printf("Connection detected!\n");
+				fprintf(log_file, "Connection detected!\n");
 			}
 		}
 		else{
-			fprintf(stderr, "Error accepting the new connection!\n");
+			fprintf(log_file, "Error accepting the new connection!\n");
 		}
 	}
-	
+
 	return 0;
 }
 

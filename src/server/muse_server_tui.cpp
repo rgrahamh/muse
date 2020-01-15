@@ -8,9 +8,6 @@ int main(int argc, char** argv) {
 	/* Initialize the state */
 	readStateFromFile();
 
-	/* Scan new mp3s into database */
-	refreshDatabase();
-
 	/* Initialize curses */
 	initscr();
 	cbreak();
@@ -44,7 +41,21 @@ int main(int argc, char** argv) {
 	box(win, 0, 0);
 	refresh();
 
-	changePage(menu, MAIN_PAGE);
+
+	if( muse_pid > 0 ) {
+		/* Check if the process still exists */
+		int exists = kill(muse_pid, 0);
+		if( exists == -1 ) { // process does not exist
+			muse_pid = -1;
+			changePage(menu, MAIN_PAGE); 
+		}
+		else { 
+			// FIXME: what if another process takes the old PID? We need to account for this case.
+			changePage(menu, SERVER_PAGE); 
+		}
+	} else {
+		changePage(menu, MAIN_PAGE);
+	}
 
 	post_menu(menu);
 	writeInfoWindow(win, ascii_height+2, (COLS / 2)+2);
@@ -122,10 +133,14 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index) {
 		updatePort(win);
 	} else if( callback == &addLibPath ) {
 		addLibPath(win);
-	} else if ( callback == &refreshDatabase ) {
-		refreshDatabase();
 	} else if( callback == &removeLibPath ) {
 		removeLibPath(win);
+	} else if( callback == &startServer ) {
+		startServer(menu);
+	} else if( callback == &cleanupServ ) {
+		cleanupServ(menu);
+	} else if( callback == &backgroundProc ) {
+		backgroundProc(menu);
 	} else if( callback == &exitMuse ) {
 		exitMuse(win, menu);
 	} else {
@@ -181,6 +196,17 @@ void writeInfoWindow(WINDOW* &win, int y, int x) {
 		mvwaddstr(win, y+height_avail, x+2, more_msg);
 	}
 
+	/* Server information */
+	if( muse_pid > 0 ) {
+		char server_msg[200] = "";
+		sprintf(server_msg, "Server is running on PID %d\n", muse_pid);
+		mvwaddstr(win, LINES - 2, 1, server_msg);
+	} else {
+		/* Clear the bottom row */
+		for( x = COLS / 2; x > 0; x-- ) {
+			mvwaddch(win, LINES - 2, x, ' ');
+		}
+	}
 
 	/* Exit label */
 	mvwaddstr(win, LINES - 2, COLS - strlen(exit_label)-1, exit_label);
@@ -234,7 +260,7 @@ void exitMuse(WINDOW* &win, MENU* &menu) {
 /**Frees used memory and otherwise cleans up the project space before closing
  * @param menu The menu which needs to be cleaned
  */
-void cleanup(MENU* menu) {
+void cleanup(MENU* &menu) {
 	/* Write program's state down */
 	writeStateToFile();
 
@@ -249,8 +275,6 @@ void cleanup(MENU* menu) {
 	/* Unpost and free all the memory taken up */
 	unpost_menu(menu);
 	free_menu(menu);
-
-
 
 	/* Free all of the lib_paths memory */
 	for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
@@ -271,12 +295,19 @@ void writeStateToFile() {
 	if( state_file.good() ) {
 		/* Write the port information */
 		if( strlen(port) > 0 )
+			// port
 			state_file << "p:" << port << std::endl;
 
 
 		/* Write library information */
 		for( unsigned int i = 0; i < lib_paths.size(); i++ ) {
+			// library
 			state_file << "l:" << lib_paths.at(i) << std::endl;
+		}
+		
+		if( muse_pid != -1 ) {
+			// identifier (pid)
+			state_file << "i:" << muse_pid << std::endl;
 		}
 	}
 	
@@ -300,6 +331,8 @@ void readStateFromFile() {
 				strncpy(new_lib_path, lib.c_str(), lib.length());
 
 				lib_paths.push_back(new_lib_path);
+			} else if( line[0] == 'i' ) {
+				muse_pid = atoi(&line[2]);
 			}
 		}
 	}
@@ -307,33 +340,55 @@ void readStateFromFile() {
 	state_file.close();
 }
 
-void cleanupServ() {
-	return;
-	// kill(muse_pid, SIGTERM);
-	// cleanup();
+void cleanupServ(MENU* &menu) {
+	kill(muse_pid, SIGTERM);
+	int status;
+	waitpid(muse_pid, &status, 0);
+	muse_pid = -1;
+	changePage(menu, MAIN_PAGE);
 }
 
-void backgroundProc() {
-	return;
+void backgroundProc(MENU* &menu) {
+	cleanup(menu);
 }
 
-void start(bool background) {
-	// //If the child process
-	// if(!(muse_pid = fork())) {
-	// 	//If serve returns anything but zero
-	// 	if(/* serve(port) */ TRUE) {
-	// 		//Spit them out to the main page if something goes wrong in MUSE itself
-	// 		// curr_page = MAIN_PAGE;
-	// 	}
-	// }
-	// if(background) {
-	// 	//backgroundProc
-	// 	backgroundProc();
-	// }
-	// else{
-	// 	// curr_page = SERVER_PAGE;
-	// }
-	// refresh();
+void startServer(MENU* &menu) {
+	/* Update the database */
+	refreshDatabase();
+
+	/* Start the server */
+	/* Fork off the parent process */
+	muse_pid = fork();
+	if (muse_pid < 0) {
+		exit(EXIT_FAILURE);
+	}
+	/* Parent process */
+	if (muse_pid > 0) {
+		changePage(menu, SERVER_PAGE);
+		return;
+	} else {
+		// CHILD PROCESS //
+		/* Change the file mode mask */
+		umask(0);
+		
+		/* Open any logs here */
+		FILE* log_file = fopen("/tmp/muse_server.log", "w");
+		if( log_file == NULL ) {
+			fclose(log_file);
+			exit(EXIT_FAILURE);
+		}
+
+		fprintf(log_file, "My PID is: %d\n", getpid());
+
+		int status = serve(port, log_file);
+
+		fprintf(log_file, "Server exited with status %d\n", status);
+
+		fclose(log_file);
+
+		muse_pid = -1;
+		exit(EXIT_SUCCESS);
+	}
 }
 
 /**Updates the port information with user prompt
@@ -647,5 +702,4 @@ void refreshDatabase() {
 	if(lib_paths.size() > 0) {
 		scan(&lib_paths.at(0), lib_paths.size());
 	}
-	return;
 }
