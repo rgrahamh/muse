@@ -286,7 +286,7 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 	if(file_size % 4096){
 		fread(tmp_buff, 1, file_size % 4096, file); }
 	fclose(file);
-	return !send(*((int*)new_sockfd), file_buff, file_size, 0);
+	return ((send(*((int*)new_sockfd), file_buff, file_size, 0) == -1)? -1 : 0);
 }
 
 int sendInfo(void* result_list, int colNum, char** column, char** result){
