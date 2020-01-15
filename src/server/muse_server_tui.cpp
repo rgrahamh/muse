@@ -304,6 +304,11 @@ void writeStateToFile() {
 			// library
 			state_file << "l:" << lib_paths.at(i) << std::endl;
 		}
+		
+		if( muse_pid != -1 ) {
+			// identifier (pid)
+			state_file << "i:" << muse_pid << std::endl;
+		}
 	}
 	
 	state_file.close();
@@ -326,25 +331,13 @@ void readStateFromFile() {
 				strncpy(new_lib_path, lib.c_str(), lib.length());
 
 				lib_paths.push_back(new_lib_path);
+			} else if( line[0] == 'i' ) {
+				muse_pid = atoi(&line[2]);
 			}
 		}
 	}
 
 	state_file.close();
-
-	std::ifstream pid_file;
-	pid_file.open("/var/run/muse_server.pid");
-
-	if( pid_file.good() ) {
-		std::string line;
-		std::getline(pid_file, line);
-
-		muse_pid = atoi(line.c_str());
-	} else {
-		muse_pid = -1;
-	}
-
-	pid_file.close();
 }
 
 void cleanupServ(MENU* &menu) {
@@ -371,15 +364,6 @@ void startServer(MENU* &menu) {
 	}
 	/* Parent process */
 	if (muse_pid > 0) {
-		std::ofstream pid_file;
-
-		pid_file.open("/var/run/muse_server.pid");
-		if( pid_file.good() ){
-			pid_file << muse_pid << std::endl;
-		}
-
-		pid_file.close();
-
 		changePage(menu, SERVER_PAGE);
 		return;
 	} else {
@@ -399,12 +383,10 @@ void startServer(MENU* &menu) {
 		int status = serve(port, log_file);
 
 		fprintf(log_file, "Server exited with status %d\n", status);
+
 		fclose(log_file);
 
 		muse_pid = -1;
-
-		remove("/var/run/muse_server.txt");
-
 		exit(EXIT_SUCCESS);
 	}
 }
