@@ -6,7 +6,9 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 int sockfd;
 
 void connectToServ(char* port, char* ip);
+void stop();

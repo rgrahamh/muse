@@ -6,32 +6,44 @@ int main(int argc, char** argv){
 }
 
 void connectToServ(char* port, char* server_ip){
-	struct addrinfo seed;
-	struct addrinfo* client;
+	signal(SIGTERM, stop);
+	signal(SIGHUP, stop);
+
+	struct addrinfo seed,* server;
 
 	memset(&seed, 0, sizeof(struct addrinfo));
-	seed.ai_flags = AI_PASSIVE;
 	seed.ai_family = AF_UNSPEC;
 	seed.ai_socktype = SOCK_STREAM;
-
-	//Get our info
-	getaddrinfo(NULL, NULL, &seed, &client);
+	
+	getaddrinfo(server_ip, port, &seed, &server);
 
 	//Open the socket
-	if((sockfd = socket(client->ai_family, client->ai_socktype, client->ai_protocol)) == -1){
+	if((sockfd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1){
 		fprintf(stderr, "Error opening a socket!\n");
 	}
 
-	//Bind the socket to a port
-	if(bind(sockfd, client->ai_addr, client->ai_addrlen)){
-		fprintf(stderr, "Error binding a socket!\n");
+	if(connect(sockfd, server->ai_addr, server->ai_addrlen) == -1){
+		printf("Could not connect to the server!\n");
 	}
 
-	struct sockaddr_in server;
-	server.sin_family = AF_UNSPEC;
-	server.sin_addr.s_addr = inet_addr(server_ip);
-	server.sin_port = htons(strtoul(port, 0, 10));
+	char* ch = "A message has been sent! Praise the sun!";
+	if(send(sockfd, ch, 25, 0) == -1){
+		printf("Cold not send!\n");
+	}
 
-	connect(sockfd, (sockaddr*)&server, sizeof(struct sockaddr_in));
+	ch = "\0";
+	if(send(sockfd, ch, 1, 0) == -1){
+		printf("Cold not send!\n");
+	}
+
 	printf("Got here!\n");
+
+	close(sockfd);
+}
+
+void stop(int sig){
+	//Terminate the connection
+	send(sockfd, "\0", 1, 0);
+	close(sockfd);
+	exit(0);
 }

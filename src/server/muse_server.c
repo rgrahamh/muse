@@ -12,14 +12,13 @@ int calledback = 0;
 
 #ifdef TEST
  int main(int argc, char** argv){
-	/*
+	
  	if(argc == 2){
  		serve(argv[1]);
  	}
  	else{
  		serve(DEFAULT_PORT);
  	}
-	*/
 
 	/*
 	//Test code for the linkedStr struct
@@ -53,8 +52,8 @@ int calledback = 0;
 	//End test code
 	*/
 
-	char* test[] = {"/home/rhouck/Music", "."};
- 	scan(test, 2);
+	/*char* test[] = {"/home/rhouck/Music", "."};
+ 	scan(test, 2);*/
  	return 0;
  }
 #endif
@@ -157,9 +156,8 @@ int handleRequest(int new_sockfd){
 	//The incoming character buffer; this will be recieved from the client
 	char* incoming = (char*)malloc(BUFF_SIZE);
 	//Holds the buffer for SQL queries
-	char* query = (char*)malloc(500);
+	char* query = (char*)malloc(4096);
 	char* order_dir = (char*)calloc(5, 1);
-
 
 	//Holds the incoming flags
 	char incoming_flags = 0;
@@ -174,8 +172,10 @@ int handleRequest(int new_sockfd){
 
 		//Recieve the request, set the amount to the transferred data minus the flags.
 		amnt_recv = recv(new_sockfd, incoming, BUFF_SIZE, 0) - 1;
+		printf("Message recieved: %s\n", incoming);
 		incoming_flags = *incoming;
 		incoming_msg = incoming + 1;
+		printf("Flags: %d\n", incoming_flags);
 
 		if((incoming_flags & REQ_TYPE_MASK) != TERMCON){
 			sqlite3* db;
@@ -191,8 +191,7 @@ int handleRequest(int new_sockfd){
 			else{
 				strcpy(order_dir, "DESC");
 			}
-
-			struct linkedStr* results = (struct linkedStr*)malloc(sizeof(struct linkedStr));
+			struct linkedStr* results = (struct linkedStr*)calloc(1, sizeof(struct linkedStr));
 
 			//Parse the packet type
 			switch(incoming_flags & REQ_TYPE_MASK){
@@ -236,7 +235,7 @@ int handleRequest(int new_sockfd){
 			}
 			sqlite3_exec(db, query, sendInfo, results, NULL);
 
-			struct linkedStr* cursor = results->next;
+			struct linkedStr* cursor = (results->next == NULL)? results : results->next;
 			unsigned result_str_len = 0;
 			while(cursor != results){
 				result_str_len += strlen(cursor->str);
