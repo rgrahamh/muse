@@ -184,12 +184,12 @@ int handleRequest(int new_sockfd){
 				printf("Could not open the sqlite database!\n");
 			}
 
-			//Set the order
+			//Set the order (opposite as recieved, since we're returning a linked list)
 			if((incoming_flags & ORD_DIR_MASK) == ASC){
-				strcpy(order_dir, "ASC");
+				strcpy(order_dir, "DESC");
 			}
 			else{
-				strcpy(order_dir, "DESC");
+				strcpy(order_dir, "ASC");
 			}
 			struct linkedStr* results = (struct linkedStr*)calloc(1, sizeof(struct linkedStr));
 
@@ -208,23 +208,23 @@ int handleRequest(int new_sockfd){
 					break;
 
 				case QWRYALBM:
-					sprintf(query, "SELECT album.id, album.name, artist.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
+					sprintf(query, "SELECT DISTINCT album.id, album.name, artist.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
 					break;
 
 				case QWRYALBMSNG:
-					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on ALUBM.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num ASC;", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num ASC;", *((unsigned long*)incoming_msg));
 					break;
 
 				case QWRYART:
-					sprintf(query, "SELECT artist.id, artist.name\nFROM artist\nORDER BY artist.name %s;", order_dir);
+					sprintf(query, "SELECT DISTINCT artist.id, artist.name\nFROM artist\nORDER BY artist.name %s;", order_dir);
 					break;
 
 				case QWRYARTALBM:
-					sprintf(query, "SELECT album.id, album.name\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year%s;", *((unsigned long*)incoming_msg), order_dir);
+					sprintf(query, "SELECT DISTINCT album.id, album.name\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year%s;", *((unsigned long*)incoming_msg), order_dir);
 					break;
 
 				case QWRYGNR:
-					sprintf(query, "SELECT song.genre\nFROM song\nORDER BY song.genre %s;", order_dir);
+					sprintf(query, "SELECT DISTINCT song.genre\nFROM song\nORDER BY song.genre %s;", order_dir);
 					break;
 
 				case QWRYGNRSNG:
@@ -235,17 +235,19 @@ int handleRequest(int new_sockfd){
 			}
 			sqlite3_exec(db, query, sendInfo, results, NULL);
 
-			struct linkedStr* cursor = (results->next == NULL)? results : results->next;
+			struct linkedStr* cursor = results->next;
 			unsigned result_str_len = 0;
-			while(cursor != results){
+			while(results->next != NULL && cursor != results){
 				result_str_len += strlen(cursor->str);
 				cursor = cursor->next;
 			}
 			char* result_str = (char*)calloc(result_str_len + 1, 1);
-			while(cursor != results){
-				strcpy(result_str, cursor->str);
+			cursor = results->next;
+			while(results->next != NULL && cursor != results){
+				strcat(result_str, cursor->str);
 				cursor = cursor->next;
 			}
+			printf("Result string: %s\n", result_str);
 			send(new_sockfd, result_str, result_str_len, 0);
 
 			freeLinkedStr(results);
@@ -283,12 +285,13 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 		tmp_buff += 4096;
 	}
 	if(file_size % 4096){
-		fread(tmp_buff, 1, file_size % 4096, file); }
+		fread(tmp_buff, 1, file_size % 4096, file);
+	}
 	fclose(file);
 	return ((send(*((int*)new_sockfd), file_buff, file_size, 0) == -1)? -1 : 0);
 }
 
-int sendInfo(void* result_list, int colNum, char** column, char** result){
+int sendInfo(void* result_list, int colNum, char** result, char** column){
 	unsigned int str_size;
 	for(int i = 0; i < colNum; i++){
 		str_size += strlen(result[i]) + 1;
@@ -296,9 +299,10 @@ int sendInfo(void* result_list, int colNum, char** column, char** result){
 	char* new_result = (char*)calloc(str_size + 3, 1);
 	for(int i = 0; i < colNum; i++){
 		strcat(new_result, result[i]);
-		strcat(new_result, "\n");
+		strcat(new_result, "\t");
+		printf("New result: %s\n", result[i]);
 	}
-	strcat(new_result, "\n\n");
+	strcat(new_result, "\n");
 	insertLinkedStr((struct linkedStr*)result_list, new_result);
 
 	return 0;
