@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
+#include <sys/wait.h>
 
 #include "../shared.h"
 #include "muse_server.h"
@@ -44,9 +45,9 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index);
 void writeInfoWindow(WINDOW* &win, int y, int x);
 int confirmSelection(WINDOW* &win);
 void exitMuse(WINDOW* &win, MENU* &menu);
-void cleanup(MENU* menu);
-void cleanupServ();
-void backgroundProc();
+void cleanup(MENU* &menu);
+void cleanupServ(MENU* &menu);
+void backgroundProc(MENU* &menu);
 void updatePort(WINDOW* &win);
 void refreshDatabase();
 void addLibPath(WINDOW* win);

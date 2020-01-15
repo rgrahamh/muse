@@ -37,7 +37,7 @@ struct dbsonginfo {
 	char* genre;
 };
 
-int serve(char* port);
+int serve(char* port, FILE* log_file);
 int handleRequest(int new_sockfd);
 int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result);
 int getAlbumArtist(void* sinfo, int colNum, char** result, char** column);
