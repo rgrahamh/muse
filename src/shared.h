@@ -22,7 +22,8 @@ enum ORD_BY{
 	ORDSNG = 0, /**< Denotes that the client wants to order by song title */
 	ORDALBM = 2, /**< Denotes that the client wants to order by album title */
 	ORDART = 4, /**< Denotes that the client wants to order by the artist name */
-	ORDGNR = 6 /**< Denotes that the client wants to order by the genre */
+	ORDGNR = 6, /**< Denotes that the client wants to order by the genre */
+	ORDYR = 2 /**< Denotes that the client wants to order by the year ONLY USABLE IN ALBUM */
 };
 
 #define REQ_TYPE_MASK 0xf8
@@ -35,7 +36,7 @@ enum REQ_TYPE{
 	QWRYALBM = 24, /**< Sends a query for all albums */
 	QWRYALBMSNG = 32, /**< Sends a query for all songs in an album */
 	QWRYART = 40, /**< Sends a query for all artists */
-	QWRYARTSNG = 48, /**< Sends a query for all songs associated with an an artist */
+	QWRYARTALBM = 48, /**< Sends a query for all albums associated with an an artist */
 	QWRYGNR = 56, /**< Sends a query for all genres */
 	QWRYGNRSNG = 64 /**< Sends a query for all songs in a genre */
 };
