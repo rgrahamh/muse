@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
+#include <sys/wait.h>
 
 #include "../shared.h"
 #include "muse_server.h"
@@ -36,7 +37,7 @@ struct MenuItem {
 char port[5];
 std::vector<char*> lib_paths;
 int curr_page = MAIN_PAGE;
-int muse_pid;
+int muse_pid = -1;
 int ascii_height, ascii_length;
 
 void changePage(MENU* &menu, int page_num);
@@ -44,22 +45,22 @@ void handleMenuCallback(WINDOW* &win, MENU* &menu, void* callback, int index);
 void writeInfoWindow(WINDOW* &win, int y, int x);
 int confirmSelection(WINDOW* &win);
 void exitMuse(WINDOW* &win, MENU* &menu);
-void cleanup(MENU* menu);
-void cleanupServ();
-void backgroundProc();
+void cleanup(MENU* &menu);
+void cleanupServ(MENU* &menu);
+void backgroundProc(MENU* &menu);
 void updatePort(WINDOW* &win);
 void refreshDatabase();
 void addLibPath(WINDOW* win);
 void removeLibPath(WINDOW* win);
 void writeStateToFile();
 void readStateFromFile();
+void startServer(MENU* &menu);
 
 const struct MenuItem main_page[] = {
 	MenuItem("1.", "Network Options", (void*)changePage, NETWORK_PAGE),
 	MenuItem("2.", "Library Locations", (void*)changePage, LIBRARY_PAGE),
-	MenuItem("3.", "Refresh Database", (void*)refreshDatabase, -1),
-	MenuItem("4.", "Start Server", (void*)changePage, SERVER_PAGE),
-	MenuItem("5.", "Exit Muse", (void*)exitMuse, -1)
+	MenuItem("3.", "Start Server", (void*)startServer, -1),
+	MenuItem("4.", "Exit Muse", (void*)exitMuse, -1)
 };
 
 const struct MenuItem port_page[] = {

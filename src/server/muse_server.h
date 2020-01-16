@@ -45,7 +45,7 @@ struct linkedStr{
 void insertLinkedStr(struct linkedStr* last, char* element);
 void freeLinkedStr(struct linkedStr* last);
 
-int serve(char* port);
+int serve(char* port, FILE* log_file);
 int handleRequest(int new_sockfd);
 int sendSongCallback(void* new_sockfd, int colNum, char** column, char** result);
 int sendInfo(void* result_list, int colNum, char** column, char** result);
