@@ -38,10 +38,10 @@ struct artistinfolst{
 int sockfd;
 
 int connectToServ(char* port, char* ip);
-int querySongs(struct albuminfolst** song_info);
+int querySongs(struct songinfolst** song_info);
 int queryAlbums(struct albuminfolst** album_info);
 int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info);
-int queryArtists(struct albuminfolst** artist_info);
+int queryArtists(struct artistinfolst** artist_info);
 int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info);
 int queryGenre(char** genres);
 int queryGenreSongs(char* genre, struct songinfolst** song_info);

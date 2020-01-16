@@ -8,7 +8,8 @@ int main(int argc, char** argv){
 	//queryAlbumSongs(25, &song_info);
 	//queryArtistAlbums(25, &album_info);
 	//queryGenreSongs("Rock", &song_info);
-	queryGenre(argv);
+	//queryGenre(argv);
+	querySongs(&song_info);
 	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
@@ -44,6 +45,27 @@ int connectToServ(char* port, char* server_ip){
 	if(send(sockfd, ch, 25, 0) == -1){
 		printf("Could not send!\n");
 	}*/
+
+	return 0;
+}
+
+int querySongs(struct songinfolst** song_info){
+	char request = QWRYSNG | ASC | ORDSNG;
+
+	if(send(sockfd, &request, 1, 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		printf("Error recieving response!\n");
+		return 1;
+	}
+
+	printf("Response:\n%s\n", resp);
+
+	free(resp);
 
 	return 0;
 }
