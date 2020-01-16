@@ -229,7 +229,8 @@ int handleRequest(int new_sockfd){
 
 				case QWRYGNRSNG:
 					char* safe_genre = escapeApostrophe(incoming_msg);
-					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM song\nWHERE song.genre = '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
+					printf("Safe genre: %s\n", safe_genre);
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
 					break;
 			}

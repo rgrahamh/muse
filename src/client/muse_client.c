@@ -1,4 +1,4 @@
-#include "client.h"
+#include "muse_client.h"
 
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");

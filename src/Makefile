@@ -5,7 +5,7 @@ SERVER=shared.c \
 	   server/muse_server.c \
 	   server/muse_server_tui.cpp
 
-CLIENT=client/client.c
+CLIENT=client/muse_client.c
 
 muse_server:
 	$(CC) $(SERVER) -o server/muse_server $(CFLAGS)
