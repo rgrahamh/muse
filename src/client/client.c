@@ -2,9 +2,9 @@
 
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
-	struct albuminfo* album_info = (struct albuminfo*)calloc(sizeof(struct albuminfo), 1);
-	queryAlbumSongs(25, album_info);
-	free(album_info);
+	struct songinfo** song_info = NULL;
+	queryAlbumSongs(25, song_info);
+	free(song_info);
 	return 0;
 }
 
@@ -39,28 +39,72 @@ int connectToServ(char* port, char* server_ip){
 	return 0;
 }
 
-int queryAlbumSongs(unsigned long album_id, struct albuminfo* album_info){
-	if(album_id == 0){
+int queryArtistAlbums(unsigned long artist_id, struct artistinfo* artist_info){
+	//TODO: Think about making a queryEntitiy() function (to reduce redundancy between functions)
+	if(artist_id == 0){
 		return 1;
 	}
 	int register request_size = sizeof(unsigned long) + sizeof(char);
 	char* request = (char*)calloc(request_size, 1);
-	char flags = QWRYALBMSNG | ASC;
+	char flags = QWRYARTALBM | ORDYR | ASC;
 	request[0] = flags;
-	*((unsigned long*)(request+1)) = album_id;
+	*((unsigned long*)(request+1)) = artist_id;
+
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
 		return 1;
 	}
 
-	char* new_buff = (char*)calloc(4096, 1);
-	if(recv(sockfd, new_buff, 4096, 0) == -1){
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
 		printf("Error recieving response!\n");
+		return 1;
+	}
+	printf("Response:\n%s\n", resp);
+
+	return 0;
+}
+
+int queryAlbumSongs(unsigned long album_id, struct songinfo** song_info){
+	if(album_id == 0){
+		return 1;
+	}
+	int request_size = sizeof(unsigned long) + sizeof(char);
+	char* request = (char*)calloc(request_size, 1);
+	char flags = QWRYALBMSNG | ASC;
+	request[0] = flags;
+	*((unsigned long*)(request+1)) = album_id;
+
+	if(send(sockfd, request, request_size, 0) == -1){
+		printf("Could not send request!\n");
+		return 1;
 	}
 
-	printf("Response:\n%s", new_buff);
+	char* resp = NULL;
+	int err;
+	if(err = receiveResponse(&resp)){
+		printf("Error recieving response!\n");
+		return 1;
+	}
 
-	free(new_buff);
+	printf("Response:\n%s\n", resp);
+
+	return 0;
+}
+
+int receiveResponse(char** resp){
+	char* resp_size_str = (char*)malloc(sizeof(unsigned long));
+	if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+		return 1;
+	}
+	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
+	*resp = (char*)malloc(resp_size+1);
+	//TODO: Make the server send the response size
+	if(recv(sockfd, *resp, resp_size, 0) == -1){
+		return 1;
+	}
+	(*resp)[resp_size] = '\0';
+	free(resp_size_str);
 
 	return 0;
 }

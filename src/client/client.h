@@ -30,5 +30,6 @@ struct albuminfo{
 int sockfd;
 
 int connectToServ(char* port, char* ip);
-int queryAlbumSongs(unsigned long album_id, struct albuminfo* album_info);
+int queryAlbumSongs(unsigned long album_id, struct songinfo** song_info);
+int receiveResponse(char** resp);
 void stop(int sig);

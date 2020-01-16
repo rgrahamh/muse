@@ -212,7 +212,7 @@ int handleRequest(int new_sockfd){
 					break;
 
 				case QWRYALBMSNG:
-					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num ASC;", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num DESC;", *((unsigned long*)incoming_msg));
 					break;
 
 				case QWRYART:
@@ -241,16 +241,22 @@ int handleRequest(int new_sockfd){
 				result_str_len += strlen(cursor->str);
 				cursor = cursor->next;
 			}
-			char* result_str = (char*)calloc(result_str_len + 1, 1);
+			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long), 1);
+			//Send the returned size as the first byte grouping
+			*((unsigned long*)result_str) = result_str_len + sizeof(unsigned long);
+			char* str_cursor = result_str+sizeof(unsigned long);
+
 			cursor = results->next;
 			while(results->next != NULL && cursor != results){
-				strcat(result_str, cursor->str);
+				strcat(str_cursor, cursor->str);
 				cursor = cursor->next;
 			}
-			printf("Result string: %s\n", result_str);
-			send(new_sockfd, result_str, result_str_len, 0);
+			printf("Result string: %s\n", str_cursor);
+			printf("Result string len: %i\n", result_str_len);
+			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long), 0);
 
 			freeLinkedStr(results);
+			free(result_str);
 
 			sqlite3_close(db);
 		}
@@ -296,12 +302,13 @@ int sendInfo(void* result_list, int colNum, char** result, char** column){
 	for(int i = 0; i < colNum; i++){
 		str_size += strlen(result[i]) + 1;
 	}
-	char* new_result = (char*)calloc(str_size + 3, 1);
-	for(int i = 0; i < colNum; i++){
+	//String size plus one for each tab plus one for the pointer plus one for the newline
+	char* new_result = (char*)calloc(str_size + colNum + sizeof(unsigned long) + 1, 1);
+	for(int i = 0; i < colNum - 1; i++){
 		strcat(new_result, result[i]);
 		strcat(new_result, "\t");
-		printf("New result: %s\n", result[i]);
 	}
+	strcat(new_result, result[colNum-1]);
 	strcat(new_result, "\n");
 	insertLinkedStr((struct linkedStr*)result_list, new_result);
 
