@@ -220,7 +220,7 @@ int handleRequest(int new_sockfd){
 					break;
 
 				case QWRYARTALBM:
-					sprintf(query, "SELECT DISTINCT album.id, album.name\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year%s;", *((unsigned long*)incoming_msg), order_dir);
+					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year %s;", *((unsigned long*)incoming_msg), order_dir);
 					break;
 
 				case QWRYGNR:

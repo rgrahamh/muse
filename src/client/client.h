@@ -27,9 +27,16 @@ struct albuminfo{
 	int year;
 };
 
+struct artistinfo{
+	char* title;
+	unsigned long id;
+};
+
 int sockfd;
 
 int connectToServ(char* port, char* ip);
+int queryArtistAlbums(unsigned long artist_id, struct albuminfo** album_info);
 int queryAlbumSongs(unsigned long album_id, struct songinfo** song_info);
+int queryEntity(unsigned long entity_id, char flags);
 int receiveResponse(char** resp);
 void stop(int sig);

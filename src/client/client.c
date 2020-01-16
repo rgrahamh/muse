@@ -3,8 +3,11 @@
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
 	struct songinfo** song_info = NULL;
+	struct albuminfo** album_info = NULL;
 	queryAlbumSongs(25, song_info);
+	queryArtistAlbums(25, album_info);
 	free(song_info);
+	free(album_info);
 	return 0;
 }
 
@@ -39,19 +42,9 @@ int connectToServ(char* port, char* server_ip){
 	return 0;
 }
 
-int queryArtistAlbums(unsigned long artist_id, struct artistinfo* artist_info){
-	//TODO: Think about making a queryEntitiy() function (to reduce redundancy between functions)
-	if(artist_id == 0){
-		return 1;
-	}
-	int register request_size = sizeof(unsigned long) + sizeof(char);
-	char* request = (char*)calloc(request_size, 1);
-	char flags = QWRYARTALBM | ORDYR | ASC;
-	request[0] = flags;
-	*((unsigned long*)(request+1)) = artist_id;
-
-	if(send(sockfd, request, request_size, 0) == -1){
-		printf("Could not send request!\n");
+int queryArtistAlbums(unsigned long artist_id, struct albuminfo** album_info){
+	if(queryEntity(artist_id, QWRYARTALBM | ORDYR | ASC)){
+		printf("Error querying entity!\n");
 		return 1;
 	}
 
@@ -60,34 +53,42 @@ int queryArtistAlbums(unsigned long artist_id, struct artistinfo* artist_info){
 		printf("Error recieving response!\n");
 		return 1;
 	}
+
 	printf("Response:\n%s\n", resp);
 
 	return 0;
 }
 
 int queryAlbumSongs(unsigned long album_id, struct songinfo** song_info){
-	if(album_id == 0){
-		return 1;
-	}
-	int request_size = sizeof(unsigned long) + sizeof(char);
-	char* request = (char*)calloc(request_size, 1);
-	char flags = QWRYALBMSNG | ASC;
-	request[0] = flags;
-	*((unsigned long*)(request+1)) = album_id;
-
-	if(send(sockfd, request, request_size, 0) == -1){
-		printf("Could not send request!\n");
+	if(queryEntity(album_id, QWRYALBMSNG | ASC)){
+		printf("Error querying entity!\n");
 		return 1;
 	}
 
 	char* resp = NULL;
-	int err;
-	if(err = receiveResponse(&resp)){
+	if(receiveResponse(&resp)){
 		printf("Error recieving response!\n");
 		return 1;
 	}
 
 	printf("Response:\n%s\n", resp);
+
+	return 0;
+}
+
+int queryEntity(unsigned long entity_id, char flags){
+	if(entity_id == 0){
+		return 1;
+	}
+	int request_size = sizeof(unsigned long) + sizeof(char);
+	char* request = (char*)calloc(request_size, 1);
+	request[0] = flags;
+	*((unsigned long*)(request+1)) = entity_id;
+
+	if(send(sockfd, request, request_size, 0) == -1){
+		printf("Could not send request!\n");
+		return 1;
+	}
 
 	return 0;
 }
