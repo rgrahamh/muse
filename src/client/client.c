@@ -1,9 +1,11 @@
 #include "client.h"
 
+#ifdef TEST
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
 	return 0;
 }
+#endif
 
 void connectToServ(char* port, char* server_ip){
 	signal(SIGTERM, stop);
