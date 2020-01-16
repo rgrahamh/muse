@@ -11,7 +11,7 @@ muse_server:
 	$(CC) $(SERVER) -o server/muse_server $(CFLAGS)
 
 muse_client:
-	$(CC) $(CLIENT) -o client/muse_client $(CFLAGS)
+	$(CC) $(CLIENT) -o client/muse_client $(CFLAGS) -DTEST
 
 muse_server_test:
 	$(CC) shared.c server/muse_server.c -o server/server_test $(CFLAGS) -DTEST

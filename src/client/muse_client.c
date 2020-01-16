@@ -5,9 +5,10 @@ int main(int argc, char** argv){
 	struct songinfolst* song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
 	struct albuminfolst* album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
 	struct artistinfolst* artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
-	queryAlbumSongs(25, &song_info);
-	queryArtistAlbums(25, &album_info);
-	queryGenreSongs("Rock", &song_info);
+	//queryAlbumSongs(25, &song_info);
+	//queryArtistAlbums(25, &album_info);
+	//queryGenreSongs("Rock", &song_info);
+	queryGenre(argv);
 	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
@@ -74,6 +75,27 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
 int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info){
 	if(queryEntity(album_id, QWRYALBMSNG | ASC)){
 		printf("Error querying entity!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		printf("Error recieving response!\n");
+		return 1;
+	}
+
+	printf("Response:\n%s\n", resp);
+
+	free(resp);
+
+	return 0;
+}
+
+int queryGenre(char** genres){
+	char request = QWRYGNR | ASC | ORDSNG;
+
+	if(send(sockfd, &request, 1, 0) == 0){
+		printf("Could not send request!\n");
 		return 1;
 	}
 

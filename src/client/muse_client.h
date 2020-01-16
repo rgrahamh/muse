@@ -43,7 +43,7 @@ int queryAlbums(struct albuminfolst** album_info);
 int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info);
 int queryArtists(struct albuminfolst** artist_info);
 int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info);
-int queryGenre(char* genre, char** genres);
+int queryGenre(char** genres);
 int queryGenreSongs(char* genre, struct songinfolst** song_info);
 
 void free_songinfolst(struct songinfolst* song_info);
