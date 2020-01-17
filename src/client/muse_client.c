@@ -9,7 +9,10 @@ int main(int argc, char** argv){
 	//queryArtistAlbums(25, &album_info);
 	//queryGenreSongs("Rock", &song_info);
 	//queryGenre(argv);
-	querySongs(&song_info);
+	//querySongs(&song_info);
+	//queryAlbums(&album_info);
+	//queryArtists(&artist_info);
+	getSong(4062);
 	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
@@ -49,8 +52,102 @@ int connectToServ(char* port, char* server_ip){
 	return 0;
 }
 
+int getSong(unsigned long song_id){
+	FILE* file = fopen("./song.mp3", "w");
+
+	int request_size = sizeof(char) + sizeof(unsigned long);
+	char* request = (char*)malloc(request_size);
+	request[0] = REQSNG;
+	*((unsigned long *)(request+1)) = song_id;
+	
+	if(send(sockfd, request, request_size, 0) == -1){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp_size_str = (char*)malloc(sizeof(unsigned long));
+	if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+		return 1;
+	}
+	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
+	char* resp = (char*)malloc(resp_size);
+
+	if(recv(sockfd, resp, resp_size, 0) == -1){
+		return 1;
+	}
+	free(resp_size_str);
+
+	fwrite(resp, sizeof(char), resp_size, file);
+
+	fclose(file);
+	free(resp);
+
+	return 0;
+}
+
 int querySongs(struct songinfolst** song_info){
 	char request = QWRYSNG | ASC | ORDSNG;
+
+	if(send(sockfd, &request, 1, 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		printf("Error recieving response!\n");
+		return 1;
+	}
+
+	printf("Response:\n%s\n", resp);
+
+	free(resp);
+
+	return 0;
+}
+
+int queryAlbums(struct albuminfolst** album_info){
+	char request = QWRYALBM | ASC | ORDSNG;
+
+	if(send(sockfd, &request, 1, 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		printf("Error recieving response!\n");
+		return 1;
+	}
+
+	printf("Response:\n%s\n", resp);
+
+	free(resp);
+
+	return 0;
+}
+
+int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info){
+	if(queryEntity(album_id, QWRYALBMSNG | ASC)){
+		printf("Error querying entity!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		printf("Error recieving response!\n");
+		return 1;
+	}
+
+	printf("Response:\n%s\n", resp);
+
+	free(resp);
+
+	return 0;
+}
+
+int queryArtists(struct artistinfolst** artist_info){
+	char request = QWRYART | ASC | ORDSNG;
 
 	if(send(sockfd, &request, 1, 0) == 0){
 		printf("Could not send request!\n");
@@ -94,24 +191,6 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
 	return 0;
 }
 
-int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info){
-	if(queryEntity(album_id, QWRYALBMSNG | ASC)){
-		printf("Error querying entity!\n");
-		return 1;
-	}
-
-	char* resp = NULL;
-	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
-		return 1;
-	}
-
-	printf("Response:\n%s\n", resp);
-
-	free(resp);
-
-	return 0;
-}
 
 int queryGenre(char** genres){
 	char request = QWRYGNR | ASC | ORDSNG;

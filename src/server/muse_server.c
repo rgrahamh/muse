@@ -5,20 +5,13 @@
 int sockfd;
 
 //Integer to keep track of the max file size and a buffer to keep the max file.
-int max_file_size;
+int max_file_size = 8388608;
 char* file_buff;
 
 int calledback = 0;
 
 #ifdef TEST
- int main(int argc, char** argv){
-	
- 	if(argc == 2){
- 		serve(argv[1]);
- 	}
- 	else{
- 		serve(DEFAULT_PORT);
- 	}
+int main(int argc, char** argv){
 
 	/*
 	//Test code for the linkedStr struct
@@ -52,8 +45,21 @@ int calledback = 0;
 	//End test code
 	*/
 
-	/*char* test[] = {"/home/rhouck/Music", "."};
- 	scan(test, 2);*/
+	//char* test[] = {"/home/rhouck/Documents/music_iso"};
+	char* test[] = {"/home/rhouck/Music"};
+ 	scan(test, 1);
+	
+	printf("Done scanning!\n");
+
+	FILE* log_file = fopen("/tmp/muse_server.log", "w");
+
+ 	if(argc == 2){
+ 		serve(argv[1], log_file);
+ 	}
+ 	else{
+ 		serve(DEFAULT_PORT, log_file);
+ 	}
+
  	return 0;
  }
 #endif
@@ -69,8 +75,7 @@ int serve(char* port, FILE* log_file){
 	signal(SIGUSR1, stop);
 
 	//Initialize the file bexit(EXIT_SUCCESS);uffer
-	max_file_size = 8388608;
-	file_buff = (char*)calloc(max_file_size, 1);
+	file_buff = (char*)calloc(max_file_size+1, 1);
 
 	struct addrinfo seed;
 	struct addrinfo* host;
@@ -109,15 +114,14 @@ int serve(char* port, FILE* log_file){
 	freeaddrinfo(host);
 
 	socklen_t addr_len = sizeof(struct sockaddr_storage);
-	int new_sockfd;
 	while(1){
 		//Accept a new connection
-		new_sockfd = accept(sockfd, (struct sockaddr*)client, &addr_len);
+		int new_sockfd = accept(sockfd, (struct sockaddr*)client, &addr_len);
 		if(new_sockfd != -1){
 			//Spawn a new child process
 			if(!fork()){
-				// handleRequest(new_sockfd);
-				// close(new_sockfd);
+				handleRequest(new_sockfd);
+				close(new_sockfd);
 				exit(0);
 			}
 			else{
@@ -166,7 +170,7 @@ int handleRequest(int new_sockfd){
 	char* order_dir = (char*)calloc(5, 1);
 
 	//Holds the incoming flags
-	char incoming_flags = 0;
+	unsigned char incoming_flags = 0;
 	//Holds the incoming message
 	char* incoming_msg;
 	//Holds the amount of bytes recieved
@@ -198,12 +202,14 @@ int handleRequest(int new_sockfd){
 				strcpy(order_dir, "ASC");
 			}
 			struct linkedStr* results = (struct linkedStr*)calloc(1, sizeof(struct linkedStr));
+			printf("REQSNG: %i\n", REQSNG);
 
 			//Parse the packet type
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
 					//Read everything past the flags as a 
-					sprintf(query, "SELECT song.filepath FROM song\nWHERE song.id='%lu';", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.filepath\nFROM song\nWHERE song.id = %lu;", *((unsigned long*)incoming_msg));
+					printf("query: %s\n", query);
 					sqlite3_exec(db, query, sendSongCallback, &new_sockfd, NULL);
 					sqlite3_close(db);
 					freeLinkedStr(results);
@@ -214,7 +220,7 @@ int handleRequest(int new_sockfd){
 					break;
 
 				case QWRYALBM:
-					sprintf(query, "SELECT DISTINCT album.id, album.name, artist.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
+					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
 					break;
 
 				case QWRYALBMSNG:
@@ -258,8 +264,8 @@ int handleRequest(int new_sockfd){
 				strcat(str_cursor, cursor->str);
 				cursor = cursor->next;
 			}
-			printf("Result string: %s\n", str_cursor);
-			printf("Result string len: %i\n", result_str_len);
+			//printf("Result string: %s\n", str_cursor);
+			//printf("Result string len: %i\n", result_str_len);
 			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long), 0);
 
 			freeLinkedStr(results);
@@ -281,24 +287,27 @@ int handleRequest(int new_sockfd){
  */
 int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column){
 	//Open the file for reading
+	printf("Got to the sendSongCallback!\n");
 	FILE* file = fopen(result[0], "r");
 
 	fseek(file, 0UL, SEEK_END);
 	unsigned long file_size = ftell(file);
 	if(file_size > max_file_size){
 		max_file_size = file_size;
-		file_buff = (char*)realloc(file_buff, max_file_size);
+		file_buff = (char*)realloc(file_buff, max_file_size+1);
 	}
 	rewind(file);
 
-	char* tmp_buff = file_buff;
+	file_buff[0] = file_size;
+
 	//I'm pulling a block at a time on my system (block size is 4096)
-	for(unsigned long i = 0; i < file_size - 4096; i++){
-		fread(tmp_buff, 1, 4096, file);
-		tmp_buff += 4096;
+	char* tmp_buff = file_buff;
+	for(unsigned long i = 0; i < file_size - BLK_SIZE; i += BLK_SIZE){
+		fread(tmp_buff, 1, BLK_SIZE, file);
+		tmp_buff += BLK_SIZE;
 	}
-	if(file_size % 4096){
-		fread(tmp_buff, 1, file_size % 4096, file);
+	if(file_size % BLK_SIZE){
+		fread(tmp_buff, 1, file_size % BLK_SIZE, file);
 	}
 	fclose(file);
 	return ((send(*((int*)new_sockfd), file_buff, file_size, 0) == -1)? -1 : 0);

@@ -38,6 +38,7 @@ struct artistinfolst{
 int sockfd;
 
 int connectToServ(char* port, char* ip);
+int getSong(unsigned long song_id);
 int querySongs(struct songinfolst** song_info);
 int queryAlbums(struct albuminfolst** album_info);
 int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info);
