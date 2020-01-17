@@ -1,3 +1,6 @@
+#ifndef MUSE_CLIENT_H
+#define MUSE_CLIENT_H
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -54,3 +57,4 @@ void free_artistinfolst(struct artistinfolst* artist_info);
 int queryEntity(unsigned long entity_id, char flags);
 int receiveResponse(char** resp);
 void stop(int sig);
+#endif // MUSE_CLIENT_H
