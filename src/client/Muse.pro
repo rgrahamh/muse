@@ -22,19 +22,22 @@ SOURCES += \
     genremodel.cpp \
     main.cpp \
     musewindow.cpp \
+    serverdialog.cpp \
     songmodel.cpp \
-    client.c
+    muse_client.c
 
 HEADERS += \
     albummodel.h \
     artistmodel.h \
     genremodel.h \
     musewindow.h \
+    serverdialog.h \
     songmodel.h \
-    client.h
+    muse_client.h
 
 FORMS += \
-    musewindow.ui
+    musewindow.ui \
+    serverdialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

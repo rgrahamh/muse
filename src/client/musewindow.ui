@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1005</width>
-    <height>639</height>
+    <width>1012</width>
+    <height>627</height>
    </rect>
   </property>
   <property name="mouseTracking">
@@ -16,10 +16,10 @@
   <property name="windowTitle">
    <string>MuseWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="mainwindow">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <layout class="QVBoxLayout" name="songwindow">
       <item>
        <widget class="QLabel" name="titleLabel">
         <property name="text">
@@ -99,7 +99,7 @@
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <layout class="QHBoxLayout" name="actionwindow">
       <item>
        <widget class="QPushButton" name="rewindButton">
         <property name="text">
@@ -131,7 +131,7 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <layout class="QHBoxLayout" name="progresswindow">
       <item>
        <widget class="QLabel" name="songProgressLabel">
         <property name="text">
@@ -161,6 +161,37 @@
       </item>
      </layout>
     </item>
+    <item>
+     <layout class="QHBoxLayout" name="serverwindow">
+      <item>
+       <widget class="QLabel" name="serverInfoLabel">
+        <property name="text">
+         <string>Not connected to server.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="connectButton">
+        <property name="text">
+         <string>Connect to...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -168,7 +199,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1005</width>
+     <width>1012</width>
      <height>20</height>
     </rect>
    </property>

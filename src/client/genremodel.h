@@ -4,6 +4,7 @@
 #include <QAbstractTableModel>
 #include <QDebug>
 
+#include "muse_client.h"
 
 class GenreModel : public QAbstractTableModel
 {
@@ -12,8 +13,7 @@ class GenreModel : public QAbstractTableModel
 public:
     GenreModel(QObject *parent = 0);
 
-    // TODO: change prototype to accept a list of char*
-    void populateData(const QList<QString> &titles, const QList<QString> &artists, const QList<QString> &albums, const QList<QString> &genres);
+    void populateData(struct genreinfolst* genres);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
@@ -22,7 +22,6 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
 
 private:
-    QList<long> id;
     QList<QString> genres;
 
 };

@@ -5,8 +5,22 @@ GenreModel::GenreModel(QObject *parent) : QAbstractTableModel(parent)
 }
 
 // Create a method to populate the model with data:
-void GenreModel::populateData(const QList<QString> &titles, const QList<QString> &artists, const QList<QString> &albums, const QList<QString> &genres)
+void GenreModel::populateData(struct genreinfolst* genres)
 {
+    // clear previous data
+    this->genres.clear();
+
+    // populate new data
+    struct genreinfolst* cursor = genres;
+    while(cursor != NULL) {
+        this->genres.append(cursor->genre);
+
+        cursor = cursor->next;
+    }
+
+    free_genreinfolst(genres);
+
+    return;
 }
 
 int GenreModel::rowCount(const QModelIndex &parent) const

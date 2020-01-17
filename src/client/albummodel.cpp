@@ -5,14 +5,32 @@ AlbumModel::AlbumModel(QObject *parent) : QAbstractTableModel(parent)
 }
 
 // Create a method to populate the model with data:
-void AlbumModel::populateData(const QList<QString> &titles, const QList<QString> &artists, const QList<QString> &albums, const QList<QString> &genres)
+void AlbumModel::populateData(struct albuminfolst* albums)
 {
+    // clear previous data
+    this->ids.clear();
+    this->titles.clear();
+    this->years.clear();
+
+    // populate new data
+    struct albuminfolst* cursor = albums;
+    while(cursor != NULL) {
+        this->ids.append(cursor->id);
+        this->titles.append(cursor->title);
+        this->years.append(QString::number(cursor->year));
+
+        cursor = cursor->next;
+    }
+
+    free_albuminfolst(albums);
+
+    return;
 }
 
 int AlbumModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return titles.length();
+    return ids.length();
 }
 
 int AlbumModel::columnCount(const QModelIndex &parent) const
@@ -27,13 +45,9 @@ QVariant AlbumModel::data(const QModelIndex &index, int role) const
         return QVariant();
     }
     if (index.column() == 0) {
-//        return titles[index.row()];
+        return titles[index.row()];
     } else if (index.column() == 1) {
-//        return artists[index.row()];
-    } else if (index.column() == 2) {
-//        return albums[index.row()];
-    } else if (index.column() == 3) {
-//        return genres[index.row()];
+        return years[index.row()];
     }
     return QVariant();
 }

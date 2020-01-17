@@ -1,5 +1,6 @@
 #include "muse_client.h"
 
+#ifdef TEST
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
 	struct songinfolst* song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
@@ -18,6 +19,9 @@ int main(int argc, char** argv){
 	free_artistinfolst(artist_info);
 	return 0;
 }
+#endif
+
+int sockfd;
 
 int connectToServ(char* port, char* server_ip){
 	signal(SIGTERM, stop);
@@ -284,13 +288,14 @@ void free_songinfolst(struct songinfolst* song_info){
 	struct songinfolst* cursor = song_info;
 	struct songinfolst* tmp;
 	while(cursor != NULL){
-		free(song_info->title);
-		free(song_info->artist);
-		free(song_info->album);
-		free(song_info->genre);
-		tmp = cursor;
-		cursor = cursor->next;
-		free(tmp);
+        free(cursor->title);
+        free(cursor->artist);
+        free(cursor->album);
+        free(cursor->genre);
+
+        tmp = cursor;
+        cursor = cursor->next;
+        free(tmp);
 	}
 }
 
@@ -298,7 +303,8 @@ void free_albuminfolst(struct albuminfolst* album_info){
 	struct albuminfolst* cursor = album_info;
 	struct albuminfolst* tmp;
 	while(cursor != NULL){
-		free(album_info->title);
+        free(cursor->title);
+
 		tmp = cursor;
 		cursor = cursor->next;
 		free(tmp);
@@ -309,11 +315,24 @@ void free_artistinfolst(struct artistinfolst* artist_info){
 	struct artistinfolst* cursor = artist_info;
 	struct artistinfolst* tmp;
 	while(cursor != NULL){
-		free(artist_info->name);
+        free(cursor->name);
+
 		tmp = cursor;
 		cursor = cursor->next;
 		free(tmp);
 	}
+}
+
+void free_genreinfolst(struct genreinfolst* genre_info){
+    struct genreinfolst* cursor = genre_info;
+    struct genreinfolst* tmp;
+    while(cursor != NULL){
+        free(cursor->genre);
+
+        tmp = cursor;
+        cursor = cursor->next;
+        free(tmp);
+    }
 }
 
 //TODO: Remove circularly linked list in server, change out w/ normal list. I dunno why I thought circularly linked was the right implementation for that :P

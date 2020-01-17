@@ -1,9 +1,5 @@
 #include "musewindow.h"
 #include "ui_musewindow.h"
-#include "songmodel.h"
-#include "artistmodel.h"
-#include "albummodel.h"
-#include "genremodel.h"
 
 MuseWindow::MuseWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -24,25 +20,14 @@ MuseWindow::MuseWindow(QWidget *parent)
     // stop user from messing with progress bar
     ui->songProgressSlider->setAttribute(Qt::WA_TransparentForMouseEvents);
 
+    // allocate space for strings
+    songProgressText = (char*) calloc(10, sizeof(char));
+    songLengthText = (char*) calloc(10, sizeof(char));
+    connectionText = (char*) calloc(100, sizeof(char));
+
     // intialize update timer
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MuseWindow::on_timeout);
-
-    // create some test data
-    QList<QString> song_titles;
-    QList<QString> artist_names;
-    QList<QString> album_names;
-    QList<QString> genres;
-
-    song_titles.append("Anchor");
-    artist_names.append("Skillet");
-    album_names.append("Save Me");
-    genres.append("Rock");
-
-    song_titles.append("Plain White Rapper");
-    artist_names.append("KJ-52");
-    album_names.append("Behind the Musik");
-    genres.append("Rap");
 
     // create the models
     ArtistModel *artist_model = new ArtistModel(this);
@@ -51,7 +36,7 @@ MuseWindow::MuseWindow(QWidget *parent)
     SongModel *song_model = new SongModel(this);
 
     // populate the models
-    song_model->populateData(song_titles, artist_names, album_names, genres);
+    // song_model->populateData(test_song1);
 
     // allow filtering by use of proxy models
     QSortFilterProxyModel *artist_proxy = new QSortFilterProxyModel();
@@ -76,6 +61,10 @@ MuseWindow::~MuseWindow()
 {
     // release audio library resources
     system->release();
+
+    free(songProgressText);
+    free(songLengthText);
+    free(connectionText);
 
     delete ui;
 }
@@ -148,9 +137,9 @@ void MuseWindow::on_playButton_clicked()
 
             unsigned int song_length_s = song_length / 1000;
 
-            char* new_label = (char*) calloc(10, sizeof(char));
-            sprintf(new_label, "%d:%02d", song_length_s / 60, song_length_s % 60);
-            ui->songLengthLabel->setText(new_label);
+            memset(songLengthText, 0, 10);
+            sprintf(songLengthText, "%d:%02d", song_length_s / 60, song_length_s % 60);
+            ui->songLengthLabel->setText(songLengthText);
 
             ui->songProgressSlider->setMinimum(0);
             ui->songProgressSlider->setMaximum(song_length);
@@ -184,6 +173,7 @@ void MuseWindow::on_rewindButton_clicked()
     song_channel->isPlaying(&is_playing);
     if( is_playing ) {
         song_channel->setPosition(0, FMOD_TIMEUNIT_MS);
+        timer->stop();
     }
 }
 
@@ -196,9 +186,9 @@ void MuseWindow::on_timeout() {
 
         unsigned int position_s = position / 1000;
 
-        char* new_label = (char*) calloc(10, sizeof(char));
-        sprintf(new_label, "%d:%02d", position_s / 60, position_s % 60);
-        ui->songProgressLabel->setText(new_label);
+        memset(songProgressText, 0, 10);
+        sprintf(songProgressText, "%d:%02d", position_s / 60, position_s % 60);
+        ui->songProgressLabel->setText(songProgressText);
 
         ui->songProgressSlider->setValue(position);
     } else {
@@ -209,5 +199,25 @@ void MuseWindow::on_timeout() {
         play_state = false;
         ui->playButton->setText("Play");
         timer->stop();
+    }
+}
+
+void MuseWindow::on_connectButton_clicked()
+{
+    connection_state = !connection_state;
+    if( connection_state ) {
+        ServerDialog* serverDialog = new ServerDialog(this);
+        if( serverDialog->exec() == QDialog::Accepted ) {
+            ip_address = serverDialog->getServerIP();
+            port = serverDialog->getServerPort();
+
+            memset(connectionText, 0, 100);
+            sprintf(connectionText, "Connected to: %s:%s", ip_address.toStdString().c_str(), port.toStdString().c_str());
+            ui->serverInfoLabel->setText(connectionText);
+            ui->connectButton->setText("Disconnect");
+        }
+    } else {
+        ui->serverInfoLabel->setText("Not connected to server.");
+        ui->connectButton->setText("Connect to...");
     }
 }

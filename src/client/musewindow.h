@@ -12,6 +12,11 @@
 #include <fmod_errors.h>
 #include <fmod_common.h>
 
+#include "songmodel.h"
+#include "artistmodel.h"
+#include "albummodel.h"
+#include "genremodel.h"
+#include "serverdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MuseWindow; }
@@ -34,9 +39,19 @@ private slots:
 
     void on_timeout();
 
+    void on_connectButton_clicked();
+
 private:
     Ui::MuseWindow *ui;
     bool play_state = false;
+    bool connection_state = false;
+
+    QString ip_address;
+    QString port;
+
+    char* songProgressText;
+    char* songLengthText;
+    char* connectionText;
 
     QTimer *timer;
 
