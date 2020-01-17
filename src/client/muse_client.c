@@ -70,6 +70,7 @@ int getSong(unsigned long song_id){
 		return 1;
 	}
 	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
+	printf("Resp size: %lu\n", resp_size);
 	char* resp = (char*)malloc(resp_size);
 
 	if(recv(sockfd, resp, resp_size, 0) == -1){

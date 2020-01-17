@@ -4,10 +4,6 @@
 //Socket file descriptor
 int sockfd;
 
-//Integer to keep track of the max file size and a buffer to keep the max file.
-int max_file_size = 8388608;
-char* file_buff;
-
 int calledback = 0;
 
 #ifdef TEST
@@ -73,9 +69,6 @@ int serve(char* port, FILE* log_file){
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
 	signal(SIGUSR1, stop);
-
-	//Initialize the file bexit(EXIT_SUCCESS);uffer
-	file_buff = (char*)calloc(max_file_size+1, 1);
 
 	struct addrinfo seed;
 	struct addrinfo* host;
@@ -287,30 +280,32 @@ int handleRequest(int new_sockfd){
  */
 int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column){
 	//Open the file for reading
-	printf("Got to the sendSongCallback!\n");
 	FILE* file = fopen(result[0], "r");
 
 	fseek(file, 0UL, SEEK_END);
 	unsigned long file_size = ftell(file);
-	if(file_size > max_file_size){
-		max_file_size = file_size;
-		file_buff = (char*)realloc(file_buff, max_file_size+1);
-	}
+	printf("file_size: %lu\n", file_size);
 	rewind(file);
 
-	file_buff[0] = file_size;
+	char* file_buff = (char*)malloc(file_size+1);
+
+	*((unsigned long*)file_buff) = file_size;
 
 	//I'm pulling a block at a time on my system (block size is 4096)
-	char* tmp_buff = file_buff;
-	for(unsigned long i = 0; i < file_size - BLK_SIZE; i += BLK_SIZE){
+	char* tmp_buff = file_buff + sizeof(unsigned long);
+	for(unsigned long i = 0; i < file_size; i += BLK_SIZE){
 		fread(tmp_buff, 1, BLK_SIZE, file);
 		tmp_buff += BLK_SIZE;
+		printf("i: %lu\n", i);
 	}
 	if(file_size % BLK_SIZE){
 		fread(tmp_buff, 1, file_size % BLK_SIZE, file);
 	}
 	fclose(file);
-	return ((send(*((int*)new_sockfd), file_buff, file_size, 0) == -1)? -1 : 0);
+
+	send(*((int*)new_sockfd), file_buff, file_size, 0);
+	free(file_buff);
+	return 0;
 }
 
 int sendInfo(void* result_list, int colNum, char** result, char** column){
