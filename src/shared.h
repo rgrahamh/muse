@@ -7,6 +7,9 @@
 
 #define ARR_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
+#define QUERY_SEG_SIZE 4096
+#define FILE_SEG_SIZE 16384
+
 #define ORD_DIR_MASK 0x01
 
 /** An enum of if the client wants results in an ascending or descending order */
@@ -23,7 +26,7 @@ enum ORD_BY{
 	ORDALBM = 2, /**< Denotes that the client wants to order by album title */
 	ORDART = 4, /**< Denotes that the client wants to order by the artist name */
 	ORDGNR = 6, /**< Denotes that the client wants to order by the genre */
-	ORDYR = 2 /**< Denotes that the client wants to order by the year ONLY USABLE IN ALBUM */
+	ORDYR = 2 /**< Denotes that the client wants to order by the year (SHOULD ONLY BE USED IN ALBUM) */
 };
 
 #define REQ_TYPE_MASK 0xf8

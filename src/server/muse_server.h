@@ -20,6 +20,7 @@
 
 #define DEFAULT_PORT "2442"
 #define BUFF_SIZE PATH_MAX + 1
+#define BLK_SIZE 4096
 
 struct dbsonginfo {
 	sqlite3* db;

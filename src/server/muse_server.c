@@ -4,21 +4,10 @@
 //Socket file descriptor
 int sockfd;
 
-//Integer to keep track of the max file size and a buffer to keep the max file.
-int max_file_size;
-char* file_buff;
-
 int calledback = 0;
 
 #ifdef TEST
- int main(int argc, char** argv){
-	
- 	if(argc == 2){
- 		serve(argv[1]);
- 	}
- 	else{
- 		serve(DEFAULT_PORT);
- 	}
+int main(int argc, char** argv){
 
 	/*
 	//Test code for the linkedStr struct
@@ -52,8 +41,21 @@ int calledback = 0;
 	//End test code
 	*/
 
-	/*char* test[] = {"/home/rhouck/Music", "."};
- 	scan(test, 2);*/
+	//char* test[] = {"/home/rhouck/Documents/music_iso"};
+	char* test[] = {"/home/rhouck/Music"};
+ 	scan(test, 1);
+	
+	printf("Done scanning!\n");
+
+	FILE* log_file = fopen("/tmp/muse_server.log", "w");
+
+ 	if(argc == 2){
+ 		serve(argv[1], log_file);
+ 	}
+ 	else{
+ 		serve(DEFAULT_PORT, log_file);
+ 	}
+
  	return 0;
  }
 #endif
@@ -67,10 +69,6 @@ int serve(char* port, FILE* log_file){
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
 	signal(SIGUSR1, stop);
-
-	//Initialize the file bexit(EXIT_SUCCESS);uffer
-	max_file_size = 8388608;
-	file_buff = (char*)calloc(max_file_size, 1);
 
 	struct addrinfo seed;
 	struct addrinfo* host;
@@ -109,15 +107,14 @@ int serve(char* port, FILE* log_file){
 	freeaddrinfo(host);
 
 	socklen_t addr_len = sizeof(struct sockaddr_storage);
-	int new_sockfd;
 	while(1){
 		//Accept a new connection
-		new_sockfd = accept(sockfd, (struct sockaddr*)client, &addr_len);
+		int new_sockfd = accept(sockfd, (struct sockaddr*)client, &addr_len);
 		if(new_sockfd != -1){
 			//Spawn a new child process
 			if(!fork()){
-				// handleRequest(new_sockfd);
-				// close(new_sockfd);
+				handleRequest(new_sockfd);
+				close(new_sockfd);
 				exit(0);
 			}
 			else{
@@ -166,7 +163,7 @@ int handleRequest(int new_sockfd){
 	char* order_dir = (char*)calloc(5, 1);
 
 	//Holds the incoming flags
-	char incoming_flags = 0;
+	unsigned char incoming_flags = 0;
 	//Holds the incoming message
 	char* incoming_msg;
 	//Holds the amount of bytes recieved
@@ -190,20 +187,22 @@ int handleRequest(int new_sockfd){
 				printf("Could not open the sqlite database!\n");
 			}
 
-			//Set the order
+			//Set the order (opposite as recieved, since we're returning a linked list)
 			if((incoming_flags & ORD_DIR_MASK) == ASC){
-				strcpy(order_dir, "ASC");
-			}
-			else{
 				strcpy(order_dir, "DESC");
 			}
+			else{
+				strcpy(order_dir, "ASC");
+			}
 			struct linkedStr* results = (struct linkedStr*)calloc(1, sizeof(struct linkedStr));
+			printf("REQSNG: %i\n", REQSNG);
 
 			//Parse the packet type
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
 					//Read everything past the flags as a 
-					sprintf(query, "SELECT song.filepath FROM song\nWHERE song.id='%lu';", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.filepath\nFROM song\nWHERE song.id = %lu;", *((unsigned long*)incoming_msg));
+					printf("query: %s\n", query);
 					sqlite3_exec(db, query, sendSongCallback, &new_sockfd, NULL);
 					sqlite3_close(db);
 					freeLinkedStr(results);
@@ -214,47 +213,56 @@ int handleRequest(int new_sockfd){
 					break;
 
 				case QWRYALBM:
-					sprintf(query, "SELECT album.id, album.name, artist.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
+					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
 					break;
 
 				case QWRYALBMSNG:
-					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on ALUBM.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num ASC;", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num DESC;", *((unsigned long*)incoming_msg));
 					break;
 
 				case QWRYART:
-					sprintf(query, "SELECT artist.id, artist.name\nFROM artist\nORDER BY artist.name %s;", order_dir);
+					sprintf(query, "SELECT DISTINCT artist.id, artist.name\nFROM artist\nORDER BY artist.name %s;", order_dir);
 					break;
 
 				case QWRYARTALBM:
-					sprintf(query, "SELECT album.id, album.name\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year%s;", *((unsigned long*)incoming_msg), order_dir);
+					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year %s;", *((unsigned long*)incoming_msg), order_dir);
 					break;
 
 				case QWRYGNR:
-					sprintf(query, "SELECT song.genre\nFROM song\nORDER BY song.genre %s;", order_dir);
+					sprintf(query, "SELECT DISTINCT song.genre\nFROM song\nORDER BY song.genre %s;", order_dir);
 					break;
 
 				case QWRYGNRSNG:
 					char* safe_genre = escapeApostrophe(incoming_msg);
-					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM song\nWHERE song.genre = '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
+					printf("Safe genre: %s\n", safe_genre);
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
 					break;
 			}
 			sqlite3_exec(db, query, sendInfo, results, NULL);
 
-			struct linkedStr* cursor = (results->next == NULL)? results : results->next;
+			struct linkedStr* cursor = results->next;
 			unsigned result_str_len = 0;
-			while(cursor != results){
+			while(results->next != NULL && cursor != results){
 				result_str_len += strlen(cursor->str);
 				cursor = cursor->next;
 			}
-			char* result_str = (char*)calloc(result_str_len + 1, 1);
-			while(cursor != results){
-				strcpy(result_str, cursor->str);
+			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long), 1);
+			//Send the returned size as the first byte grouping
+			*((unsigned long*)result_str) = result_str_len + sizeof(unsigned long);
+			char* str_cursor = result_str+sizeof(unsigned long);
+
+			cursor = results->next;
+			while(results->next != NULL && cursor != results){
+				strcat(str_cursor, cursor->str);
 				cursor = cursor->next;
 			}
-			send(new_sockfd, result_str, result_str_len, 0);
+			//printf("Result string: %s\n", str_cursor);
+			//printf("Result string len: %i\n", result_str_len);
+			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long), 0);
 
 			freeLinkedStr(results);
+			free(result_str);
 
 			sqlite3_close(db);
 		}
@@ -276,35 +284,43 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 
 	fseek(file, 0UL, SEEK_END);
 	unsigned long file_size = ftell(file);
-	if(file_size > max_file_size){
-		max_file_size = file_size;
-		file_buff = (char*)realloc(file_buff, max_file_size);
-	}
+	printf("file_size: %lu\n", file_size);
 	rewind(file);
 
-	char* tmp_buff = file_buff;
+	char* file_buff = (char*)malloc(file_size+1);
+
+	*((unsigned long*)file_buff) = file_size;
+
 	//I'm pulling a block at a time on my system (block size is 4096)
-	for(unsigned long i = 0; i < file_size - 4096; i++){
-		fread(tmp_buff, 1, 4096, file);
-		tmp_buff += 4096;
+	char* tmp_buff = file_buff + sizeof(unsigned long);
+	for(unsigned long i = 0; i < file_size; i += BLK_SIZE){
+		fread(tmp_buff, 1, BLK_SIZE, file);
+		tmp_buff += BLK_SIZE;
+		printf("i: %lu\n", i);
 	}
-	if(file_size % 4096){
-		fread(tmp_buff, 1, file_size % 4096, file); }
+	if(file_size % BLK_SIZE){
+		fread(tmp_buff, 1, file_size % BLK_SIZE, file);
+	}
 	fclose(file);
-	return ((send(*((int*)new_sockfd), file_buff, file_size, 0) == -1)? -1 : 0);
+
+	send(*((int*)new_sockfd), file_buff, file_size, 0);
+	free(file_buff);
+	return 0;
 }
 
-int sendInfo(void* result_list, int colNum, char** column, char** result){
+int sendInfo(void* result_list, int colNum, char** result, char** column){
 	unsigned int str_size;
 	for(int i = 0; i < colNum; i++){
 		str_size += strlen(result[i]) + 1;
 	}
-	char* new_result = (char*)calloc(str_size + 3, 1);
-	for(int i = 0; i < colNum; i++){
+	//String size plus one for each tab plus one for the pointer plus one for the newline
+	char* new_result = (char*)calloc(str_size + colNum + sizeof(unsigned long) + 1, 1);
+	for(int i = 0; i < colNum - 1; i++){
 		strcat(new_result, result[i]);
-		strcat(new_result, "\n");
+		strcat(new_result, "\t");
 	}
-	strcat(new_result, "\n\n");
+	strcat(new_result, result[colNum-1]);
+	strcat(new_result, "\n");
 	insertLinkedStr((struct linkedStr*)result_list, new_result);
 
 	return 0;
