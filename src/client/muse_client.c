@@ -11,7 +11,7 @@ int main(int argc, char** argv){
 	queryArtistAlbums(25, &album_info);
 	//queryGenreSongs("Rock", &song_info);
 	queryGenre(&genre_info);
-	//querySongs(&song_info);
+	querySongs(&song_info);
 	//queryAlbums(&album_info);
 	//queryArtists(&artist_info);
 	//getSong(4062);
@@ -37,13 +37,14 @@ int main(int argc, char** argv){
 	}
 	struct artistinfolst* artist_cursor = artist_info;
 	while(artist_cursor != NULL){
-		printf("Artist:\n");
+		printf("Artist:%s\n", artist_cursor->name);
 		printf("%lu\n", artist_cursor->id);
 		artist_cursor = artist_cursor->next;
 	}
 	free_songinfolst(song_info);
-	free_albuminfolst(album_info);
+	//free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
+	free_genreinfolst(genre_info);
 	return 0;
 }
 #endif
@@ -170,8 +171,6 @@ int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info){
 
 	parseSongs(resp, song_info);
 
-	printf("Response: %s\n", resp);
-
 	free(resp);
 	return 0;
 }
@@ -191,6 +190,8 @@ int queryArtists(struct artistinfolst** artist_info){
 	}
 
 	parseArtists(resp, artist_info);
+
+	printf("Response: %s\n", resp);
 
 	free(resp);
 	return 0;
@@ -294,7 +295,7 @@ int parseGenre(char* resp, struct genreinfolst** genre_info){
 
 char* parseFieldStr(char** dest, char* base, char endchar){
 	int str_size = substrsize(base, endchar) + 1;
-	char* new_str = (char*)malloc(str_size);
+	char* new_str = (char*)malloc(str_size + 1);
 	*dest = new_str;
 	snprintf(new_str, str_size, "%s", base);
 	new_str[str_size] = '\0';
@@ -437,6 +438,18 @@ void free_artistinfolst(struct artistinfolst* artist_info){
 	}
 }
 
+void free_genreinfolst(struct genreinfolst* genre_info){
+    struct genreinfolst* cursor = genre_info;
+    struct genreinfolst* tmp;
+    while(cursor != NULL){
+        free(cursor->genre);
+
+        tmp = cursor;
+        cursor = cursor->next;
+        free(tmp);
+    }
+}
+
 /** Iterates through a string and does a deep copy until a null byte or specified stopping point is hit
  * @param base The base string
  * @param until The ending character
@@ -463,17 +476,6 @@ int substrsize(char* str, char until){
 		continue;
 	}
 	return i;
-}
-void free_genreinfolst(struct genreinfolst* genre_info){
-    struct genreinfolst* cursor = genre_info;
-    struct genreinfolst* tmp;
-    while(cursor != NULL){
-        free(cursor->genre);
-
-        tmp = cursor;
-        cursor = cursor->next;
-        free(tmp);
-    }
 }
 
 //TODO: Remove circularly linked list in server, change out w/ normal list. I dunno why I thought circularly linked was the right implementation for that :P
