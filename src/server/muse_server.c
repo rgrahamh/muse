@@ -209,7 +209,7 @@ int handleRequest(int new_sockfd){
 					continue;
 
 				case QWRYSNG:
-					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY song.name %s;", order_dir);
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY song.name %s;", order_dir);
 					break;
 
 				case QWRYALBM:
@@ -217,7 +217,7 @@ int handleRequest(int new_sockfd){
 					break;
 
 				case QWRYALBMSNG:
-					sprintf(query, "SELECT song.id, song.name, song.track_num\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num DESC;", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num DESC;", *((unsigned long*)incoming_msg));
 					break;
 
 				case QWRYART:
@@ -235,7 +235,7 @@ int handleRequest(int new_sockfd){
 				case QWRYGNRSNG:
 					char* safe_genre = escapeApostrophe(incoming_msg);
 					printf("Safe genre: %s\n", safe_genre);
-					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
 					break;
 			}

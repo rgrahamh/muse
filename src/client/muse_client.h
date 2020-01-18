@@ -50,12 +50,16 @@ extern "C" {
     int getSong(unsigned long song_id);
     int querySongs(struct songinfolst** song_info);
     int queryAlbums(struct albuminfolst** album_info);
-	int parseAlbums(char* resp, struct albuminfolst** album_info);
     int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info);
     int queryArtists(struct artistinfolst** artist_info);
     int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info);
-    int queryGenre(char** genres);
+    int queryGenre(struct genreinfolst** genre_info);
     int queryGenreSongs(char* genre, struct songinfolst** song_info);
+
+	int parseSongs(char* resp, struct songinfolst** song_info);
+	int parseAlbums(char* resp, struct albuminfolst** album_info);
+	int parseArtists(char* resp, struct artistinfolst** artist_info);
+	int parseGenre(char* resp, struct genreinfolst** genre_info);
 
 	char* parseFieldStr(char** dest, char* base, char endchar);
 	char* parseFieldLong(unsigned long* dest, char* base, char endchar);
@@ -64,8 +68,8 @@ extern "C" {
     void free_albuminfolst(struct albuminfolst* album_info);
     void free_artistinfolst(struct artistinfolst* artist_info);
     void free_genreinfolst(struct genreinfolst* genre_info);
-int substrsize(char* str, char until);
-int substr(char* base, char until, char* cpy, int cpySize);
+	int substrsize(char* str, char until);
+	int substr(char* base, char until, char* cpy, int cpySize);
 
     int queryEntity(unsigned long entity_id, char flags);
     int receiveResponse(char** resp);
