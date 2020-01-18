@@ -2,7 +2,7 @@
 
 #ifdef TEST
 int main(int argc, char** argv){
-	connectToServ("2442", "127.0.0.1");
+	connectToServ("2442", "10.116.202.134");
 	struct songinfolst* song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
 	struct albuminfolst* album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
 	struct artistinfolst* artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
@@ -389,9 +389,11 @@ int receiveResponse(char** resp){
 	}
 	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
 	*resp = (char*)malloc(resp_size+1);
+	char* resp_cursor = *resp;
 	//TODO: Make the server send the response size
-	if(recv(sockfd, *resp, resp_size, 0) == -1){
-		return 1;
+	unsigned long amnt_recv = 0;
+	while((amnt_recv += recv(sockfd, resp_cursor, resp_size - amnt_recv, 0)) < resp_size){
+		resp_cursor = amnt_recv + *resp;
 	}
 	(*resp)[resp_size] = '\0';
 	free(resp_size_str);
