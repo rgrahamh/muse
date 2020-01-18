@@ -6,14 +6,21 @@ int main(int argc, char** argv){
 	struct songinfolst* song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
 	struct albuminfolst* album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
 	struct artistinfolst* artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
-	//queryAlbumSongs(25, &song_info);
-	//queryArtistAlbums(25, &album_info);
-	//queryGenreSongs("Rock", &song_info);
-	//queryGenre(argv);
-	//querySongs(&song_info);
-	//queryAlbums(&album_info);
-	//queryArtists(&artist_info);
+	queryAlbumSongs(25, &song_info);
+	queryArtistAlbums(25, &album_info);
+	queryGenreSongs("Rock", &song_info);
+	queryGenre(argv);
+	querySongs(&song_info);
+	queryAlbums(&album_info);
+	queryArtists(&artist_info);
 	getSong(4062);
+	struct albuminfolst* album_cursor = album_info;
+	while(album_cursor != NULL){
+		printf("%lu\n", album_cursor->id);
+		printf("%s\n", album_cursor->title);
+		printf("%lu\n\n", album_cursor->year);
+		album_cursor = album_cursor->next;
+	}
 	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
@@ -178,8 +185,6 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
 		return 1;
 	}
 
-	//*album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
-
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
 		printf("Error recieving response!\n");
@@ -187,15 +192,49 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
 		return 1;
 	}
 
-	printf("Response:\n%s\n", resp);
+	parseAlbums(resp, album_info);
 
-	/*struct albuminfolst* cursor = *album_info;
-	while(
-		cursor->title = 
-	(*albuminfolst)->next = new_album;*/
 	return 0;
 }
 
+int parseAlbums(char* resp, struct albuminfolst** album_info){
+	*album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
+
+	struct albuminfolst* album_cursor = *album_info;
+	char* resp_cursor = resp;
+	resp_cursor = parseFieldLong(&(album_cursor->id), resp_cursor, '\t');
+	resp_cursor = parseFieldStr(&(album_cursor->title), resp_cursor, '\t');
+	resp_cursor = parseFieldLong(&(album_cursor->year), resp_cursor, '\n');
+
+	while(*(resp_cursor) != '\0'){
+		struct albuminfolst* new_album = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
+		resp_cursor = parseFieldLong(&(new_album->id), resp_cursor, '\t');
+		resp_cursor = parseFieldStr(&(new_album->title), resp_cursor, '\t');
+		resp_cursor = parseFieldLong(&(new_album->year), resp_cursor, '\n');
+		album_cursor->next = new_album;
+		album_cursor = album_cursor->next;
+	}
+	return 0;
+}
+
+char* parseFieldStr(char** dest, char* base, char endchar){
+	int str_size = substrsize(base, endchar) + 1;
+	char* new_str = (char*)malloc(str_size + 2);
+	*dest = new_str;
+	snprintf(new_str, str_size, "%s", base);
+	new_str[str_size] = '\0';
+	return base + str_size + 1;
+}
+
+char* parseFieldLong(unsigned long* dest, char* base, char endchar){
+	int str_size = substrsize(base, endchar);
+	char* num_str = (char*)malloc(str_size + 1);
+	substr(base, '\t', num_str, str_size);
+	num_str[str_size] = '\0';
+	*dest = strtoul(num_str, NULL, 10);
+	free(num_str);
+	return base + str_size + 1;
+}
 
 int queryGenre(char** genres){
 	char request = QWRYGNR | ASC | ORDSNG;
@@ -323,6 +362,33 @@ void free_artistinfolst(struct artistinfolst* artist_info){
 	}
 }
 
+/** Iterates through a string and does a deep copy until a null byte or specified stopping point is hit
+ * @param base The base string
+ * @param until The ending character
+ * @param cpy The char* to copy file contents into
+ * @param cpySize The size of cpy
+ * @return 1 on success, 0 otherwise
+ */
+int substr(char* base, char until, char* cpy, int cpySize){
+    //Iterate through until we hit a null byte or the delim
+    int i;
+    for(i = 0; *base != until && i < cpySize; i++){
+        *(cpy++) = *(base++);
+    }
+    if(i == cpySize){
+        return 0;
+    }
+    *cpy = '\0';
+    return 1;
+}
+
+int substrsize(char* str, char until){
+	int i;
+	for(i = 0; str[i] != until && str[i] != '\0'; i++){
+		continue;
+	}
+	return i;
+}
 void free_genreinfolst(struct genreinfolst* genre_info){
     struct genreinfolst* cursor = genre_info;
     struct genreinfolst* tmp;

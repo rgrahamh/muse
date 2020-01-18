@@ -296,7 +296,6 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 	for(unsigned long i = 0; i < file_size; i += BLK_SIZE){
 		fread(tmp_buff, 1, BLK_SIZE, file);
 		tmp_buff += BLK_SIZE;
-		printf("i: %lu\n", i);
 	}
 	if(file_size % BLK_SIZE){
 		fread(tmp_buff, 1, file_size % BLK_SIZE, file);
