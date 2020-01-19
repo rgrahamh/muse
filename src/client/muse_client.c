@@ -7,14 +7,14 @@ int main(int argc, char** argv){
 	struct albuminfolst* album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
 	struct artistinfolst* artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
 	struct genreinfolst* genre_info = (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
-	queryAlbumSongs(25, &song_info);
-	queryArtistAlbums(25, &album_info);
-	//queryGenreSongs("Rock", &song_info);
+	//queryAlbumSongs(25, &song_info);
+	//queryArtistAlbums(25, &album_info);
+	queryGenreSongs("Rock", &song_info);
 	queryGenre(&genre_info);
-	querySongs(&song_info);
-	//queryAlbums(&album_info);
-	//queryArtists(&artist_info);
-	//getSong(4062);
+	//querySongs(&song_info);
+	queryAlbums(&album_info);
+	queryArtists(&artist_info);
+	getSong(4062);
 	struct albuminfolst* album_cursor = album_info;
 	while(album_cursor != NULL){
 	printf("Album:\n");
@@ -37,12 +37,17 @@ int main(int argc, char** argv){
 	}
 	struct artistinfolst* artist_cursor = artist_info;
 	while(artist_cursor != NULL){
-		printf("Artist:%s\n", artist_cursor->name);
+		printf("Artist: %s\n", artist_cursor->name);
 		printf("%lu\n", artist_cursor->id);
 		artist_cursor = artist_cursor->next;
 	}
+	struct genreinfolst* genre_cursor = genre_info;
+	while(genre_cursor != NULL){
+		printf("Genre: %s\n", genre_cursor->genre);
+		genre_cursor = genre_cursor->next;
+	}
 	free_songinfolst(song_info);
-	//free_albuminfolst(album_info);
+	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
 	free_genreinfolst(genre_info);
 	return 0;
@@ -329,7 +334,6 @@ int queryGenre(struct genreinfolst** genre_info){
 	parseGenre(resp, genre_info);
 
 	free(resp);
-
 	return 0;
 }
 
@@ -356,10 +360,9 @@ int queryGenreSongs(char* genre, struct songinfolst** song_info){
 		return 1;
 	}
 
-	printf("Response:\n%s\n", resp);
+	parseSongs(resp, song_info);
 
 	free(resp);
-
 	return 0;
 }
 
@@ -378,7 +381,6 @@ int queryEntity(unsigned long entity_id, char flags){
 	}
 
 	free(request);
-
 	return 0;
 }
 
@@ -397,7 +399,6 @@ int receiveResponse(char** resp){
 	}
 	(*resp)[resp_size] = '\0';
 	free(resp_size_str);
-
 	return 0;
 }
 
