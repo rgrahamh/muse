@@ -2,11 +2,11 @@
 
 #ifdef TEST
 int main(int argc, char** argv){
-	connectToServ("2442", "10.116.202.134");
-	struct songinfolst* song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
-	struct albuminfolst* album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
-	struct artistinfolst* artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
-	struct genreinfolst* genre_info = (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
+	connectToServ("2442", "10.117.200.17");
+	struct songinfolst* song_info;
+	struct albuminfolst* album_info;
+	struct artistinfolst* artist_info;
+	struct genreinfolst* genre_info;
 	queryAlbumSongs(25, &song_info);
 	queryArtistAlbums(25, &album_info);
 	queryGenreSongs("Rock", &song_info);
@@ -14,9 +14,9 @@ int main(int argc, char** argv){
 	querySongs(&song_info);
 	queryAlbums(&album_info);
 	queryArtists(&artist_info);
-	getSong(80, "./Green_Grass_And_High_Tides.mp3");
+	getSong(1, "./Green_Grass_And_High_Tides.mp3");
 	struct albuminfolst* album_cursor = album_info;
-	while(album_cursor != NULL){
+	/*while(album_cursor != NULL){
 	printf("Album:\n");
 		printf("%lu\n", album_cursor->id);
 		printf("%s\n", album_cursor->title);
@@ -45,7 +45,7 @@ int main(int argc, char** argv){
 	while(genre_cursor != NULL){
 		printf("Genre: %s\n", genre_cursor->genre);
 		genre_cursor = genre_cursor->next;
-	}
+	}*/
 	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
@@ -107,7 +107,6 @@ int getSong(unsigned long song_id, char* filepath){
 		return 1;
 	}
 	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
-	printf("Resp size: %lu\n", resp_size);
 	char* resp = (char*)malloc(resp_size);
 
 	if(recv(sockfd, resp, resp_size, 0) == -1){
@@ -132,7 +131,7 @@ int querySongs(struct songinfolst** song_info){
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
+		initSong(song_info);
 		return 1;
 	}
 
@@ -152,7 +151,7 @@ int queryAlbums(struct albuminfolst** album_info){
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
+		initAlbum(album_info);
 		return 1;
 	}
 
@@ -170,7 +169,7 @@ int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info){
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
+		initSong(song_info);
 		return 1;
 	}
 
@@ -190,13 +189,11 @@ int queryArtists(struct artistinfolst** artist_info){
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
+		initArtist(artist_info);
 		return 1;
 	}
 
 	parseArtists(resp, artist_info);
-
-	printf("Response: %s\n", resp);
 
 	free(resp);
 	return 0;
@@ -210,8 +207,7 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
-		free(album_info);
+		initAlbum(album_info);
 		return 1;
 	}
 
@@ -219,102 +215,6 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
 
 	free(resp);
 	return 0;
-}
-
-int parseSongs(char* resp, struct songinfolst** song_info){
-	*song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
-
-	struct songinfolst* song_cursor = *song_info;
-	char* resp_cursor = resp;
-
-	int first_iter = 1;
-	while(*(resp_cursor) != '\0'){
-		struct songinfolst* new_song = (first_iter == 1)? song_cursor : (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
-		resp_cursor = parseFieldLong(&(new_song->id), resp_cursor, '\t');
-		resp_cursor = parseFieldStr(&(new_song->title), resp_cursor, '\t');
-		resp_cursor = parseFieldStr(&(new_song->artist), resp_cursor, '\t');
-		resp_cursor = parseFieldStr(&(new_song->album), resp_cursor, '\t');
-		resp_cursor = parseFieldLong(&(new_song->year), resp_cursor, '\t');
-		resp_cursor = parseFieldLong(&(new_song->track_num), resp_cursor, '\t');
-		resp_cursor = parseFieldStr(&(new_song->genre), resp_cursor, '\n');
-		song_cursor->next = new_song;
-		song_cursor = song_cursor->next;
-		first_iter = 0;
-	}
-	return 0;
-}
-
-int parseAlbums(char* resp, struct albuminfolst** album_info){
-	*album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
-
-	struct albuminfolst* album_cursor = *album_info;
-	char* resp_cursor = resp;
-
-	int first_iter = 1;
-	while(*(resp_cursor) != '\0'){
-		struct albuminfolst* new_album = (first_iter == 1)? album_cursor : (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
-		resp_cursor = parseFieldLong(&(new_album->id), resp_cursor, '\t');
-		resp_cursor = parseFieldStr(&(new_album->title), resp_cursor, '\t');
-		resp_cursor = parseFieldLong(&(new_album->year), resp_cursor, '\n');
-		album_cursor->next = new_album;
-		album_cursor = album_cursor->next;
-		first_iter = 0;
-	}
-	return 0;
-}
-
-int parseArtists(char* resp, struct artistinfolst** artist_info){
-	*artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
-
-	struct artistinfolst* artist_cursor = *artist_info;
-	char* resp_cursor = resp;
-
-	int first_iter = 1;
-	while(*(resp_cursor) != '\0'){
-		struct artistinfolst* new_artist = (first_iter == 1)? artist_cursor : (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
-		resp_cursor = parseFieldLong(&(new_artist->id), resp_cursor, '\t');
-		resp_cursor = parseFieldStr(&(new_artist->name), resp_cursor, '\n');
-		artist_cursor->next = new_artist;
-		artist_cursor = artist_cursor->next;
-		first_iter = 0;
-	}
-	return 0;
-}
-
-int parseGenre(char* resp, struct genreinfolst** genre_info){
-	*genre_info = (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
-
-	struct genreinfolst* genre_cursor = *genre_info;
-	char* resp_cursor = resp;
-
-	int first_iter = 1;
-	while(*(resp_cursor) != '\0'){
-		struct genreinfolst* new_genre = (first_iter == 1)? genre_cursor : (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
-		resp_cursor = parseFieldStr(&(new_genre->genre), resp_cursor, '\n');
-		genre_cursor->next = new_genre;
-		genre_cursor = genre_cursor->next;
-		first_iter = 0;
-	}
-	return 0;
-}
-
-char* parseFieldStr(char** dest, char* base, char endchar){
-	int str_size = substrsize(base, endchar) + 1;
-	char* new_str = (char*)malloc(str_size + 1);
-	*dest = new_str;
-	snprintf(new_str, str_size, "%s", base);
-	new_str[str_size] = '\0';
-	return base + str_size;
-}
-
-char* parseFieldLong(unsigned long* dest, char* base, char endchar){
-	int str_size = substrsize(base, endchar);
-	char* num_str = (char*)malloc(str_size + 1);
-	substr(base, '\t', num_str, str_size);
-	num_str[str_size] = '\0';
-	*dest = strtoul(num_str, NULL, 10);
-	free(num_str);
-	return base + str_size + 1;
 }
 
 int queryGenre(struct genreinfolst** genre_info){
@@ -327,7 +227,7 @@ int queryGenre(struct genreinfolst** genre_info){
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
+		initGenre(genre_info);
 		return 1;
 	}
 
@@ -356,7 +256,8 @@ int queryGenreSongs(char* genre, struct songinfolst** song_info){
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
-		printf("Error recieving response!\n");
+		initSong(song_info);
+		free(request);
 		return 1;
 	}
 
@@ -377,11 +278,160 @@ int queryEntity(unsigned long entity_id, char flags){
 
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
+		free(request);
 		return 1;
 	}
 
 	free(request);
 	return 0;
+}
+
+int parseSongs(char* resp, struct songinfolst** song_info){
+	*song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
+
+	struct songinfolst* song_cursor = *song_info;
+	char* resp_cursor = resp;
+
+	int first_iter = 1;
+	while(*(resp_cursor) != '\0'){
+		struct songinfolst* new_song = (first_iter == 1)? song_cursor : (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
+		resp_cursor = parseFieldLong(&(new_song->id), resp_cursor, '\t');
+		resp_cursor = parseFieldStr(&(new_song->title), resp_cursor, '\t');
+		resp_cursor = parseFieldStr(&(new_song->artist), resp_cursor, '\t');
+		resp_cursor = parseFieldStr(&(new_song->album), resp_cursor, '\t');
+		resp_cursor = parseFieldLong(&(new_song->year), resp_cursor, '\t');
+		resp_cursor = parseFieldLong(&(new_song->track_num), resp_cursor, '\t');
+		resp_cursor = parseFieldStr(&(new_song->genre), resp_cursor, '\n');
+		if(!first_iter){
+			song_cursor->next = new_song;
+			song_cursor = song_cursor->next;
+		}
+		first_iter = 0;
+	}
+	return 0;
+}
+
+int parseAlbums(char* resp, struct albuminfolst** album_info){
+	*album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
+
+	struct albuminfolst* album_cursor = *album_info;
+	char* resp_cursor = resp;
+
+	int first_iter = 1;
+	while(*(resp_cursor) != '\0'){
+		struct albuminfolst* new_album = (first_iter == 1)? album_cursor : (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
+		resp_cursor = parseFieldLong(&(new_album->id), resp_cursor, '\t');
+		resp_cursor = parseFieldStr(&(new_album->title), resp_cursor, '\t');
+		resp_cursor = parseFieldLong(&(new_album->year), resp_cursor, '\n');
+		if(!first_iter){
+			album_cursor->next = new_album;
+			album_cursor = album_cursor->next;
+		}
+		first_iter = 0;
+	}
+	return 0;
+}
+
+int parseArtists(char* resp, struct artistinfolst** artist_info){
+	*artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
+
+	struct artistinfolst* artist_cursor = *artist_info;
+	char* resp_cursor = resp;
+
+	int first_iter = 1;
+	while(*(resp_cursor) != '\0'){
+		struct artistinfolst* new_artist = (first_iter == 1)? artist_cursor : (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
+		resp_cursor = parseFieldLong(&(new_artist->id), resp_cursor, '\t');
+		resp_cursor = parseFieldStr(&(new_artist->name), resp_cursor, '\n');
+		if(!first_iter){
+			artist_cursor->next = new_artist;
+			artist_cursor = artist_cursor->next;
+		}
+		first_iter = 0;
+	}
+	return 0;
+}
+
+int parseGenre(char* resp, struct genreinfolst** genre_info){
+	*genre_info = (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
+
+	struct genreinfolst* genre_cursor = *genre_info;
+	char* resp_cursor = resp;
+
+	int first_iter = 1;
+	while(*(resp_cursor) != '\0'){
+		struct genreinfolst* new_genre = (first_iter == 1)? genre_cursor : (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
+		resp_cursor = parseFieldStr(&(new_genre->genre), resp_cursor, '\n');
+		if(!first_iter){
+			genre_cursor->next = new_genre;
+			genre_cursor = genre_cursor->next;
+		}
+		first_iter = 0;
+	}
+	return 0;
+}
+
+char* parseFieldStr(char** dest, char* base, char endchar){
+	int str_size = substrsize(base, endchar) + 1;
+	char* new_str = (char*)malloc(str_size + 1);
+	*dest = new_str;
+	snprintf(new_str, str_size, "%s", base);
+	new_str[str_size] = '\0';
+	return base + str_size;
+}
+
+char* parseFieldLong(unsigned long* dest, char* base, char endchar){
+	int str_size = substrsize(base, endchar);
+	char* num_str = (char*)malloc(str_size + 1);
+	substr(base, '\t', num_str, str_size);
+	num_str[str_size] = '\0';
+	*dest = strtoul(num_str, NULL, 10);
+	free(num_str);
+	return base + str_size + 1;
+}
+
+void initSong(struct songinfolst** song_info){
+	*song_info = (struct songinfolst*)calloc(1, sizeof(struct songinfolst));
+	struct songinfolst* song = *song_info;
+	song->title = (char*)malloc(1);
+	strcpy(song->title, "");
+	song->id = 0;
+	song->artist = (char*)malloc(1);
+	strcpy(song->artist, "");
+	song->album = (char*)malloc(1);
+	strcpy(song->album, "");
+	song->year = 0;
+	song->track_num = 0;
+	song->genre = (char*)malloc(1);
+	strcpy(song->genre, "");
+	song->next = NULL;
+}
+
+void initAlbum(struct albuminfolst** album_info){
+	*album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
+	struct albuminfolst* album = *album_info;
+	album->title = (char*)malloc(1);
+	strcpy(album->title, "");
+	album->id = 0;
+	album->year = 0;
+	album->next = NULL;
+}
+
+void initArtist(struct artistinfolst** artist_info){
+	*artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
+	struct artistinfolst* artist = *artist_info;
+	artist->name = (char*)malloc(1);
+	strcpy(artist->name, "");
+	artist->id = 0;
+	artist->next = NULL;
+}
+
+void initGenre(struct genreinfolst** genre_info){
+	*genre_info = (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
+	struct genreinfolst* genre = *genre_info;
+	genre->genre = (char*)malloc(1);
+	strcpy(genre->genre, "");
+	genre->next = NULL;
 }
 
 int receiveResponse(char** resp){
@@ -390,9 +440,11 @@ int receiveResponse(char** resp){
 		return 1;
 	}
 	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
+	if(resp_size == 0){
+		return 1;
+	}
 	*resp = (char*)malloc(resp_size+1);
 	char* resp_cursor = *resp;
-	//TODO: Make the server send the response size
 	unsigned long amnt_recv = 0;
 	while((amnt_recv += recv(sockfd, resp_cursor, resp_size - amnt_recv, 0)) < resp_size){
 		resp_cursor = amnt_recv + *resp;

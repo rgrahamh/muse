@@ -64,6 +64,11 @@ extern "C" {
 	char* parseFieldStr(char** dest, char* base, char endchar);
 	char* parseFieldLong(unsigned long* dest, char* base, char endchar);
 
+	void initSong(struct songinfolst** song_info);
+	void initAlbum(struct albuminfolst** album_info);
+	void initArtist(struct artistinfolst** artist_info);
+	void initGenre(struct genreinfolst** genre_info);
+
     void free_songinfolst(struct songinfolst* song_info);
     void free_albuminfolst(struct albuminfolst* album_info);
     void free_artistinfolst(struct artistinfolst* artist_info);
