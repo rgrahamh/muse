@@ -7,14 +7,14 @@ int main(int argc, char** argv){
 	struct albuminfolst* album_info = (struct albuminfolst*)calloc(1, sizeof(struct albuminfolst));
 	struct artistinfolst* artist_info = (struct artistinfolst*)calloc(1, sizeof(struct artistinfolst));
 	struct genreinfolst* genre_info = (struct genreinfolst*)calloc(1, sizeof(struct genreinfolst));
-	//queryAlbumSongs(25, &song_info);
-	//queryArtistAlbums(25, &album_info);
+	queryAlbumSongs(25, &song_info);
+	queryArtistAlbums(25, &album_info);
 	queryGenreSongs("Rock", &song_info);
 	queryGenre(&genre_info);
-	//querySongs(&song_info);
+	querySongs(&song_info);
 	queryAlbums(&album_info);
 	queryArtists(&artist_info);
-	getSong(4062);
+	getSong(80, "./Green_Grass_And_High_Tides.mp3");
 	struct albuminfolst* album_cursor = album_info;
 	while(album_cursor != NULL){
 	printf("Album:\n");
@@ -89,8 +89,8 @@ int connectToServ(char* port, char* server_ip){
 	return 0;
 }
 
-int getSong(unsigned long song_id){
-	FILE* file = fopen("./song.mp3", "w");
+int getSong(unsigned long song_id, char* filepath){
+	FILE* file = fopen(filepath, "w");
 
 	int request_size = sizeof(char) + sizeof(unsigned long);
 	char* request = (char*)malloc(request_size);
