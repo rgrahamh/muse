@@ -23,7 +23,7 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
 
 private:
-    QList<long> ids;
+    QList<qint64> ids;
     QList<QString> titles;
     QList<QString> artists;
     QList<QString> albums;

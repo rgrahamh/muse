@@ -1,10 +1,17 @@
 #include "songmodel.h"
 
+/**
+ * @brief SongModel::SongModel Constructor for the SongModel class
+ * @param parent The object responsible for memory management on this object
+ */
 SongModel::SongModel(QObject *parent) : QAbstractTableModel(parent)
 {
 }
 
-// Create a method to populate the model with data:
+/**
+ * @brief SongModel::populateData Loads information from an outside source into the model
+ * @param songs An songinfolst linked-list from "muse_client.h"
+ */
 void SongModel::populateData(struct songinfolst* songs)
 {
     // clear previous data
@@ -35,22 +42,41 @@ void SongModel::populateData(struct songinfolst* songs)
     return;
 }
 
+/**
+ * @brief SongModel::rowCount Returns the number of rows in the model
+ * @param parent Overridden from parent class
+ * @return int The number of rows in the model
+ */
 int SongModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return ids.length();
 }
 
+/**
+ * @brief SongModel::columnCount Returns the number of columns in the model
+ * @param parent Overridden from parent class
+ * @return int The number of columns in the model
+ */
 int SongModel::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return 6;
 }
 
+/**
+ * @brief SongModel::data Retrieves a single table cell from the model
+ * @param index Overridden from parent class
+ * @param role Overridden from parent class
+ * @return QVariant The value of the selected cell
+ */
 QVariant SongModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid() || role != Qt::DisplayRole) {
+    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::UserRole)) {
         return QVariant();
+    }
+    else if(role == Qt::UserRole) {
+        return ids[index.row()];
     }
     if (index.column() == 0) {
         return track_nums[index.row()];
@@ -68,6 +94,13 @@ QVariant SongModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+/**
+ * @brief SongModel::headerData Retrieves the header information for the table
+ * @param section Overridden from parent class
+ * @param orientation Overridden from parent class
+ * @param role Overridden from parent class
+ * @return QVariant The header label value
+ */
 QVariant SongModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {

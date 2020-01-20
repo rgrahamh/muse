@@ -1,6 +1,10 @@
 #include "serverdialog.h"
 #include "ui_serverdialog.h"
 
+/**
+ * @brief ServerDialog::ServerDialog Constructor for the server setup dialog
+ * @param parent The parent to attach to
+ */
 ServerDialog::ServerDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::ServerDialog)
@@ -19,11 +23,18 @@ ServerDialog::ServerDialog(QWidget *parent) :
     ui->serverDialogInputPort->setValidator(port_validator);
 }
 
+/**
+ * @brief ServerDialog::~ServerDialog Deconstructor
+ */
 ServerDialog::~ServerDialog()
 {
     delete ui;
 }
 
+/**
+ * @brief ServerDialog::done Slot for when the dialog is about to close
+ * @param status The exit status for the dialog
+ */
 void ServerDialog::done(int status) {
     if( status == QDialog::Accepted ) {
         if( ui->serverDialogInputIP->hasAcceptableInput() &&
@@ -40,10 +51,18 @@ void ServerDialog::done(int status) {
     }
 }
 
+/**
+ * @brief ServerDialog::getServerIP Getter method for user-input IP address
+ * @return QString The user string
+ */
 QString ServerDialog::getServerIP() {
     return ui->serverDialogInputIP->text();
 }
 
+/**
+ * @brief ServerDialog::getServerPort Getter method for user-input port
+ * @return QString The user string
+ */
 QString ServerDialog::getServerPort() {
     return ui->serverDialogInputPort->text();
 }

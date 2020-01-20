@@ -1,10 +1,15 @@
 #include "musewindow.h"
 #include "ui_musewindow.h"
 
+/**
+ * @brief MuseWindow::MuseWindow Constructor for the main window of the client UI
+ * @param parent The parent to attach to
+ */
 MuseWindow::MuseWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MuseWindow)
 {
+    // ui initialization
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
 
@@ -28,6 +33,7 @@ MuseWindow::MuseWindow(QWidget *parent)
     // intialize update timer
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MuseWindow::on_timeout);
+    timer->start(75);
 
     // create the models
     ArtistModel *artist_model = new ArtistModel(this);
@@ -36,7 +42,10 @@ MuseWindow::MuseWindow(QWidget *parent)
     SongModel *song_model = new SongModel(this);
 
     // populate the models
-    // song_model->populateData(test_song1);
+    song_model->populateData(getTestSongs());
+    artist_model->populateData(getTestArtists());
+    album_model->populateData(getTestAlbums());
+    genre_model->populateData(getTestGenres());
 
     // allow filtering by use of proxy models
     QSortFilterProxyModel *artist_proxy = new QSortFilterProxyModel();
@@ -57,6 +66,9 @@ MuseWindow::MuseWindow(QWidget *parent)
 
 }
 
+/**
+ * @brief MuseWindow::~MuseWindow Deconstructor
+ */
 MuseWindow::~MuseWindow()
 {
     // release audio library resources
@@ -69,6 +81,10 @@ MuseWindow::~MuseWindow()
     delete ui;
 }
 
+/**
+ * @brief MuseWindow::configureTableView Sets project defaults for each table view
+ * @param view The QTableView being processed
+ */
 void MuseWindow::configureTableView(QTableView* view) {
     // set selection behavior and mode for proper access
     view->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -80,9 +96,13 @@ void MuseWindow::configureTableView(QTableView* view) {
 
     // display
     view->horizontalHeader()->setVisible(true);
+    view->verticalHeader()->setVisible(false);
     view->setVisible(true);
 }
 
+/**
+ * @brief MuseWindow::initializeFMOD Readies audio-library for playback
+ */
 void MuseWindow::initializeFMOD() {
     result = FMOD::System_Create(&system);      // Create the main system object.
     if (result != FMOD_OK)
@@ -99,7 +119,10 @@ void MuseWindow::initializeFMOD() {
     }
 }
 
-
+/**
+ * @brief MuseWindow::on_tabWidget_currentChanged Slot for when a tab changes
+ * @param index The index of the tab that was switched to
+ */
 void MuseWindow::on_tabWidget_currentChanged(int index)
 {
     /* The tab has changed, so we need to update the view with new data */
@@ -118,6 +141,45 @@ void MuseWindow::on_tabWidget_currentChanged(int index)
     }
 }
 
+/**QString
+ * @brief MuseWindow::on_songView_doubleClicked Slot for when a row in the SongTable is double-clicked
+ * @param index The index of the cell double clicked
+ */
+void MuseWindow::on_songView_doubleClicked(const QModelIndex &index)
+{
+    qDebug() << "Song id selected is: " << index.data(Qt::UserRole).value<int>() << endl;
+}
+
+/**
+ * @brief MuseWindow::on_artistView_doubleClicked Slot for when a row in the ArtistTable is double-clicked
+ * @param index The index of the cell double clicked
+ */
+void MuseWindow::on_artistView_doubleClicked(const QModelIndex &index)
+{
+    qDebug() << "Artist id selected is: " << index.data(Qt::UserRole).value<int>() << endl;
+}
+
+/**
+ * @brief MuseWindow::on_albumView_doubleClicked Slot for when a row in the AlbumTable is double-clicked
+ * @param index The index of the cell double clicked
+ */
+void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
+{
+    qDebug() << "Album id selected is: " << index.data(Qt::UserRole).value<int>() << endl;
+}
+
+/**
+ * @brief MuseWindow::on_genreView_doubleClicked Slot for when a row in the GenreTable is double-clicked
+ * @param index The index of the cell double clicked
+ */
+void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
+{
+    qDebug() << "Genre selected is: " << index.data().value<QString>() << endl;
+}
+
+/**
+ * @brief MuseWindow::on_playButton_clicked Slot for when the play button is pressed
+ */
 void MuseWindow::on_playButton_clicked()
 {
     play_state = !play_state;
@@ -146,7 +208,6 @@ void MuseWindow::on_playButton_clicked()
             ui->songProgressSlider->setValue(0);
 
             system->playSound(song_to_play, NULL, false, &song_channel);
-            timer->start(75);
         }
 
         // song_to_play->release();
@@ -162,21 +223,46 @@ void MuseWindow::on_playButton_clicked()
     }
 }
 
-void MuseWindow::on_songView_doubleClicked(const QModelIndex &index)
-{
-    qDebug() << "Song index selected is: " << index.row() << endl;
-}
-
+/**
+ * @brief MuseWindow::on_rewindButton_clicked Slot for when the rewind button is pressed
+ */
 void MuseWindow::on_rewindButton_clicked()
 {
     bool is_playing = false;
     song_channel->isPlaying(&is_playing);
     if( is_playing ) {
         song_channel->setPosition(0, FMOD_TIMEUNIT_MS);
-        timer->stop();
+        ui->songProgressLabel->setText("0:00");
+        ui->songProgressSlider->setValue(0);
     }
 }
 
+/**
+ * @brief MuseWindow::on_connectButton_clicked Slot for when the connection button is pressed
+ */
+void MuseWindow::on_connectButton_clicked()
+{
+    connection_state = !connection_state;
+    if( connection_state ) {
+        ServerDialog* serverDialog = new ServerDialog(this);
+        if( serverDialog->exec() == QDialog::Accepted ) {
+            ip_address = serverDialog->getServerIP();
+            port = serverDialog->getServerPort();
+
+            memset(connectionText, 0, 100);
+            sprintf(connectionText, "Connected to: %s:%s", ip_address.toStdString().c_str(), port.toStdString().c_str());
+            ui->serverInfoLabel->setText(connectionText);
+            ui->connectButton->setText("Disconnect");
+        }
+    } else {
+        ui->serverInfoLabel->setText("Not connected to server.");
+        ui->connectButton->setText("Connect to...");
+    }
+}
+
+/**
+ * @brief MuseWindow::on_timeout Slot for when the update poll timer times out
+ */
 void MuseWindow::on_timeout() {
     bool is_playing = false;
     song_channel->isPlaying(&is_playing);
@@ -198,26 +284,5 @@ void MuseWindow::on_timeout() {
         ui->songLengthLabel->setText("-:--");
         play_state = false;
         ui->playButton->setText("Play");
-        timer->stop();
-    }
-}
-
-void MuseWindow::on_connectButton_clicked()
-{
-    connection_state = !connection_state;
-    if( connection_state ) {
-        ServerDialog* serverDialog = new ServerDialog(this);
-        if( serverDialog->exec() == QDialog::Accepted ) {
-            ip_address = serverDialog->getServerIP();
-            port = serverDialog->getServerPort();
-
-            memset(connectionText, 0, 100);
-            sprintf(connectionText, "Connected to: %s:%s", ip_address.toStdString().c_str(), port.toStdString().c_str());
-            ui->serverInfoLabel->setText(connectionText);
-            ui->connectButton->setText("Disconnect");
-        }
-    } else {
-        ui->serverInfoLabel->setText("Not connected to server.");
-        ui->connectButton->setText("Connect to...");
     }
 }

@@ -288,6 +288,8 @@ void cleanup(MENU* &menu) {
 	exit(0);
 }
 
+/**Writes necessary program state to a local file
+ */
 void writeStateToFile() {
 	std::ofstream state_file;
 	state_file.open("muse.state");
@@ -314,6 +316,8 @@ void writeStateToFile() {
 	state_file.close();
 }
 
+/**Reads relevant program state information from a saved file, if it exists
+ */
 void readStateFromFile() {
 	std::ifstream  state_file;
 	state_file.open("muse.state");
@@ -340,6 +344,9 @@ void readStateFromFile() {
 	state_file.close();
 }
 
+/**Kills the server process and sets the menu up for another re-launch
+ * @param menu The menu object that allows the user to interact with the system
+ */
 void cleanupServ(MENU* &menu) {
 	kill(muse_pid, SIGTERM);
 	int status;
@@ -348,10 +355,16 @@ void cleanupServ(MENU* &menu) {
 	changePage(menu, MAIN_PAGE);
 }
 
+/**Performs some cleanup on the UI instance of the server while leaving the server process in a backgrounded state
+ * @param menu The menu to be cleaned up and uninstantiated
+ */ 
 void backgroundProc(MENU* &menu) {
 	cleanup(menu);
 }
 
+/**Starts a child process that runs the file server
+ * @param menu The menu that runs the UI instance
+ */
 void startServer(MENU* &menu) {
 	/* Update the database */
 	refreshDatabase();
@@ -442,6 +455,9 @@ void updatePort(WINDOW* &win) {
 	wrefresh(win);
 }
 
+/**Accepts user input for a path to a directory
+ * @param win The window object that is being drawn to
+ */ 
 void addLibPath(WINDOW* win) {
 	/* Show the cursor */
 	curs_set(1);
@@ -512,6 +528,9 @@ void addLibPath(WINDOW* win) {
 	wrefresh(win);
 }
 
+/**Removes a current library path from the list
+ * @param win The window that is being drawn to
+ */ 
 void removeLibPath(WINDOW* win) {
 	int last_char;
 	int origin_y = ascii_height+4;
@@ -697,6 +716,8 @@ void removeLibPath(WINDOW* win) {
 	wrefresh(win);
 }
 
+/**Refreshes the database cataloging so that accurate information is served
+ */
 void refreshDatabase() {
 	/* Call backend routine */
 	if(lib_paths.size() > 0) {

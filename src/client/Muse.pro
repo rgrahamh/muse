@@ -24,7 +24,8 @@ SOURCES += \
     musewindow.cpp \
     serverdialog.cpp \
     songmodel.cpp \
-    muse_client.c
+    muse_client.c \
+    testdata.cpp
 
 HEADERS += \
     albummodel.h \
@@ -33,7 +34,8 @@ HEADERS += \
     musewindow.h \
     serverdialog.h \
     songmodel.h \
-    muse_client.h
+    muse_client.h \
+    testdata.h
 
 FORMS += \
     musewindow.ui \

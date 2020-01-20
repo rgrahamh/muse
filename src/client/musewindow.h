@@ -17,6 +17,7 @@
 #include "albummodel.h"
 #include "genremodel.h"
 #include "serverdialog.h"
+#include "testdata.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MuseWindow; }
@@ -33,13 +34,17 @@ public:
 
 private slots:
     void on_tabWidget_currentChanged(int index);
-    void on_playButton_clicked();
+
     void on_songView_doubleClicked(const QModelIndex &index);
+    void on_artistView_doubleClicked(const QModelIndex &index);
+    void on_albumView_doubleClicked(const QModelIndex &index);
+    void on_genreView_doubleClicked(const QModelIndex &index);
+
+    void on_playButton_clicked();
     void on_rewindButton_clicked();
+    void on_connectButton_clicked();
 
     void on_timeout();
-
-    void on_connectButton_clicked();
 
 private:
     Ui::MuseWindow *ui;
