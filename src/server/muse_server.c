@@ -287,7 +287,7 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 	printf("file_size: %lu\n", file_size);
 	rewind(file);
 
-	char* file_buff = (char*)malloc(file_size+1);
+	char* file_buff = (char*)malloc(file_size + sizeof(unsigned long));
 
 	*((unsigned long*)file_buff) = file_size;
 
@@ -302,7 +302,7 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 	}
 	fclose(file);
 
-	send(*((int*)new_sockfd), file_buff, file_size, 0);
+	send(*((int*)new_sockfd), file_buff, file_size + sizeof(unsigned long), 0);
 	free(file_buff);
 	return 0;
 }

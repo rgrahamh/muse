@@ -106,11 +106,12 @@ int getSong(unsigned long song_id, char* filepath){
 	if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
 		return 1;
 	}
-	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
+	unsigned long resp_size = (*((unsigned long*)resp_size_str)) - sizeof(unsigned long);
 	char* resp = (char*)malloc(resp_size);
 
-	if(recv(sockfd, resp, resp_size, 0) == -1){
-		return 1;
+	unsigned long amnt_recv = 0;
+	while((amnt_recv += recv(sockfd, resp, resp_size - amnt_recv, 0)) < resp_size){
+		resp_cursor = amnt_recv + *resp;
 	}
 	free(resp_size_str);
 
