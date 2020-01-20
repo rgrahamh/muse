@@ -62,6 +62,7 @@ int main(int argc, char** argv){
 
 /**Spins up the MUSE server
  * @param port The port you wish to open the server on
+ * @param log_file The log file that the server program should use to print useful output
  * @return If the server exited normally
  */
 int serve(char* port, FILE* log_file){
@@ -127,28 +128,6 @@ int serve(char* port, FILE* log_file){
 	}
 
 	return 0;
-}
-
-void insertLinkedStr(struct linkedStr* last, char* element){
-	linkedStr* new_ls = (linkedStr*)malloc(sizeof(struct linkedStr));
-	new_ls->str = element;
-	if(last->next != NULL){
-		new_ls->next = last->next;
-	}
-	else{
-		new_ls->next = last;
-	}
-	last->next = new_ls;
-}
-
-void freeLinkedStr(struct linkedStr* last){
-	while(last != last->next && last->next != NULL){
-		struct linkedStr* death_row = last->next;
-		free(death_row->str);
-		last->next = death_row->next;
-		free(death_row);
-	}
-	free(last);
 }
 
 /**Handles the request 
@@ -274,11 +253,13 @@ int handleRequest(int new_sockfd){
 	return 0;
 }
 
-/**Sends a song over TCP
+/** An sqlite callback function that sends a song over TCP
  * @param new_sockfd The socket fd to send the song over
- * @param song_id The number of results returned
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
  */
-int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column){
+int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column){
 	//Open the file for reading
 	FILE* file = fopen(result[0], "r");
 
@@ -307,83 +288,43 @@ int sendSongCallback(void* new_sockfd, int colNum, char** result, char** column)
 	return 0;
 }
 
-int sendInfo(void* result_list, int colNum, char** result, char** column){
+/** Sends a response to the client's query
+ * @param result_list The list of resultant strings
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
+ */
+int sendInfo(void* result_list, int col_num, char** result, char** column){
 	unsigned int str_size;
-	for(int i = 0; i < colNum; i++){
+	for(int i = 0; i < col_num; i++){
 		str_size += strlen(result[i]) + 1;
 	}
 	//String size plus one for each tab plus one for the pointer plus one for the newline
-	char* new_result = (char*)calloc(str_size + colNum + sizeof(unsigned long) + 1, 1);
-	for(int i = 0; i < colNum - 1; i++){
+	char* new_result = (char*)calloc(str_size + col_num + sizeof(unsigned long) + 1, 1);
+	for(int i = 0; i < col_num - 1; i++){
 		strcat(new_result, result[i]);
 		strcat(new_result, "\t");
 	}
-	strcat(new_result, result[colNum-1]);
+	strcat(new_result, result[col_num-1]);
 	strcat(new_result, "\n");
 	insertLinkedStr((struct linkedStr*)result_list, new_result);
 
 	return 0;
 }
 
-int cullSongCallback(void* datab, int colNum, char** result, char** column){
-	sqlite3* db = (sqlite3*)datab;
-	char* query = (char*)calloc(1, 4096);
-	char album_still_exists = 0;
-	char artist_still_exists = 0;
-	if(access(result[0], F_OK | R_OK)){
-		sprintf(query, "DELETE FROM song\nWHERE song.id = %lu;", strtoul(result[1], NULL, 10));
-		sqlite3_exec(db, query, NULL, NULL, NULL);
-		for(int i = 0; i < colNum; i++){
-			if(strcmp("ALBUM_ID", column[i]) == 0){
-				unsigned long album_id = strtoul(result[i], NULL, 10);
-				sprintf(query, "SELECT album.id\nFROM album INNER JOIN song ON album.id = song.album_id\nWHERE song.album_id = %lu;", album_id);
-				sqlite3_exec(db, query, deleteAlbum, &album_still_exists, NULL);
-				if(!album_still_exists){
-					sprintf(query, "DELETE FROM album\nWHERE album.id = %lu;", album_id);
-					sqlite3_exec(db, query, NULL, NULL, NULL);
-				}
-			}
-			else if(strcmp("ARTIST_ID", column[i]) == 0){
-				unsigned long artist_id = strtoul(result[i], NULL, 10);
-				sprintf(query, "SELECT artist.id\nFROM artist INNER JOIN song ON artist.id = song.artist_id\nWHERE song.artist_id = %lu;", artist_id);
-				sqlite3_exec(db, query, deleteArtist, &artist_still_exists, NULL);
-				if(!artist_still_exists){
-					sprintf(query, "DELETE FROM artist\nWHERE artist.id = %lu;", artist_id);
-					sqlite3_exec(db, query, NULL, NULL, NULL);
-				}
-			}
-		}
-	}
-	free(query);
-
-	return 0;
-}
-
-int deleteArtist(void* artist_still_exists, int colNum, char** result, char** column){
-	*((char*)artist_still_exists) = 1;
-	return 0;
-}
-
-int deleteAlbum(void* album_still_exists, int colNum, char** result, char** column){
-	*((char*)album_still_exists) = 1;
-	return 0;
-}
-
-void printSongInfo(struct dbsonginfo* song_info){
-	printf("Title: %s\nArtist: %s\nAlbum: %s\nYear: %d\nTrack: %d\nFilepath: %s\nGenre: %s\n",song_info->title, song_info->artist, song_info->album, song_info->year, song_info->track_num, song_info->filepath, song_info->genre);
-}
-
-int returnOne(void* sinfo, int colNum, char** result, char** column){
-	return 1;
-}
-
-int getAlbumArtist(void* sinfo, int colNum, char** result, char** column){
+/** Gets the albums/artists matching what is scanned from the song
+ * @param sinfo A struct dbsonginfo* that stuff is passed back in through
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
+ */
+int getAlbumArtist(void* sinfo, int col_num, char** result, char** column){
 	calledback = 1;
 	struct dbsonginfo* song_info = (struct dbsonginfo*)sinfo;
 
 	//Parsing the artist/album.
 	int album_col = 0, album_valid = 0, artist_col = 0, artist_valid = 0;
-	for(int i = 0; i < colNum; i++){
+	for(int i = 0; i < col_num; i++){
 		//ADD STRING CHECKING BECAUSE THE OR STATEMENT JUST MEANS WE ACCEPT THE FIRST SONG@
 		if((strcmp(column[i], "ALBUM_ID") == 0)){
 			album_col = i;
@@ -408,12 +349,24 @@ int getAlbumArtist(void* sinfo, int colNum, char** result, char** column){
 	return 0;
 }
 
-int initAlbumID(void* sinfo, int colNum, char** result, char** column){
+/** Gets the album id from the database
+ * @param A struct dbsonginfo* that the album id is passed back through to the calling function
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
+ */
+int initAlbumID(void* sinfo, int col_num, char** result, char** column){
 	((struct dbsonginfo*)sinfo)->next_album = strtoul(result[0], NULL, 10);
 	return 0;
 }
 
-int initArtistID(void* sinfo, int colNum, char** result, char** column){
+/** Gets the artist id from the database
+ * @param A struct dbsonginfo* that the artist id is passed back through to the calling function
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
+ */
+int initArtistID(void* sinfo, int col_num, char** result, char** column){
 	((struct dbsonginfo*)sinfo)->next_artist = strtoul(result[0], NULL, 10);
 	return 0;
 }
@@ -421,7 +374,7 @@ int initArtistID(void* sinfo, int colNum, char** result, char** column){
 /**Scans the file system for mp3s and updates the database based upon that
  * @param lib_paths The library paths to search
  * @param num_paths The number of library paths passed in
- * @return The number of files successfully scanned in
+ * @return 0 if successful, 1 otherwise.
  */
 int scan(char** lib_paths, int num_paths){
 	DIR* dir;
@@ -442,6 +395,7 @@ int scan(char** lib_paths, int num_paths){
 	//Open the database connection
 	if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
 		printf("Could not open the sqlite database!\n");
+		return 1;
 	}
 	song_info->db = db;
 
@@ -581,6 +535,111 @@ int scan(char** lib_paths, int num_paths){
 
 	free(subdirs);
 	return 0;
+}
+
+/** Culls songs based on if their path can be found or not
+ * @param datab The database being queried
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
+ */
+int cullSongCallback(void* datab, int col_num, char** result, char** column){
+	sqlite3* db = (sqlite3*)datab;
+	char* query = (char*)calloc(1, 4096);
+	char album_still_exists = 0;
+	char artist_still_exists = 0;
+	if(access(result[0], F_OK | R_OK)){
+		sprintf(query, "DELETE FROM song\nWHERE song.id = %lu;", strtoul(result[1], NULL, 10));
+		sqlite3_exec(db, query, NULL, NULL, NULL);
+		for(int i = 0; i < col_num; i++){
+			if(strcmp("ALBUM_ID", column[i]) == 0){
+				unsigned long album_id = strtoul(result[i], NULL, 10);
+				sprintf(query, "SELECT album.id\nFROM album INNER JOIN song ON album.id = song.album_id\nWHERE song.album_id = %lu;", album_id);
+				sqlite3_exec(db, query, deleteAlbum, &album_still_exists, NULL);
+				if(!album_still_exists){
+					sprintf(query, "DELETE FROM album\nWHERE album.id = %lu;", album_id);
+					sqlite3_exec(db, query, NULL, NULL, NULL);
+				}
+			}
+			else if(strcmp("ARTIST_ID", column[i]) == 0){
+				unsigned long artist_id = strtoul(result[i], NULL, 10);
+				sprintf(query, "SELECT artist.id\nFROM artist INNER JOIN song ON artist.id = song.artist_id\nWHERE song.artist_id = %lu;", artist_id);
+				sqlite3_exec(db, query, deleteArtist, &artist_still_exists, NULL);
+				if(!artist_still_exists){
+					sprintf(query, "DELETE FROM artist\nWHERE artist.id = %lu;", artist_id);
+					sqlite3_exec(db, query, NULL, NULL, NULL);
+				}
+			}
+		}
+	}
+	free(query);
+
+	return 0;
+}
+
+/** Returns one (used to see if something exists in an sqlite callback)
+ * @return 1
+ */
+int returnOne(void* sinfo, int col_num, char** result, char** column){
+	return 1;
+}
+
+/** Deletes artist based on if their path can be found or not
+ * @param artist_still_exists Returns 1 (used to query if the artist still exists)
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
+ */
+int deleteArtist(void* artist_still_exists, int col_num, char** result, char** column){
+	*((char*)artist_still_exists) = 1;
+	return 0;
+}
+
+/** Deletes album based on if their path can be found or not
+ * @param album_still_exists Returns 1 (used to query if the album still exists)
+ * @param col_num The number of columns returned
+ * @param result The results given for each column
+ * @param column The column that each index represents
+ */
+int deleteAlbum(void* album_still_exists, int col_num, char** result, char** column){
+	*((char*)album_still_exists) = 1;
+	return 0;
+}
+
+/** Prints song information (used for debugging)
+ * @param song_info The struct contatining the song information
+ */
+void printSongInfo(struct dbsonginfo* song_info){
+	printf("Title: %s\nArtist: %s\nAlbum: %s\nYear: %d\nTrack: %d\nFilepath: %s\nGenre: %s\n",song_info->title, song_info->artist, song_info->album, song_info->year, song_info->track_num, song_info->filepath, song_info->genre);
+}
+
+/** Inserts a string into the linked list
+ * @param last The last node of the linked list you wish to insert into
+ * @param element The char* that you wish to insert
+ */
+void insertLinkedStr(struct linkedStr* last, char* element){
+	linkedStr* new_ls = (linkedStr*)malloc(sizeof(struct linkedStr));
+	new_ls->str = element;
+	if(last->next != NULL){
+		new_ls->next = last->next;
+	}
+	else{
+		new_ls->next = last;
+	}
+	last->next = new_ls;
+}
+
+/** Frees the linked list (and the strings contained therein)
+ * @param last The last node of the linked list you wish to free
+ */
+void freeLinkedStr(struct linkedStr* last){
+	while(last != last->next && last->next != NULL){
+		struct linkedStr* death_row = last->next;
+		free(death_row->str);
+		last->next = death_row->next;
+		free(death_row);
+	}
+	free(last);
 }
 
 /**Stops the server
