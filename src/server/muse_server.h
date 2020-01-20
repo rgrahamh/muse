@@ -44,7 +44,7 @@ struct linkedStr{
 };
 
 int serve(char* port, FILE* log_file);
-int handleRequest(int new_sockfd);
+int handleRequest(int new_sockfd, FILE* log_file);
 int sendSongCallback(void* new_sockfd, int col_num, char** column, char** result);
 int sendInfo(void* result_list, int col_num, char** column, char** result);
 int getAlbumArtist(void* sinfo, int col_num, char** result, char** column);
@@ -53,7 +53,7 @@ int initAlbumID(void* sinfo, int col_num, char** result, char** column);
 int initArtistID(void* sinfo, int col_num, char** result, char** column);
 int returnOne(void* sinfo, int col_num, char** result, char** column);
 
-int scan(char** lib_paths, int num_paths);
+int scan(char** lib_paths, int num_paths, FILE* log_file);
 int cullSongCallback(void* datab, int col_num, char** result, char** column);
 int deleteArtist(void* artist_still_exists, int col_num, char** result, char** column);
 int deleteAlbum(void* album_still_exists, int col_num, char** result, char** column);

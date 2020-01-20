@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 
 	//char* test[] = {"/home/rhouck/Documents/music_iso"};
 	char* test[] = {"/home/rhouck/Music"};
- 	scan(test, 1);
+ 	scan(test, 1, log_file);
 	
 	printf("Done scanning!\n");
 
@@ -114,7 +114,7 @@ int serve(char* port, FILE* log_file){
 		if(new_sockfd != -1){
 			//Spawn a new child process
 			if(!fork()){
-				handleRequest(new_sockfd);
+				handleRequest(new_sockfd, log_file);
 				close(new_sockfd);
 				exit(0);
 			}
@@ -134,7 +134,7 @@ int serve(char* port, FILE* log_file){
  * @param new_sockfd The new socket file descriptor gotten through accept()
  * @return If the connection ended normally
  */
-int handleRequest(int new_sockfd){
+int handleRequest(int new_sockfd, FILE* log_file){
 	//The incoming character buffer; this will be recieved from the client
 	char* incoming = (char*)malloc(BUFF_SIZE);
 	//Holds the buffer for SQL queries
@@ -154,16 +154,15 @@ int handleRequest(int new_sockfd){
 
 		//Recieve the request, set the amount to the transferred data minus the flags.
 		amnt_recv = recv(new_sockfd, incoming, BUFF_SIZE, 0) - 1;
-		printf("Message recieved: %s\n", incoming);
 		incoming_flags = *incoming;
 		incoming_msg = incoming + 1;
-		printf("Flags: %d\n", incoming_flags);
 
 		if((incoming_flags & REQ_TYPE_MASK) != TERMCON){
 			sqlite3* db;
 			//Open the database connection
 			if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
-				printf("Could not open the sqlite database!\n");
+				fprintf(log_file, "Could not open the sqlite database!\n");
+				return 1;
 			}
 
 			//Set the order (opposite as recieved, since we're returning a linked list)
@@ -174,14 +173,12 @@ int handleRequest(int new_sockfd){
 				strcpy(order_dir, "ASC");
 			}
 			struct linkedStr* results = (struct linkedStr*)calloc(1, sizeof(struct linkedStr));
-			printf("REQSNG: %i\n", REQSNG);
 
 			//Parse the packet type
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
 					//Read everything past the flags as a 
 					sprintf(query, "SELECT song.filepath\nFROM song\nWHERE song.id = %lu;", *((unsigned long*)incoming_msg));
-					printf("query: %s\n", query);
 					sqlite3_exec(db, query, sendSongCallback, &new_sockfd, NULL);
 					sqlite3_close(db);
 					freeLinkedStr(results);
@@ -213,7 +210,6 @@ int handleRequest(int new_sockfd){
 
 				case QWRYGNRSNG:
 					char* safe_genre = escapeApostrophe(incoming_msg);
-					printf("Safe genre: %s\n", safe_genre);
 					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
 					break;
@@ -236,8 +232,6 @@ int handleRequest(int new_sockfd){
 				strcat(str_cursor, cursor->str);
 				cursor = cursor->next;
 			}
-			//printf("Result string: %s\n", str_cursor);
-			//printf("Result string len: %i\n", result_str_len);
 			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long), 0);
 
 			freeLinkedStr(results);
@@ -265,7 +259,6 @@ int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column
 
 	fseek(file, 0UL, SEEK_END);
 	unsigned long file_size = ftell(file);
-	printf("file_size: %lu\n", file_size);
 	rewind(file);
 
 	char* file_buff = (char*)malloc(file_size + sizeof(unsigned long));
@@ -376,7 +369,7 @@ int initArtistID(void* sinfo, int col_num, char** result, char** column){
  * @param num_paths The number of library paths passed in
  * @return 0 if successful, 1 otherwise.
  */
-int scan(char** lib_paths, int num_paths){
+int scan(char** lib_paths, int num_paths, FILE* log_file){
 	DIR* dir;
 	struct dirent* file_info;
 	struct stat stat_info;
@@ -394,7 +387,7 @@ int scan(char** lib_paths, int num_paths){
 	sqlite3* db;
 	//Open the database connection
 	if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
-		printf("Could not open the sqlite database!\n");
+		fprintf(log_file, "Could not open the sqlite database!\n");
 		return 1;
 	}
 	song_info->db = db;
@@ -527,7 +520,7 @@ int scan(char** lib_paths, int num_paths){
 
 	//Call scan recursively on subdirectories
 	if(subdir_num >= 1){
-		scan(subdirs, subdir_num);
+		scan(subdirs, subdir_num, log_file);
 		for(int i = 0; i < subdir_num; i++){
 			free(subdirs[i]);
 		}

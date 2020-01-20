@@ -78,6 +78,7 @@ extern "C" {
 
     int queryEntity(unsigned long entity_id, char flags);
     int receiveResponse(char** resp);
+	void disconnect();
     void stop(int sig);
 #ifdef __cplusplus
 }

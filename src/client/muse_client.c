@@ -631,6 +631,12 @@ int substrsize(char* str, char until){
 	return i;
 }
 
+/** Disconnects from the server */
+void disconnect(){
+	send(sockfd, "\0", 1, 0);
+	close(sockfd);
+}
+
 //TODO: Remove circularly linked list in server, change out w/ normal list. I dunno why I thought circularly linked was the right implementation for that :P
 
 /** The function that safely closes the socket upon exiting the application
