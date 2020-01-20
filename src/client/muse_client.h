@@ -56,10 +56,10 @@ extern "C" {
     int queryGenre(struct genreinfolst** genre_info);
     int queryGenreSongs(char* genre, struct songinfolst** song_info);
 
-	int parseSongs(char* resp, struct songinfolst** song_info);
-	int parseAlbums(char* resp, struct albuminfolst** album_info);
-	int parseArtists(char* resp, struct artistinfolst** artist_info);
-	int parseGenre(char* resp, struct genreinfolst** genre_info);
+	void parseSongs(char* resp, struct songinfolst** song_info);
+	void parseAlbums(char* resp, struct albuminfolst** album_info);
+	void parseArtists(char* resp, struct artistinfolst** artist_info);
+	void parseGenre(char* resp, struct genreinfolst** genre_info);
 
 	char* parseFieldStr(char** dest, char* base, char endchar);
 	char* parseFieldLong(unsigned long* dest, char* base, char endchar);
