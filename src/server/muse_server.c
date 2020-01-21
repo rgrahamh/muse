@@ -42,12 +42,12 @@ int main(int argc, char** argv){
 	*/
 
 	//char* test[] = {"/home/rhouck/Documents/music_iso"};
+	FILE* log_file = fopen("/tmp/muse_server.log", "w");
+
 	char* test[] = {"/home/rhouck/Music"};
  	scan(test, 1, log_file);
-	
-	printf("Done scanning!\n");
 
-	FILE* log_file = fopen("/tmp/muse_server.log", "w");
+	printf("Done scanning!\n");
 
  	if(argc == 2){
  		serve(argv[1], log_file);
@@ -138,16 +138,16 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	//The incoming character buffer; this will be recieved from the client
 	char* incoming = (char*)malloc(BUFF_SIZE);
 	//Holds the buffer for SQL queries
-	char* query = (char*)malloc(4096);
+	char* query = (char*)malloc(BUFF_SIZE);
 	char* order_dir = (char*)calloc(5, 1);
 
 	//Holds the incoming flags
 	unsigned char incoming_flags = 0;
-	//Holds the incoming message
-	char* incoming_msg;
-	//Holds the amount of bytes recieved
-	int amnt_recv = 0;
 	do{
+		//Holds the incoming message
+		char* incoming_msg;
+		//Holds the amount of bytes recieved
+		int amnt_recv = 0;
 		//Re-clear the memory
 		memset(incoming, 0, BUFF_SIZE);
 		memset(query, 0, BUFF_SIZE);
@@ -219,7 +219,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			struct linkedStr* cursor = results->next;
 			unsigned result_str_len = 0;
 			while(results->next != NULL && cursor != results){
-				result_str_len += strlen(cursor->str);
+				result_str_len += strlen(cursor->str) + 1;
 				cursor = cursor->next;
 			}
 			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long), 1);
