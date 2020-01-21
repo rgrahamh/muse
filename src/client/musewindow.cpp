@@ -289,7 +289,7 @@ void MuseWindow::on_connectButton_clicked()
             }
         }
     } else {
-
+        disconnect();
         connection_state = false;
         ui->serverInfoLabel->setText("Not connected to server.");
         ui->connectButton->setText("Connect to...");

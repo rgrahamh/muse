@@ -42,8 +42,12 @@ int main(int argc, char** argv){
 	*/
 
 	//char* test[] = {"/home/rhouck/Documents/music_iso"};
-
 	FILE* log_file = fopen("/tmp/muse_server.log", "w");
+
+	char* test[] = {"/home/dfletch/Documents/School/muse/assets/music"};
+ 	scan(test, 1, log_file);
+
+	printf("Done scanning!\n");
 
  	if(argc == 2){
  		serve(argv[1], log_file);
@@ -139,8 +143,6 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	char* query = (char*)malloc(BUFF_SIZE);
 	char* order_dir = (char*)calloc(5, 1);
 
-	printf("handle request...\n");
-
 	//Holds the incoming flags
 	unsigned char incoming_flags = 0;
 	//Holds the incoming message
@@ -156,6 +158,10 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	}
 
 	do{
+		//Holds the incoming message
+		char* incoming_msg;
+		//Holds the amount of bytes recieved
+		int amnt_recv = 0;
 		//Re-clear the memory
 		memset(incoming, 0, BUFF_SIZE);
 		memset(query, 0, BUFF_SIZE);
@@ -220,32 +226,21 @@ int handleRequest(int new_sockfd, FILE* log_file){
 
 			sqlite3_exec(db, query, sendInfo, &results, NULL);
 
-			printf("Received results\n");
 			struct linkedstr* cursor = results;
 			unsigned result_str_len = 0;
 
-			printf("entering while\n");
 			while(cursor != NULL){
 				result_str_len += strlen(cursor->str);
-				printf("cursor at:  %s\n", cursor->str);
 				cursor = cursor->prev;
 			}
-			printf("exiting while\n");
 			char* result_str = (char*)calloc(20000, sizeof(char));
 			//Send the returned size as the first byte grouping
 			*((unsigned long*)result_str) = result_str_len + sizeof(unsigned long);
 			char* str_cursor = result_str+sizeof(unsigned long);
 
-			printf("entering while2\n");
 			cursor = results;
 			while(cursor != NULL){
 				strcat(str_cursor, cursor->str);
-				cursor = cursor->prev;
-			}
-			printf("exiting while2\n");
-			cursor = results;
-			while(cursor != NULL){
-				printf("%s", cursor->str);
 				cursor = cursor->prev;
 			}
 
@@ -255,8 +250,6 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			free(result_str);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
-
-	printf("closing database\n");
 
 	int status = sqlite3_close(db);
 
