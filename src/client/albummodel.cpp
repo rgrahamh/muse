@@ -14,6 +14,8 @@ AlbumModel::AlbumModel(QObject *parent) : QAbstractTableModel(parent)
  */
 void AlbumModel::populateData(struct albuminfolst* albums)
 {
+    beginResetModel();
+
     // clear previous data
     this->ids.clear();
     this->titles.clear();
@@ -30,6 +32,8 @@ void AlbumModel::populateData(struct albuminfolst* albums)
     }
 
     free_albuminfolst(albums);
+
+    endResetModel();
 
     return;
 }

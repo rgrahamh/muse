@@ -2,21 +2,21 @@
 
 #ifdef TEST
 int main(int argc, char** argv){
-	connectToServ("2442", "10.117.200.17");
+	connectToServ("2442", "10.116.202.134");
 	struct songinfolst* song_info;
 	struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
-	queryAlbumSongs(25, &song_info);
-	queryArtistAlbums(25, &album_info);
-	queryGenreSongs("Rock", &song_info);
-	queryGenre(&genre_info);
+	// queryAlbumSongs(25, &song_info);
+	// queryArtistAlbums(25, &album_info);
+	// queryGenreSongs("Rock", &song_info);
+	queryGenres(&genre_info);
 	querySongs(&song_info);
 	queryAlbums(&album_info);
 	queryArtists(&artist_info);
-	getSong(1, "./Green_Grass_And_High_Tides.mp3");
+	// getSong(1, "./Green_Grass_And_High_Tides.mp3");
 	struct albuminfolst* album_cursor = album_info;
-	/*while(album_cursor != NULL){
+	while(album_cursor != NULL){
 	printf("Album:\n");
 		printf("%lu\n", album_cursor->id);
 		printf("%s\n", album_cursor->title);
@@ -45,7 +45,7 @@ int main(int argc, char** argv){
 	while(genre_cursor != NULL){
 		printf("Genre: %s\n", genre_cursor->genre);
 		genre_cursor = genre_cursor->next;
-	}*/
+	}
 	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
@@ -61,7 +61,7 @@ int sockfd;
  * @param port The port that you wish to connect to
  * @return 0 if successful, 1 otherwise
  */
-int connectToServ(char* port, char* server_ip){
+int connectToServ(const  char* port, const char* server_ip){
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
 
@@ -249,7 +249,7 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
  * @param genre_info The genreinfolst struct that is populated with genre information
  * @return 0 if successful, 1 otherwise.
  */
-int queryGenre(struct genreinfolst** genre_info){
+int queryGenres(struct genreinfolst** genre_info){
 	char request = QWRYGNR | ASC | ORDSNG;
 
 	if(send(sockfd, &request, 1, 0) == 0){
@@ -517,11 +517,13 @@ void initGenre(struct genreinfolst** genre_info){
  */
 int receiveResponse(char** resp){
 	char* resp_size_str = (char*)malloc(sizeof(unsigned long));
-	if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+    if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+		printf("Error receiving data!\n");
 		return 1;
 	}
 	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
 	if(resp_size == 0){
+		printf("Response has no size!\n");
 		return 1;
 	}
 	*resp = (char*)malloc(resp_size+1);

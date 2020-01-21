@@ -62,8 +62,13 @@ private:
 
     FMOD_RESULT result;
     FMOD::System *system = NULL;
-    FMOD::Sound* song_to_play;
-    FMOD::Channel* song_channel;
+    FMOD::Sound* song_to_play = NULL;
+    FMOD::Channel* song_channel = NULL;
+
+    ArtistModel* artist_model;
+    AlbumModel* album_model;
+    GenreModel* genre_model;
+    SongModel* song_model;
 
     void configureTableView(QTableView* view);
     void initializeFMOD();

@@ -14,6 +14,8 @@ GenreModel::GenreModel(QObject *parent) : QAbstractTableModel(parent)
  */
 void GenreModel::populateData(struct genreinfolst* genres)
 {
+    beginResetModel();
+
     // clear previous data
     this->genres.clear();
 
@@ -26,6 +28,8 @@ void GenreModel::populateData(struct genreinfolst* genres)
     }
 
     free_genreinfolst(genres);
+
+    endResetModel();
 
     return;
 }
