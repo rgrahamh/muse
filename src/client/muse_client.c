@@ -2,7 +2,7 @@
 
 #ifdef TEST
 int main(int argc, char** argv){
-	connectToServ("8080", "10.116.202.134");
+	connectToServ("2442", "10.116.202.134");
 	struct songinfolst* song_info;
 	struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;

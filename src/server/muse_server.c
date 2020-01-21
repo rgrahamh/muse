@@ -111,14 +111,14 @@ int serve(char* port, FILE* log_file){
 		int new_sockfd = accept(sockfd, (struct sockaddr*)client, &addr_len);
 		if(new_sockfd != -1){
 			//Spawn a new child process
-			if(!fork()){
+			// if(!fork()){
 				handleRequest(new_sockfd, log_file);
 				close(new_sockfd);
 				exit(0);
-			}
-			else{
-				fprintf(log_file, "Connection detected!\n");
-			}
+			// }
+			// else{
+			// 	fprintf(log_file, "Connection detected!\n");
+			// }
 		}
 		else{
 			fprintf(log_file, "Error accepting the new connection!\n");
@@ -147,6 +147,14 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	char* incoming_msg;
 	//Holds the amount of bytes recieved
 	int amnt_recv = 0;
+
+	sqlite3* db;
+	//Open the database connection
+	if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
+		fprintf(log_file, "Could not open the sqlite database!\n");
+		return 1;
+	}
+
 	do{
 		//Re-clear the memory
 		memset(incoming, 0, BUFF_SIZE);
@@ -158,13 +166,6 @@ int handleRequest(int new_sockfd, FILE* log_file){
 		incoming_msg = incoming + 1;
 
 		if((incoming_flags & REQ_TYPE_MASK) != TERMCON){
-			sqlite3* db;
-			//Open the database connection
-			if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
-				fprintf(log_file, "Could not open the sqlite database!\n");
-				return 1;
-			}
-
 			//Set the order (opposite as recieved, since we're returning a linked list)
 			if((incoming_flags & ORD_DIR_MASK) == ASC){
 				strcpy(order_dir, "DESC");
@@ -216,6 +217,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					free(safe_genre);
 					break;
 			}
+
 			sqlite3_exec(db, query, sendInfo, &results, NULL);
 
 			printf("Received results\n");
@@ -229,7 +231,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				cursor = cursor->prev;
 			}
 			printf("exiting while\n");
-			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long), 1);
+			char* result_str = (char*)calloc(20000, sizeof(char));
 			//Send the returned size as the first byte grouping
 			*((unsigned long*)result_str) = result_str_len + sizeof(unsigned long);
 			char* str_cursor = result_str+sizeof(unsigned long);
@@ -239,7 +241,6 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			while(cursor != NULL){
 				strcat(str_cursor, cursor->str);
 				cursor = cursor->prev;
-				printf("%s\n", str_cursor);
 			}
 			printf("exiting while2\n");
 			cursor = results;
@@ -252,14 +253,12 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			
 			freeLinkedStr(results);
 			free(result_str);
-
-			printf("closing database\n");
-
-			int status = sqlite3_close(db);
-
-			printf("Status is: %d\n", status);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
+
+	printf("closing database\n");
+
+	int status = sqlite3_close(db);
 
 	free(query);
 	free(incoming);
