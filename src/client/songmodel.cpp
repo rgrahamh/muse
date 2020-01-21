@@ -14,6 +14,8 @@ SongModel::SongModel(QObject *parent) : QAbstractTableModel(parent)
  */
 void SongModel::populateData(struct songinfolst* songs)
 {
+    beginResetModel();
+
     // clear previous data
     this->ids.clear();
     this->titles.clear();
@@ -38,6 +40,8 @@ void SongModel::populateData(struct songinfolst* songs)
     }
 
     free_songinfolst(songs);
+
+    endResetModel();
 
     return;
 }

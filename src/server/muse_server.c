@@ -11,7 +11,7 @@ int main(int argc, char** argv){
 
 	/*
 	//Test code for the linkedStr struct
-	linkedStr* last = (linkedStr*)calloc(1,sizeof(struct linkedStr));
+	linkedstr* last = (linkedStr*)calloc(1,sizeof(struct linkedstr));
 
 	char* str1 = (char*)malloc(256);
 	char* str2 = (char*)malloc(256);
@@ -30,11 +30,11 @@ int main(int argc, char** argv){
 	insertLinkedStr(last, str3);
 	insertLinkedStr(last, str4);
 	insertLinkedStr(last, str5);
-	struct linkedStr* cursor = last->next;
+	struct linkedStr* cursor = last->prev;
 
 	while(cursor != last){
 		printf("%s\n", cursor->str);
-		cursor = cursor->next;
+		cursor = cursor->prev;
 	}
 	
 	freeLinkedStr(last);
@@ -42,10 +42,6 @@ int main(int argc, char** argv){
 	*/
 
 	//char* test[] = {"/home/rhouck/Documents/music_iso"};
-	char* test[] = {"/home/rhouck/Music"};
- 	scan(test, 1, log_file);
-	
-	printf("Done scanning!\n");
 
 	FILE* log_file = fopen("/tmp/muse_server.log", "w");
 
@@ -55,6 +51,8 @@ int main(int argc, char** argv){
  	else{
  		serve(DEFAULT_PORT, log_file);
  	}
+
+	 fclose(log_file);
 
  	return 0;
  }
@@ -138,8 +136,10 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	//The incoming character buffer; this will be recieved from the client
 	char* incoming = (char*)malloc(BUFF_SIZE);
 	//Holds the buffer for SQL queries
-	char* query = (char*)malloc(4096);
+	char* query = (char*)malloc(BUFF_SIZE);
 	char* order_dir = (char*)calloc(5, 1);
+
+	printf("handle request...\n");
 
 	//Holds the incoming flags
 	unsigned char incoming_flags = 0;
@@ -172,7 +172,9 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			else{
 				strcpy(order_dir, "ASC");
 			}
-			struct linkedStr* results = (struct linkedStr*)calloc(1, sizeof(struct linkedStr));
+			struct linkedstr* results = NULL;
+			//(struct linkedstr*)calloc(1, sizeof(struct linkedstr));
+			//results->prev = NULL;
 
 			//Parse the packet type
 			switch(incoming_flags & REQ_TYPE_MASK){
@@ -214,30 +216,48 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					free(safe_genre);
 					break;
 			}
-			sqlite3_exec(db, query, sendInfo, results, NULL);
+			sqlite3_exec(db, query, sendInfo, &results, NULL);
 
-			struct linkedStr* cursor = results->next;
+			printf("Received results\n");
+			struct linkedstr* cursor = results;
 			unsigned result_str_len = 0;
-			while(results->next != NULL && cursor != results){
+
+			printf("entering while\n");
+			while(cursor != NULL){
 				result_str_len += strlen(cursor->str);
-				cursor = cursor->next;
+				printf("cursor at:  %s\n", cursor->str);
+				cursor = cursor->prev;
 			}
+			printf("exiting while\n");
 			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long), 1);
 			//Send the returned size as the first byte grouping
 			*((unsigned long*)result_str) = result_str_len + sizeof(unsigned long);
 			char* str_cursor = result_str+sizeof(unsigned long);
 
-			cursor = results->next;
-			while(results->next != NULL && cursor != results){
+			printf("entering while2\n");
+			cursor = results;
+			while(cursor != NULL){
 				strcat(str_cursor, cursor->str);
-				cursor = cursor->next;
+				cursor = cursor->prev;
+				printf("%s\n", str_cursor);
 			}
-			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long), 0);
+			printf("exiting while2\n");
+			cursor = results;
+			while(cursor != NULL){
+				printf("%s", cursor->str);
+				cursor = cursor->prev;
+			}
 
+			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long), 0);
+			
 			freeLinkedStr(results);
 			free(result_str);
 
-			sqlite3_close(db);
+			printf("closing database\n");
+
+			int status = sqlite3_close(db);
+
+			printf("Status is: %d\n", status);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
 
@@ -300,7 +320,7 @@ int sendInfo(void* result_list, int col_num, char** result, char** column){
 	}
 	strcat(new_result, result[col_num-1]);
 	strcat(new_result, "\n");
-	insertLinkedStr((struct linkedStr*)result_list, new_result);
+	insertLinkedStr((struct linkedstr**)result_list, new_result);
 
 	return 0;
 }
@@ -512,7 +532,6 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 
 	//Free somme memory
 	free(dir);
-	free(file_info);
 	free(song_info);
 	free(query);
 	free(curr_path);
@@ -607,32 +626,26 @@ void printSongInfo(struct dbsonginfo* song_info){
 }
 
 /** Inserts a string into the linked list
- * @param last The last node of the linked list you wish to insert into
+ * @param prev The last node of the linked list you wish to insert into
  * @param element The char* that you wish to insert
  */
-void insertLinkedStr(struct linkedStr* last, char* element){
-	linkedStr* new_ls = (linkedStr*)malloc(sizeof(struct linkedStr));
+void insertLinkedStr(struct linkedstr** prev, char* element){
+	struct  linkedstr* new_ls = (struct linkedstr*)malloc(sizeof(struct linkedstr));
 	new_ls->str = element;
-	if(last->next != NULL){
-		new_ls->next = last->next;
-	}
-	else{
-		new_ls->next = last;
-	}
-	last->next = new_ls;
+	new_ls->prev = *prev;
+	*prev = new_ls;
 }
 
 /** Frees the linked list (and the strings contained therein)
  * @param last The last node of the linked list you wish to free
  */
-void freeLinkedStr(struct linkedStr* last){
-	while(last != last->next && last->next != NULL){
-		struct linkedStr* death_row = last->next;
+void freeLinkedStr(struct linkedstr* last){
+	while(last != NULL){
+		struct linkedstr* death_row = last;
+		last = last->prev;
 		free(death_row->str);
-		last->next = death_row->next;
 		free(death_row);
 	}
-	free(last);
 }
 
 /**Stops the server

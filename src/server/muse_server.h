@@ -38,9 +38,9 @@ struct dbsonginfo {
 	char* genre;
 };
 
-struct linkedStr{
-	char* str;
-	struct linkedStr* next;
+struct linkedstr{
+    char* str;
+    struct linkedstr* prev;
 };
 
 int serve(char* port, FILE* log_file);
@@ -59,8 +59,8 @@ int deleteArtist(void* artist_still_exists, int col_num, char** result, char** c
 int deleteAlbum(void* album_still_exists, int col_num, char** result, char** column);
 
 void printSongInfo(struct dbsonginfo* song_info);
-void insertLinkedStr(struct linkedStr* last, char* element);
-void freeLinkedStr(struct linkedStr* last);
+void insertLinkedStr(struct linkedstr** last, char* element);
+void freeLinkedStr(struct linkedstr* last);
 void stop(int sig);
 
 #endif

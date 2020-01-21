@@ -36,33 +36,38 @@ MuseWindow::MuseWindow(QWidget *parent)
     timer->start(75);
 
     // create the models
-    ArtistModel *artist_model = new ArtistModel(this);
-    AlbumModel *album_model = new AlbumModel(this);
-    GenreModel *genre_model = new GenreModel(this);
-    SongModel *song_model = new SongModel(this);
+    artist_model = new ArtistModel(this);
+    album_model = new AlbumModel(this);
+    genre_model = new GenreModel(this);
+    song_model = new SongModel(this);
 
-    // populate the models
-    song_model->populateData(getTestSongs());
-    artist_model->populateData(getTestArtists());
-    album_model->populateData(getTestAlbums());
-    genre_model->populateData(getTestGenres());
+//    // populate the models
+//    song_model->populateData(getTestSongs());
+//    artist_model->populateData(getTestArtists());
+//    album_model->populateData(getTestAlbums());
+//    genre_model->populateData(getTestGenres());
 
-    // allow filtering by use of proxy models
-    QSortFilterProxyModel *artist_proxy = new QSortFilterProxyModel();
-    artist_proxy->setSourceModel(artist_model);
-    ui->artistView->setModel(artist_proxy);
+//    // allow filtering by use of proxy models
+//    QSortFilterProxyModel *artist_proxy = new QSortFilterProxyModel();
+//    artist_proxy->setSourceModel(artist_model);
+//    ui->artistView->setModel(artist_proxy);
 
-    QSortFilterProxyModel *album_proxy = new QSortFilterProxyModel();
-    album_proxy->setSourceModel(album_model);
-    ui->albumView->setModel(album_proxy);
+//    QSortFilterProxyModel *album_proxy = new QSortFilterProxyModel();
+//    album_proxy->setSourceModel(album_model);
+//    ui->albumView->setModel(album_proxy);
 
-    QSortFilterProxyModel *genre_proxy = new QSortFilterProxyModel();
-    genre_proxy->setSourceModel(genre_model);
-    ui->genreView->setModel(genre_proxy);
+//    QSortFilterProxyModel *genre_proxy = new QSortFilterProxyModel();
+//    genre_proxy->setSourceModel(genre_model);
+//    ui->genreView->setModel(genre_proxy);
 
-    QSortFilterProxyModel *song_proxy = new QSortFilterProxyModel();
-    song_proxy->setSourceModel(song_model);
-    ui->songView->setModel(song_proxy);
+//    QSortFilterProxyModel *song_proxy = new QSortFilterProxyModel();
+//    song_proxy->setSourceModel(song_model);
+//    ui->songView->setModel(song_proxy);
+
+    ui->artistView->setModel(artist_model);
+    ui->albumView->setModel(album_model);
+    ui->genreView->setModel(genre_model);
+    ui->songView->setModel(song_model);
 
 }
 
@@ -126,18 +131,41 @@ void MuseWindow::initializeFMOD() {
 void MuseWindow::on_tabWidget_currentChanged(int index)
 {
     /* The tab has changed, so we need to update the view with new data */
-    switch(index) {
-//        case 0: /* Artist */
-//            ui->artistView->addItem("ARTIST");
-//            break;
-//        case 1: /* Album */
-//            ui->albumView->addItem("ALBUM");
-//            break;
-//        case 2: /* Genre */
-//            ui->genreView->addItem("GENRE");
-//            break;
-//        case 3: /* Song */
-//            break;
+    if( connection_state )  {
+        switch(index) {
+            case 0: /* Artist */
+                struct artistinfolst* artists;
+                if( int err = queryArtists(&artists) ) {
+                    qDebug() << "Error fetching artists!" << endl;
+                } else {
+                    artist_model->populateData(artists);
+                }
+                break;
+            case 1: /* Album */
+                struct albuminfolst* albums;
+                if( int err = queryAlbums(&albums) ) {
+                    qDebug() << "Error fetching albums!" << endl;
+                } else {
+                    album_model->populateData(albums);
+                }
+                break;
+            case 2: /* Genre */
+                struct genreinfolst* genres;
+                if( int err = queryGenres(&genres) ) {
+                    qDebug() << "Error fetching genres!" << endl;
+                } else {
+                    genre_model->populateData(genres);
+                }
+                break;
+            case 3: /* Song */
+                struct songinfolst* songs;
+                if( int err = querySongs(&songs) ) {
+                    qDebug() << "Error fetching songs!" << endl;
+                } else {
+                    song_model->populateData(songs);
+                }
+                break;
+        }
     }
 }
 
@@ -242,19 +270,27 @@ void MuseWindow::on_rewindButton_clicked()
  */
 void MuseWindow::on_connectButton_clicked()
 {
-    connection_state = !connection_state;
-    if( connection_state ) {
+    if( !connection_state ) {
         ServerDialog* serverDialog = new ServerDialog(this);
         if( serverDialog->exec() == QDialog::Accepted ) {
             ip_address = serverDialog->getServerIP();
             port = serverDialog->getServerPort();
 
-            memset(connectionText, 0, 100);
-            sprintf(connectionText, "Connected to: %s:%s", ip_address.toStdString().c_str(), port.toStdString().c_str());
-            ui->serverInfoLabel->setText(connectionText);
-            ui->connectButton->setText("Disconnect");
+            if( int err = connectToServ(port.toStdString().c_str(), ip_address.toStdString().c_str()) ) {
+                qDebug() << "Error connecting to server!" << endl;
+            } else {
+                memset(connectionText, 0, 100);
+                sprintf(connectionText, "Connected to: %s:%s", ip_address.toStdString().c_str(), port.toStdString().c_str());
+                ui->serverInfoLabel->setText(connectionText);
+                ui->connectButton->setText("Disconnect");
+                connection_state = true;
+
+                ui->tabWidget->setCurrentIndex(0);
+            }
         }
     } else {
+
+        connection_state = false;
         ui->serverInfoLabel->setText("Not connected to server.");
         ui->connectButton->setText("Connect to...");
     }

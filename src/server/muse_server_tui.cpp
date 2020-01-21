@@ -385,7 +385,7 @@ void startServer(MENU* &menu) {
 		umask(0);
 		
 		/* Open any logs here */
-		FILE* log_file = fopen("/tmp/muse_server.log", "w");
+		FILE* log_file = fopen("/tmp/muse_server.log", "a");
 		if( log_file == NULL ) {
 			fclose(log_file);
 			exit(EXIT_FAILURE);
@@ -720,7 +720,15 @@ void removeLibPath(WINDOW* win) {
  */
 void refreshDatabase() {
 	/* Call backend routine */
-	if(lib_paths.size() > 0) {
-		scan(&lib_paths.at(0), lib_paths.size());
+	FILE* log_file = fopen("/tmp/muse_server.log", "w");
+	if( log_file == NULL ) {
+		fclose(log_file);
+		exit(EXIT_FAILURE);
 	}
+
+	if(lib_paths.size() > 0) {
+		scan(&lib_paths.at(0), lib_paths.size(), log_file);
+	}
+
+	fclose(log_file);
 }

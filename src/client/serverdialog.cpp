@@ -12,7 +12,7 @@ ServerDialog::ServerDialog(QWidget *parent) :
     ui->setupUi(this);
 
     // setup regex
-    QRegExp serverIPRegex("[0-9]{3}.[0-9]{3}.[0-9]{3}.[0-9]{3}");
+    QRegExp serverIPRegex("[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}");
     QRegExp serverPortRegex("[0-9]{4}");
 
     QValidator *ip_validator = new QRegExpValidator(serverIPRegex, this);
