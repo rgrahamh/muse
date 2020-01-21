@@ -124,3 +124,18 @@ QVariant SongModel::headerData(int section, Qt::Orientation orientation, int rol
     }
     return QVariant();
 }
+
+void SongModel::clearModel() {
+    beginResetModel();
+
+    // clear previous data
+    this->ids.clear();
+    this->titles.clear();
+    this->artists.clear();
+    this->albums.clear();
+    this->years.clear();
+    this->track_nums.clear();
+    this->genres.clear();
+
+    endResetModel();
+}

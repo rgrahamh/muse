@@ -100,3 +100,14 @@ QVariant AlbumModel::headerData(int section, Qt::Orientation orientation, int ro
     }
     return QVariant();
 }
+
+void AlbumModel::clearModel() {
+    beginResetModel();
+
+    // clear previous data
+    this->ids.clear();
+    this->titles.clear();
+    this->years.clear();
+
+    endResetModel();
+}

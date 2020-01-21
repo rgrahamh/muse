@@ -89,3 +89,12 @@ QVariant GenreModel::headerData(int section, Qt::Orientation orientation, int ro
     }
     return QVariant();
 }
+
+void GenreModel::clearModel() {
+    beginResetModel();
+
+    // clear previous data
+    this->genres.clear();
+
+    endResetModel();
+}

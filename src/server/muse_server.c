@@ -115,14 +115,14 @@ int serve(char* port, FILE* log_file){
 		int new_sockfd = accept(sockfd, (struct sockaddr*)client, &addr_len);
 		if(new_sockfd != -1){
 			//Spawn a new child process
-			// if(!fork()){
+			if(!fork()){
 				handleRequest(new_sockfd, log_file);
 				close(new_sockfd);
 				exit(0);
-			// }
-			// else{
-			// 	fprintf(log_file, "Connection detected!\n");
-			// }
+			}
+			else{
+				fprintf(log_file, "Connection detected!\n");
+			}
 		}
 		else{
 			fprintf(log_file, "Error accepting the new connection!\n");
@@ -150,14 +150,14 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	//Holds the amount of bytes recieved
 	int amnt_recv = 0;
 
-	sqlite3* db;
-	//Open the database connection
-	if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
-		fprintf(log_file, "Could not open the sqlite database!\n");
-		return 1;
-	}
 
 	do{
+		sqlite3* db;
+		//Open the database connection
+		if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
+			fprintf(log_file, "Could not open the sqlite database!\n");
+			return 1;
+		}
 		//Holds the incoming message
 		char* incoming_msg;
 		//Holds the amount of bytes recieved
@@ -248,13 +248,16 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			
 			freeLinkedStr(results);
 			free(result_str);
+
+			int status = sqlite3_close(db);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
 
-	int status = sqlite3_close(db);
 
 	free(query);
 	free(incoming);
+
+	close(new_sockfd);
 
 	return 0;
 }
@@ -267,10 +270,12 @@ int handleRequest(int new_sockfd, FILE* log_file){
  */
 int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column){
 	//Open the file for reading
-	FILE* file = fopen(result[0], "r");
+	FILE* file = fopen(result[0], "rb");
 
-	fseek(file, 0UL, SEEK_END);
-	unsigned long file_size = ftell(file);
+	unsigned long register file_size = 0;
+	while(getc(file) != EOF){
+		file_size++;
+	}
 	rewind(file);
 
 	char* file_buff = (char*)malloc(file_size + sizeof(unsigned long));

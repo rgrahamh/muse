@@ -94,3 +94,13 @@ QVariant ArtistModel::headerData(int section, Qt::Orientation orientation, int r
     }
     return QVariant();
 }
+
+void ArtistModel::clearModel() {
+    beginResetModel();
+
+    // clear previous data
+    this->ids.clear();
+    this->names.clear();
+
+    endResetModel();
+}

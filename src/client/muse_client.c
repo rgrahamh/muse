@@ -2,54 +2,55 @@
 
 #ifdef TEST
 int main(int argc, char** argv){
-	connectToServ("2442", "10.116.202.134");
-	struct songinfolst* song_info;
-	struct albuminfolst* album_info;
-	struct artistinfolst* artist_info;
-	struct genreinfolst* genre_info;
+    connectToServ("2442", "127.0.0.1");
+//	struct songinfolst* song_info;
+//	struct albuminfolst* album_info;
+//	struct artistinfolst* artist_info;
+//	struct genreinfolst* genre_info;
 	// queryAlbumSongs(25, &song_info);
 	// queryArtistAlbums(25, &album_info);
 	// queryGenreSongs("Rock", &song_info);
-	queryGenres(&genre_info);
-	querySongs(&song_info);
-	queryAlbums(&album_info);
-	queryArtists(&artist_info);
-	// getSong(1, "./Green_Grass_And_High_Tides.mp3");
-	struct albuminfolst* album_cursor = album_info;
-	while(album_cursor != NULL){
-	printf("Album:\n");
-		printf("%lu\n", album_cursor->id);
-		printf("%s\n", album_cursor->title);
-		printf("%lu\n\n", album_cursor->year);
-		album_cursor = album_cursor->next;
-	}
-	struct songinfolst* song_cursor = song_info;
-	while(song_cursor != NULL){
-	printf("Song:\n");
-		printf("%lu\n", song_cursor->id);
-		printf("%s\n", song_cursor->title);
-		printf("%s\n", song_cursor->artist);
-		printf("%s\n", song_cursor->album);
-		printf("%lu\n", song_cursor->year);
-		printf("%lu\n", song_cursor->track_num);
-		printf("%s\n\n", song_cursor->genre);
-		song_cursor = song_cursor->next;
-	}
-	struct artistinfolst* artist_cursor = artist_info;
-	while(artist_cursor != NULL){
-		printf("Artist: %s\n", artist_cursor->name);
-		printf("%lu\n", artist_cursor->id);
-		artist_cursor = artist_cursor->next;
-	}
-	struct genreinfolst* genre_cursor = genre_info;
-	while(genre_cursor != NULL){
-		printf("Genre: %s\n", genre_cursor->genre);
-		genre_cursor = genre_cursor->next;
-	}
-	free_songinfolst(song_info);
-	free_albuminfolst(album_info);
-	free_artistinfolst(artist_info);
-	free_genreinfolst(genre_info);
+//	queryGenres(&genre_info);
+//	querySongs(&song_info);
+//	queryAlbums(&album_info);
+//	queryArtists(&artist_info);
+     getSong(14, "/tmp/muse_download_14.mp3");
+     getSong(13, "/tmp/muse_download_13.mp3");
+//	struct albuminfolst* album_cursor = album_info;
+//	while(album_cursor != NULL){
+//	printf("Album:\n");
+//		printf("%lu\n", album_cursor->id);
+//		printf("%s\n", album_cursor->title);
+//		printf("%lu\n\n", album_cursor->year);
+//		album_cursor = album_cursor->next;
+//	}
+//	struct songinfolst* song_cursor = song_info;
+//	while(song_cursor != NULL){
+//	printf("Song:\n");
+//		printf("%lu\n", song_cursor->id);
+//		printf("%s\n", song_cursor->title);
+//		printf("%s\n", song_cursor->artist);
+//		printf("%s\n", song_cursor->album);
+//		printf("%lu\n", song_cursor->year);
+//		printf("%lu\n", song_cursor->track_num);
+//		printf("%s\n\n", song_cursor->genre);
+//		song_cursor = song_cursor->next;
+//	}
+//	struct artistinfolst* artist_cursor = artist_info;
+//	while(artist_cursor != NULL){
+//		printf("Artist: %s\n", artist_cursor->name);
+//		printf("%lu\n", artist_cursor->id);
+//		artist_cursor = artist_cursor->next;
+//	}
+//	struct genreinfolst* genre_cursor = genre_info;
+//	while(genre_cursor != NULL){
+//		printf("Genre: %s\n", genre_cursor->genre);
+//		genre_cursor = genre_cursor->next;
+//	}
+//	free_songinfolst(song_info);
+//	free_albuminfolst(album_info);
+//	free_artistinfolst(artist_info);
+//	free_genreinfolst(genre_info);
 	return 0;
 }
 #endif
@@ -97,6 +98,11 @@ int connectToServ(const  char* port, const char* server_ip){
 int getSong(unsigned long song_id, char* filepath){
 	FILE* file = fopen(filepath, "w");
 
+    if( file == NULL ) {
+        printf("File could not be opened!\n");
+        return 1;
+    }
+
 	int request_size = sizeof(char) + sizeof(unsigned long);
 	char* request = (char*)malloc(request_size);
 	request[0] = REQSNG;
@@ -121,7 +127,11 @@ int getSong(unsigned long song_id, char* filepath){
 	}
 	fwrite(resp, sizeof(char), resp_size, file);
 
+	//Flush the socket of all of the messiness that was sent after the actual song length
+	recv(sockfd, resp_cursor, resp_size, MSG_DONTWAIT);
+
 	free(resp_size_str);
+	free(request);
 	fclose(file);
 	free(resp);
 	return 0;
@@ -274,7 +284,7 @@ int queryGenres(struct genreinfolst** genre_info){
  * @param song_info The songinfolst struct that is populated with song information
  * @return 0 if successful, 1 otherwise.
  */
-int queryGenreSongs(char* genre, struct songinfolst** song_info){
+int queryGenreSongs(const char* genre, struct songinfolst** song_info){
 	if(genre == NULL){
 		return 1;
 	}

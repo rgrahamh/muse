@@ -54,7 +54,7 @@ extern "C" {
     int queryArtists(struct artistinfolst** artist_info);
     int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info);
     int queryGenres(struct genreinfolst** genre_info);
-    int queryGenreSongs(char* genre, struct songinfolst** song_info);
+    int queryGenreSongs(const char* genre, struct songinfolst** song_info);
 
 	void parseSongs(char* resp, struct songinfolst** song_info);
 	void parseAlbums(char* resp, struct albuminfolst** album_info);

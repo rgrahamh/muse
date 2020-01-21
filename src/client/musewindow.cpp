@@ -41,33 +41,30 @@ MuseWindow::MuseWindow(QWidget *parent)
     genre_model = new GenreModel(this);
     song_model = new SongModel(this);
 
-//    // populate the models
-//    song_model->populateData(getTestSongs());
-//    artist_model->populateData(getTestArtists());
-//    album_model->populateData(getTestAlbums());
-//    genre_model->populateData(getTestGenres());
+    // populate the models
+    clearModels();
 
-//    // allow filtering by use of proxy models
-//    QSortFilterProxyModel *artist_proxy = new QSortFilterProxyModel();
-//    artist_proxy->setSourceModel(artist_model);
-//    ui->artistView->setModel(artist_proxy);
+    // allow filtering by use of proxy models
+    QSortFilterProxyModel *artist_proxy = new QSortFilterProxyModel();
+    artist_proxy->setSourceModel(artist_model);
+    ui->artistView->setModel(artist_proxy);
 
-//    QSortFilterProxyModel *album_proxy = new QSortFilterProxyModel();
-//    album_proxy->setSourceModel(album_model);
-//    ui->albumView->setModel(album_proxy);
+    QSortFilterProxyModel *album_proxy = new QSortFilterProxyModel();
+    album_proxy->setSourceModel(album_model);
+    ui->albumView->setModel(album_proxy);
 
-//    QSortFilterProxyModel *genre_proxy = new QSortFilterProxyModel();
-//    genre_proxy->setSourceModel(genre_model);
-//    ui->genreView->setModel(genre_proxy);
+    QSortFilterProxyModel *genre_proxy = new QSortFilterProxyModel();
+    genre_proxy->setSourceModel(genre_model);
+    ui->genreView->setModel(genre_proxy);
 
-//    QSortFilterProxyModel *song_proxy = new QSortFilterProxyModel();
-//    song_proxy->setSourceModel(song_model);
-//    ui->songView->setModel(song_proxy);
+    QSortFilterProxyModel *song_proxy = new QSortFilterProxyModel();
+    song_proxy->setSourceModel(song_model);
+    ui->songView->setModel(song_proxy);
 
-    ui->artistView->setModel(artist_model);
-    ui->albumView->setModel(album_model);
-    ui->genreView->setModel(genre_model);
-    ui->songView->setModel(song_model);
+    ui->artistView->setModel(artist_proxy);
+    ui->albumView->setModel(album_proxy);
+    ui->genreView->setModel(genre_proxy);
+    ui->songView->setModel(song_proxy);
 
 }
 
@@ -124,11 +121,7 @@ void MuseWindow::initializeFMOD() {
     }
 }
 
-/**
- * @brief MuseWindow::on_tabWidget_currentChanged Slot for when a tab changes
- * @param index The index of the tab that was switched to
- */
-void MuseWindow::on_tabWidget_currentChanged(int index)
+void MuseWindow::on_tabWidget_tabBarClicked(int index)
 {
     /* The tab has changed, so we need to update the view with new data */
     if( connection_state )  {
@@ -175,7 +168,23 @@ void MuseWindow::on_tabWidget_currentChanged(int index)
  */
 void MuseWindow::on_songView_doubleClicked(const QModelIndex &index)
 {
-    qDebug() << "Song id selected is: " << index.data(Qt::UserRole).value<int>() << endl;
+    int song_id = index.data(Qt::UserRole).value<int>();
+
+    qDebug() << "Song id selected is: " << song_id << endl;
+
+    char* new_song_path = (char*)  calloc(100, sizeof(char));
+    sprintf(new_song_path, "/tmp/muse_download_%d.mp3", song_id);
+    if( int err = getSong(song_id, new_song_path) ) {
+        qDebug() << "Unable to retrieve song" << endl;
+    } else {
+        current_song = song_id;
+    }
+
+    free(new_song_path);
+
+    stopAndReadyUpFMOD();
+
+    on_playButton_clicked();
 }
 
 /**
@@ -184,7 +193,18 @@ void MuseWindow::on_songView_doubleClicked(const QModelIndex &index)
  */
 void MuseWindow::on_artistView_doubleClicked(const QModelIndex &index)
 {
-    qDebug() << "Artist id selected is: " << index.data(Qt::UserRole).value<int>() << endl;
+    int artist_id = index.data(Qt::UserRole).value<int>();
+
+    qDebug() << "Artist id selected is: " << artist_id << endl;
+
+    struct albuminfolst* albums;
+    if( int err = queryArtistAlbums(artist_id, &albums) ) {
+        qDebug() << "Error retrieving artist albums!" << endl;
+        return;
+    }
+
+    album_model->populateData(albums);
+    ui->tabWidget->setCurrentIndex(1);
 }
 
 /**
@@ -193,7 +213,18 @@ void MuseWindow::on_artistView_doubleClicked(const QModelIndex &index)
  */
 void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
 {
-    qDebug() << "Album id selected is: " << index.data(Qt::UserRole).value<int>() << endl;
+    int album_id = index.data(Qt::UserRole).value<int>();
+
+    qDebug() << "Album id selected is: " << album_id << endl;
+
+    struct songinfolst* songs;
+    if( int err = queryAlbumSongs(album_id, &songs) ) {
+        qDebug() << "Error retrieving album songs!" << endl;
+        return;
+    }
+
+    song_model->populateData(songs);
+    ui->tabWidget->setCurrentIndex(3);
 }
 
 /**
@@ -202,7 +233,18 @@ void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
  */
 void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 {
-    qDebug() << "Genre selected is: " << index.data().value<QString>() << endl;
+    const char* genre = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
+
+    qDebug() << "Genre selected is: " << genre << endl;
+
+    struct songinfolst* songs;
+    if( int err = queryGenreSongs(genre, &songs) ) {
+        qDebug() << "Error retrieving genre songs!" << endl;
+        return;
+    }
+
+    song_model->populateData(songs);
+    ui->tabWidget->setCurrentIndex(3);
 }
 
 /**
@@ -219,23 +261,31 @@ void MuseWindow::on_playButton_clicked()
         if( is_playing ) {
             song_channel->setPaused(false);
         } else {
-            // try playing a song
-            system->createStream("/home/dfletch/Documents/School/muse/assets/music/summer_is_gone.mp3", FMOD_DEFAULT, NULL, &song_to_play);
+            if( current_song > -1 ) {
+                char* new_song_path = (char*)  calloc(100, sizeof(char));
+                sprintf(new_song_path, "/tmp/muse_download_%d.mp3", current_song);
 
-            unsigned int song_length;
-            song_to_play->getLength(&song_length, FMOD_TIMEUNIT_MS);
+                // try playing a song
+                FMOD_RESULT result = system->createStream(new_song_path, FMOD_CREATESTREAM, NULL, &song_to_play);
+                if( result == FMOD_RESULT::FMOD_OK ) {
+                    unsigned int song_length;
+                    song_to_play->getLength(&song_length, FMOD_TIMEUNIT_MS);
 
-            unsigned int song_length_s = song_length / 1000;
+                    unsigned int song_length_s = song_length / 1000;
 
-            memset(songLengthText, 0, 10);
-            sprintf(songLengthText, "%d:%02d", song_length_s / 60, song_length_s % 60);
-            ui->songLengthLabel->setText(songLengthText);
+                    memset(songLengthText, 0, 10);
+                    sprintf(songLengthText, "%d:%02d", song_length_s / 60, song_length_s % 60);
+                    ui->songLengthLabel->setText(songLengthText);
 
-            ui->songProgressSlider->setMinimum(0);
-            ui->songProgressSlider->setMaximum(song_length);
-            ui->songProgressSlider->setValue(0);
+                    ui->songProgressSlider->setMinimum(0);
+                    ui->songProgressSlider->setMaximum(song_length);
+                    ui->songProgressSlider->setValue(0);
 
-            system->playSound(song_to_play, NULL, false, &song_channel);
+                    system->playSound(song_to_play, NULL, false, &song_channel);
+                }
+
+                free(new_song_path);
+            }
         }
 
         // song_to_play->release();
@@ -285,11 +335,12 @@ void MuseWindow::on_connectButton_clicked()
                 ui->connectButton->setText("Disconnect");
                 connection_state = true;
 
-                ui->tabWidget->setCurrentIndex(0);
+                on_tabWidget_tabBarClicked(0);
             }
         }
     } else {
         disconnect();
+        clearModels();
         connection_state = false;
         ui->serverInfoLabel->setText("Not connected to server.");
         ui->connectButton->setText("Connect to...");
@@ -305,7 +356,6 @@ void MuseWindow::on_timeout() {
     if( is_playing ) {
         unsigned int position;
         song_channel->getPosition(&position, FMOD_TIMEUNIT_MS);
-
         unsigned int position_s = position / 1000;
 
         memset(songProgressText, 0, 10);
@@ -322,3 +372,25 @@ void MuseWindow::on_timeout() {
         ui->playButton->setText("Play");
     }
 }
+
+void MuseWindow::clearModels() {
+    song_model->clearModel();
+    artist_model->clearModel();
+    album_model->clearModel();
+    genre_model->clearModel();
+}
+
+void MuseWindow::stopAndReadyUpFMOD() {
+    ui->playButton->setText("Play");
+    play_state = false;
+    ui->songProgressLabel->setText("0:00");
+    ui->songProgressSlider->setValue(0);
+
+    song_channel->stop();
+    song_to_play->release();
+
+    song_channel = NULL;
+    song_to_play = NULL;
+}
+
+
