@@ -26,11 +26,11 @@ struct dbsonginfo {
 	sqlite3* db;
 	char* title;
 	char* artist;
-	unsigned long artist_id;
-	unsigned long next_artist;
+	unsigned long long artist_id;
+	unsigned long long next_artist;
 	char* album;
-	unsigned long album_id;
-	unsigned long next_album;
+	unsigned long long album_id;
+	unsigned long long next_album;
 	char* comment;
 	int year;
 	int track_num;

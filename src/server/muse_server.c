@@ -145,10 +145,6 @@ int handleRequest(int new_sockfd, FILE* log_file){
 
 	//Holds the incoming flags
 	unsigned char incoming_flags = 0;
-	//Holds the incoming message
-	char* incoming_msg;
-	//Holds the amount of bytes recieved
-	int amnt_recv = 0;
 
 	do{
 		sqlite3* db;
@@ -157,18 +153,17 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			fprintf(log_file, "Could not open the sqlite database!\n");
 			return 1;
 		}
-		//Holds the incoming message
-		char* incoming_msg;
-		//Holds the amount of bytes recieved
-		int amnt_recv = 0;
 		//Re-clear the memory
 		memset(incoming, 0, BUFF_SIZE);
 		memset(query, 0, BUFF_SIZE);
 
 		//Recieve the request, set the amount to the transferred data minus the flags.
-		amnt_recv = recv(new_sockfd, incoming, BUFF_SIZE, 0) - 1;
+		if(recv(new_sockfd, incoming, BUFF_SIZE, 0) == -1){
+			fprintf(log_file, "Error receiving request!\n");
+			return 1;
+		}
 		incoming_flags = *incoming;
-		incoming_msg = incoming + 1;
+		char* incoming_msg = incoming + 1;
 
 		if((incoming_flags & REQ_TYPE_MASK) != TERMCON){
 			//Set the order (opposite as recieved, since we're returning a linked list)
@@ -186,7 +181,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
 					//Read everything past the flags as a 
-					sprintf(query, "SELECT song.filepath\nFROM song\nWHERE song.id = %lu;", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.filepath\nFROM song\nWHERE song.id = %llu;", *((unsigned long long*)incoming_msg));
 					sqlite3_exec(db, query, sendSongCallback, &new_sockfd, NULL);
 					sqlite3_close(db);
 					freeLinkedStr(results);
@@ -201,7 +196,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					break;
 
 				case QWRYALBMSNG:
-					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %lu ORDER BY song.track_num DESC;", *((unsigned long*)incoming_msg));
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song on album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE album.id = %llu ORDER BY song.track_num DESC;", *((unsigned long long*)incoming_msg));
 					break;
 
 				case QWRYART:
@@ -209,7 +204,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					break;
 
 				case QWRYARTALBM:
-					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %lu ORDER BY album.year %s;", *((unsigned long*)incoming_msg), order_dir);
+					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %llu ORDER BY album.year %s;", *((unsigned long long*)incoming_msg), order_dir);
 					break;
 
 				case QWRYGNR:
@@ -232,10 +227,10 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				result_str_len += strlen(cursor->str);
 				cursor = cursor->prev;
 			}
-			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long) + 1, 1);
+			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long long) + 1, 1);
 			//Send the returned size as the first byte grouping
-			*((unsigned long*)result_str) = result_str_len + sizeof(unsigned long);
-			char* str_cursor = result_str+sizeof(unsigned long);
+			*((unsigned long long*)result_str) = result_str_len + sizeof(unsigned long long);
+			char* str_cursor = result_str+sizeof(unsigned long long);
 
 			cursor = results;
 			while(cursor != NULL){
@@ -243,12 +238,12 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				cursor = cursor->prev;
 			}
 
-			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long), 0);
+			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long long), 0);
 			
 			freeLinkedStr(results);
 			free(result_str);
 
-			int status = sqlite3_close(db);
+			sqlite3_close(db);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
 
@@ -270,19 +265,19 @@ int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column
 	//Open the file for reading
 	FILE* file = fopen(result[0], "rb");
 
-	unsigned long register file_size = 0;
+	unsigned long long register file_size = 0;
 	while(getc(file) != EOF){
 		file_size++;
 	}
 	rewind(file);
 
-	char* file_buff = (char*)malloc(file_size + sizeof(unsigned long));
+	char* file_buff = (char*)malloc(file_size + sizeof(unsigned long long));
 
-	*((unsigned long*)file_buff) = file_size;
+	*((unsigned long long*)file_buff) = file_size;
 
 	//I'm pulling a block at a time on my system (block size is 4096)
-	char* tmp_buff = file_buff + sizeof(unsigned long);
-	for(unsigned long i = 0; i < file_size - BLK_SIZE; i += BLK_SIZE){
+	char* tmp_buff = file_buff + sizeof(unsigned long long);
+	for(unsigned long long i = 0; i < file_size - BLK_SIZE; i += BLK_SIZE){
 		fread(tmp_buff, 1, BLK_SIZE, file);
 		tmp_buff += BLK_SIZE;
 	}
@@ -291,7 +286,7 @@ int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column
 	}
 	fclose(file);
 
-	send(*((int*)new_sockfd), file_buff, file_size + sizeof(unsigned long), 0);
+	send(*((int*)new_sockfd), file_buff, file_size + sizeof(unsigned long long), 0);
 	free(file_buff);
 	return 0;
 }
@@ -308,7 +303,7 @@ int sendInfo(void* result_list, int col_num, char** result, char** column){
 		str_size += strlen(result[i]) + 1;
 	}
 	//String size plus one for each tab plus one for the pointer plus one for the newline
-	char* new_result = (char*)calloc(str_size + col_num + sizeof(unsigned long) + 1, 1);
+	char* new_result = (char*)calloc(str_size + col_num + sizeof(unsigned long long) + 1, 1);
 	for(int i = 0; i < col_num - 1; i++){
 		strcat(new_result, result[i]);
 		strcat(new_result, "\t");
@@ -484,7 +479,7 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 							//If there were no columns returned
 							if(calledback == 0){
 								//Create new entries for the artist, song, and album
-								sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\nINSERT INTO album(name, year)\nVALUES('%s', %i);\n\nINSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %lu, %lu, %i, '%s', '%s');", song_info->artist, song_info->album, song_info->year, song_info->title, ++(song_info->next_album), ++(song_info->next_artist), song_info->track_num, song_info->filepath, song_info->genre);
+								sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\nINSERT INTO album(name, year)\nVALUES('%s', %i);\n\nINSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %llu, %llu, %i, '%s', '%s');", song_info->artist, song_info->album, song_info->year, song_info->title, ++(song_info->next_album), ++(song_info->next_artist), song_info->track_num, song_info->filepath, song_info->genre);
 
 								sqlite3_exec(db, query, NULL, NULL, NULL);
 							}
@@ -502,7 +497,7 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 									song_info->artist_id = ++(song_info->next_artist);
 								}
 								//Create new entry for the song, link the artist and album FK's
-								sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %lu, %lu, %i, '%s', '%s');", song_info->title, song_info->album_id, song_info->artist_id, song_info->track_num, song_info->filepath, song_info->genre);
+								sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %llu, %llu, %i, '%s', '%s');", song_info->title, song_info->album_id, song_info->artist_id, song_info->track_num, song_info->filepath, song_info->genre);
 								sqlite3_exec(db, query, NULL, NULL, NULL);
 							}
 							free(song_info->title);
@@ -556,24 +551,24 @@ int cullSongCallback(void* datab, int col_num, char** result, char** column){
 	char album_still_exists = 0;
 	char artist_still_exists = 0;
 	if(access(result[0], F_OK | R_OK)){
-		sprintf(query, "DELETE FROM song\nWHERE song.id = %lu;", strtoul(result[1], NULL, 10));
+		sprintf(query, "DELETE FROM song\nWHERE song.id = %llu;", (unsigned long long)strtoul(result[1], NULL, 10));
 		sqlite3_exec(db, query, NULL, NULL, NULL);
 		for(int i = 0; i < col_num; i++){
 			if(strcmp("ALBUM_ID", column[i]) == 0){
-				unsigned long album_id = strtoul(result[i], NULL, 10);
-				sprintf(query, "SELECT album.id\nFROM album INNER JOIN song ON album.id = song.album_id\nWHERE song.album_id = %lu;", album_id);
+				unsigned long long album_id = strtoul(result[i], NULL, 10);
+				sprintf(query, "SELECT album.id\nFROM album INNER JOIN song ON album.id = song.album_id\nWHERE song.album_id = %llu;", album_id);
 				sqlite3_exec(db, query, deleteAlbum, &album_still_exists, NULL);
 				if(!album_still_exists){
-					sprintf(query, "DELETE FROM album\nWHERE album.id = %lu;", album_id);
+					sprintf(query, "DELETE FROM album\nWHERE album.id = %llu;", album_id);
 					sqlite3_exec(db, query, NULL, NULL, NULL);
 				}
 			}
 			else if(strcmp("ARTIST_ID", column[i]) == 0){
-				unsigned long artist_id = strtoul(result[i], NULL, 10);
-				sprintf(query, "SELECT artist.id\nFROM artist INNER JOIN song ON artist.id = song.artist_id\nWHERE song.artist_id = %lu;", artist_id);
+				unsigned long long artist_id = strtoul(result[i], NULL, 10);
+				sprintf(query, "SELECT artist.id\nFROM artist INNER JOIN song ON artist.id = song.artist_id\nWHERE song.artist_id = %llu;", artist_id);
 				sqlite3_exec(db, query, deleteArtist, &artist_still_exists, NULL);
 				if(!artist_still_exists){
-					sprintf(query, "DELETE FROM artist\nWHERE artist.id = %lu;", artist_id);
+					sprintf(query, "DELETE FROM artist\nWHERE artist.id = %llu;", artist_id);
 					sqlite3_exec(db, query, NULL, NULL, NULL);
 				}
 			}

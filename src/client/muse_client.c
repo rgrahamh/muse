@@ -24,21 +24,21 @@ int main(int argc, char** argv){
 	struct albuminfolst* album_cursor = album_info;
 	while(album_cursor != NULL){
 	printf("Album:\n");
-		printf("%lu\n", album_cursor->id);
+		printf("%llu\n", album_cursor->id);
 		printf("%s\n", album_cursor->title);
-		printf("%lu\n\n", album_cursor->year);
+		printf("%llu\n\n", album_cursor->year);
 		album_cursor = album_cursor->next;
 	}
 
 	struct songinfolst* song_cursor = song_info;
 	while(song_cursor != NULL){
 	printf("Song:\n");
-		printf("%lu\n", song_cursor->id);
+		printf("%llu\n", song_cursor->id);
 		printf("%s\n", song_cursor->title);
 		printf("%s\n", song_cursor->artist);
 		printf("%s\n", song_cursor->album);
-		printf("%lu\n", song_cursor->year);
-		printf("%lu\n", song_cursor->track_num);
+		printf("%llu\n", song_cursor->year);
+		printf("%llu\n", song_cursor->track_num);
 		printf("%s\n\n", song_cursor->genre);
 		song_cursor = song_cursor->next;
 	}
@@ -46,7 +46,7 @@ int main(int argc, char** argv){
 	struct artistinfolst* artist_cursor = artist_info;
 	while(artist_cursor != NULL){
 		printf("Artist: %s\n", artist_cursor->name);
-		printf("%lu\n", artist_cursor->id);
+		printf("%llu\n", artist_cursor->id);
 		artist_cursor = artist_cursor->next;
 	}
 
@@ -85,17 +85,17 @@ int main(int argc, char** argv){
 	
 	//loadPlaylist(&playlists, "./my_playlist.pl");
 	scanPlaylists(&playlists);
-	printf("Song 1: %lu\n", playlists->first_song->id);
-	printf("Song 2: %lu\n", playlists->first_song->next->id);
-	printf("Song 3: %lu\n", playlists->first_song->next->next->id);
-	printf("Song 4: %lu\n", playlists->first_song->next->next->next->id);
-	printf("Song 5: %lu\n", playlists->first_song->next->next->next->next->id);
+	printf("Song 1: %llu\n", playlists->first_song->id);
+	printf("Song 2: %llu\n", playlists->first_song->next->id);
+	printf("Song 3: %llu\n", playlists->first_song->next->next->id);
+	printf("Song 4: %llu\n", playlists->first_song->next->next->next->id);
+	printf("Song 5: %llu\n", playlists->first_song->next->next->next->next->id);
 
-	printf("Song 1: %lu\n", playlists->prev->first_song->id);
-	printf("Song 2: %lu\n", playlists->prev->first_song->next->id);
-	printf("Song 3: %lu\n", playlists->prev->first_song->next->next->id);
-	printf("Song 4: %lu\n", playlists->prev->first_song->next->next->next->id);
-	printf("Song 5: %lu\n", playlists->prev->first_song->next->next->next->next->id);
+	printf("Song 1: %llu\n", playlists->prev->first_song->id);
+	printf("Song 2: %llu\n", playlists->prev->first_song->next->id);
+	printf("Song 3: %llu\n", playlists->prev->first_song->next->next->id);
+	printf("Song 4: %llu\n", playlists->prev->first_song->next->next->next->id);
+	printf("Song 5: %llu\n", playlists->prev->first_song->next->next->next->next->id);
 
 	free_playlist(playlists);
 
@@ -141,7 +141,7 @@ int connectToServ(const  char* port, const char* server_ip){
  * @param filepath The filepath that the song will be printed to
  * @return 0 if successful, 1 otherwise.
  */
-int getSong(unsigned long song_id, char* filepath){
+int getSong(unsigned long long song_id, char* filepath){
 	FILE* file = fopen(filepath, "w");
 
     if( file == NULL ) {
@@ -149,25 +149,25 @@ int getSong(unsigned long song_id, char* filepath){
         return 1;
     }
 
-	int request_size = sizeof(char) + sizeof(unsigned long);
+	int request_size = sizeof(char) + sizeof(unsigned long long);
 	char* request = (char*)malloc(request_size);
 	request[0] = REQSNG;
-	*((unsigned long *)(request+1)) = song_id;
+	*((unsigned long long *)(request+1)) = song_id;
 	
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
 		return 1;
 	}
 
-	char* resp_size_str = (char*)malloc(sizeof(unsigned long));
-	if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+	char* resp_size_str = (char*)malloc(sizeof(unsigned long long));
+	if(recv(sockfd, resp_size_str, sizeof(unsigned long long), 0) == -1){
 		return 1;
 	}
-	unsigned long resp_size = (*((unsigned long*)resp_size_str)) - sizeof(unsigned long);
+	unsigned long long resp_size = (*((unsigned long long*)resp_size_str)) - sizeof(unsigned long long);
 	char* resp = (char*)malloc(resp_size);
 	char* resp_cursor = resp;
 
-	unsigned long amnt_recv = 0;
+	unsigned long long amnt_recv = 0;
 	while((amnt_recv += recv(sockfd, resp_cursor, resp_size - amnt_recv, 0)) < resp_size){
 		resp_cursor = amnt_recv + resp;
 	}
@@ -236,7 +236,7 @@ int queryAlbums(struct albuminfolst** album_info){
  * @param song_info The songinfolst struct that is populated with song information
  * @return 0 if successful, 1 otherwise.
  */
-int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info){
+int queryAlbumSongs(unsigned long long album_id, struct songinfolst** song_info){
 	if(queryEntity(album_id, QWRYALBMSNG | ASC)){
 		printf("Error querying entity!\n");
 		return 1;
@@ -283,7 +283,7 @@ int queryArtists(struct artistinfolst** artist_info){
  * @param artist_info The artistinfolst struct that is populated with artist information
  * @return 0 if successful, 1 otherwise.
  */
-int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info){
+int queryArtistAlbums(unsigned long long artist_id, struct albuminfolst** album_info){
 	if(queryEntity(artist_id, QWRYARTALBM | ORDYR | ASC)){
 		printf("Error querying entity!\n");
 		return 1;
@@ -365,14 +365,14 @@ int queryGenreSongs(const char* genre, struct songinfolst** song_info){
  * @param flags The request flags that are being sent
  * @return 1 if unsuccessful, 0 otherwise
  */
-int queryEntity(unsigned long entity_id, char flags){
+int queryEntity(unsigned long long entity_id, char flags){
 	if(entity_id == 0){
 		return 1;
 	}
-	int request_size = sizeof(unsigned long) + sizeof(char);
+	int request_size = sizeof(unsigned long long) + sizeof(char);
 	char* request = (char*)calloc(request_size, 1);
 	request[0] = flags;
-	*((unsigned long*)(request+1)) = entity_id;
+	*((unsigned long long*)(request+1)) = entity_id;
 
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
@@ -496,13 +496,13 @@ char* parseFieldStr(char** dest, char* base, char endchar){
 	return base + str_size;
 }
 
-/** Parses a field into an address of an unsigned long from base to whenever it runs into the endchar (same functionality as parseFieldStr, but uses a different name to avoid improper C++ name mangling)
+/** Parses a field into an address of an unsigned long long from base to whenever it runs into the endchar (same functionality as parseFieldStr, but uses a different name to avoid improper C++ name mangling)
  * @param dest The final destination of the field
  * @param base The place the field is being read from
  * @param endchar The character to read until
  * @return The address of the character after the endchar
  */
-char* parseFieldLong(unsigned long* dest, char* base, char endchar){
+char* parseFieldLong(unsigned long long* dest, char* base, char endchar){
 	int str_size = substrsize(base, endchar);
 	char* num_str = (char*)malloc(str_size + 1);
 	substr(base, '\t', num_str, str_size);
@@ -573,19 +573,19 @@ void initGenre(struct genreinfolst** genre_info){
  * @return 0 if successful, 1 otherwise
  */
 int receiveResponse(char** resp){
-	char* resp_size_str = (char*)malloc(sizeof(unsigned long));
-    if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+	char* resp_size_str = (char*)malloc(sizeof(unsigned long long));
+    if(recv(sockfd, resp_size_str, sizeof(unsigned long long), 0) == -1){
 		printf("Error receiving data!\n");
 		return 1;
 	}
-	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
+	unsigned long long resp_size = (*((unsigned long long*)(resp_size_str))) - sizeof(unsigned long long);
 	if(resp_size == 0){
 		printf("Response has no size!\n");
 		return 1;
 	}
 	*resp = (char*)malloc(resp_size+1);
 	char* resp_cursor = *resp;
-	unsigned long amnt_recv = 0;
+	unsigned long long amnt_recv = 0;
 	while((amnt_recv += recv(sockfd, resp_cursor, resp_size - amnt_recv, 0)) < resp_size){
 		resp_cursor = amnt_recv + *resp;
 	}
@@ -611,7 +611,7 @@ void addPlaylist(char* name, struct playlist** list){
  * @param song_id The id of the song that you wish to add to the playlist
  * @param list The list that you wish to add a song to
  */
-void addSongToPlaylist(unsigned long song_id, struct playlist* list){
+void addSongToPlaylist(unsigned long long song_id, struct playlist* list){
 	struct songlst* new_song = (struct songlst*)malloc(sizeof(struct songlst));
 	new_song->id = song_id;
 	new_song->next = NULL;
@@ -648,15 +648,15 @@ int savePlaylist(struct playlist* list, char* filepath){
 	fwrite(list->name, 1, strlen(list->name) + 1, file);
 
 	//Print the song IDs to the file
-	char* str = (char*)calloc(song_count, sizeof(unsigned long));
+	char* str = (char*)calloc(song_count, sizeof(unsigned long long));
 	char* str_cursor = str;
 	cursor = list->first_song;
 	while(cursor != NULL){
-		*((unsigned long*)str_cursor) = cursor->id;
-		str_cursor += sizeof(unsigned long);
+		*((unsigned long long*)str_cursor) = cursor->id;
+		str_cursor += sizeof(unsigned long long);
 		cursor = cursor->next;
 	}
-	fwrite(str, sizeof(unsigned long), song_count, file);
+	fwrite(str, sizeof(unsigned long long), song_count, file);
 	fclose(file);
 
 	return 0;
@@ -686,21 +686,21 @@ int loadPlaylist(struct playlist** list, char* filepath){
 	fread(play_list->name, name_len + 1, 1, file);
 
 	//Parse the song IDs
-	char* id_str = (char*)calloc(1, sizeof(unsigned long) + 1);
+	char* id_str = (char*)calloc(1, sizeof(unsigned long long) + 1);
 	struct songlst* prev_song = (struct songlst*)calloc(1, sizeof(struct songlst));
-	fread(id_str, 1, sizeof(unsigned long), file);
-	prev_song->id = *((unsigned long*)id_str);
+	fread(id_str, 1, sizeof(unsigned long long), file);
+	prev_song->id = *((unsigned long long*)id_str);
 	prev_song->next = NULL;
 	play_list->first_song = prev_song;
-	fread(id_str, 1, sizeof(unsigned long), file);
+	fread(id_str, 1, sizeof(unsigned long long), file);
 	while(!feof(file)){
 		struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
-		song->id = *((unsigned long*)id_str);
+		song->id = *((unsigned long long*)id_str);
 		song->next = NULL;
 		prev_song->next = song;
 		play_list->last_song = song;
 		prev_song = song;
-		fread(id_str, 1, sizeof(unsigned long), file);
+		fread(id_str, 1, sizeof(unsigned long long), file);
 	}
 	play_list->prev = *list;
 	*list = play_list;
