@@ -14,6 +14,8 @@ GenreModel::GenreModel(QObject *parent) : QAbstractTableModel(parent)
  */
 void GenreModel::populateData(struct genreinfolst* genres)
 {
+    beginResetModel();
+
     // clear previous data
     this->genres.clear();
 
@@ -26,6 +28,8 @@ void GenreModel::populateData(struct genreinfolst* genres)
     }
 
     free_genreinfolst(genres);
+
+    endResetModel();
 
     return;
 }
@@ -84,4 +88,13 @@ QVariant GenreModel::headerData(int section, Qt::Orientation orientation, int ro
         }
     }
     return QVariant();
+}
+
+void GenreModel::clearModel() {
+    beginResetModel();
+
+    // clear previous data
+    this->genres.clear();
+
+    endResetModel();
 }

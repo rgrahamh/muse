@@ -14,6 +14,8 @@ ArtistModel::ArtistModel(QObject *parent) : QAbstractTableModel(parent)
  */
 void ArtistModel::populateData(struct artistinfolst* artists)
 {
+    beginResetModel();
+
     // clear previous data
     this->ids.clear();
     this->names.clear();
@@ -28,6 +30,8 @@ void ArtistModel::populateData(struct artistinfolst* artists)
     }
 
     free_artistinfolst(artists);
+
+    endResetModel();
 
     return;
 }
@@ -89,4 +93,14 @@ QVariant ArtistModel::headerData(int section, Qt::Orientation orientation, int r
         }
     }
     return QVariant();
+}
+
+void ArtistModel::clearModel() {
+    beginResetModel();
+
+    // clear previous data
+    this->ids.clear();
+    this->names.clear();
+
+    endResetModel();
 }

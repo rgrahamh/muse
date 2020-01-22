@@ -14,6 +14,8 @@ SongModel::SongModel(QObject *parent) : QAbstractTableModel(parent)
  */
 void SongModel::populateData(struct songinfolst* songs)
 {
+    beginResetModel();
+
     // clear previous data
     this->ids.clear();
     this->titles.clear();
@@ -38,6 +40,8 @@ void SongModel::populateData(struct songinfolst* songs)
     }
 
     free_songinfolst(songs);
+
+    endResetModel();
 
     return;
 }
@@ -119,4 +123,19 @@ QVariant SongModel::headerData(int section, Qt::Orientation orientation, int rol
         }
     }
     return QVariant();
+}
+
+void SongModel::clearModel() {
+    beginResetModel();
+
+    // clear previous data
+    this->ids.clear();
+    this->titles.clear();
+    this->artists.clear();
+    this->albums.clear();
+    this->years.clear();
+    this->track_nums.clear();
+    this->genres.clear();
+
+    endResetModel();
 }

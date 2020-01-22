@@ -8,6 +8,8 @@ int main(int argc, char** argv){
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
 	struct playlistlst* playlists;
+    getSong(14, "/tmp/muse_download_14.mp3");
+    getSong(13, "/tmp/muse_download_13.mp3");
 	queryAlbumSongs(25, &song_info);
 	queryArtistAlbums(25, &album_info);
 	queryGenreSongs("Rock", &song_info);
@@ -66,6 +68,7 @@ int main(int argc, char** argv){
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
 	free_genreinfolst(genre_info);*/
+
 	return 0;
 }
 #endif
@@ -77,7 +80,7 @@ int sockfd;
  * @param port The port that you wish to connect to
  * @return 0 if successful, 1 otherwise
  */
-int connectToServ(char* port, char* server_ip){
+int connectToServ(const  char* port, const char* server_ip){
 	signal(SIGTERM, stop);
 	signal(SIGHUP, stop);
 
@@ -113,6 +116,11 @@ int connectToServ(char* port, char* server_ip){
 int getSong(unsigned long song_id, char* filepath){
 	FILE* file = fopen(filepath, "w");
 
+    if( file == NULL ) {
+        printf("File could not be opened!\n");
+        return 1;
+    }
+
 	int request_size = sizeof(char) + sizeof(unsigned long);
 	char* request = (char*)malloc(request_size);
 	request[0] = REQSNG;
@@ -137,7 +145,11 @@ int getSong(unsigned long song_id, char* filepath){
 	}
 	fwrite(resp, sizeof(char), resp_size, file);
 
+	//Flush the socket of all of the messiness that was sent after the actual song length
+	recv(sockfd, resp_cursor, resp_size, MSG_DONTWAIT);
+
 	free(resp_size_str);
+	free(request);
 	fclose(file);
 	free(resp);
 	return 0;
@@ -265,7 +277,7 @@ int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info)
  * @param genre_info The genreinfolst struct that is populated with genre information
  * @return 0 if successful, 1 otherwise.
  */
-int queryGenre(struct genreinfolst** genre_info){
+int queryGenres(struct genreinfolst** genre_info){
 	char request = QWRYGNR | ASC | ORDSNG;
 
 	if(send(sockfd, &request, 1, 0) == 0){
@@ -290,7 +302,7 @@ int queryGenre(struct genreinfolst** genre_info){
  * @param song_info The songinfolst struct that is populated with song information
  * @return 0 if successful, 1 otherwise.
  */
-int queryGenreSongs(char* genre, struct songinfolst** song_info){
+int queryGenreSongs(const char* genre, struct songinfolst** song_info){
 	if(genre == NULL){
 		return 1;
 	}
@@ -534,11 +546,13 @@ void initGenre(struct genreinfolst** genre_info){
  */
 int receiveResponse(char** resp){
 	char* resp_size_str = (char*)malloc(sizeof(unsigned long));
-	if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+    if(recv(sockfd, resp_size_str, sizeof(unsigned long), 0) == -1){
+		printf("Error receiving data!\n");
 		return 1;
 	}
 	unsigned long resp_size = (*((unsigned long*)(resp_size_str))) - sizeof(unsigned long);
 	if(resp_size == 0){
+		printf("Response has no size!\n");
 		return 1;
 	}
 	*resp = (char*)malloc(resp_size+1);

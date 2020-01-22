@@ -12,15 +12,15 @@ ServerDialog::ServerDialog(QWidget *parent) :
     ui->setupUi(this);
 
     // setup regex
-    QRegExp serverIPRegex("[0-9]{3}.[0-9]{3}.[0-9]{3}.[0-9]{3}");
-    QRegExp serverPortRegex("[0-9]{4}");
+//    QRegExp serverIPRegex("[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}");
+//    QRegExp serverPortRegex("[0-9]{4}");
 
-    QValidator *ip_validator = new QRegExpValidator(serverIPRegex, this);
-    QValidator *port_validator = new QRegExpValidator(serverPortRegex, this);
+//    QValidator *ip_validator = new QRegExpValidator(serverIPRegex, this);
+//    QValidator *port_validator = new QRegExpValidator(serverPortRegex, this);
 
-    // assert regex to inputs
-    ui->serverDialogInputIP->setValidator(ip_validator);
-    ui->serverDialogInputPort->setValidator(port_validator);
+//    // assert regex to inputs
+//    ui->serverDialogInputIP->setValidator(ip_validator);
+//    ui->serverDialogInputPort->setValidator(port_validator);
 }
 
 /**

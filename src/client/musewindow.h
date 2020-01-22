@@ -33,7 +33,7 @@ public:
     ~MuseWindow();
 
 private slots:
-    void on_tabWidget_currentChanged(int index);
+    void on_tabWidget_tabBarClicked(int index);
 
     void on_songView_doubleClicked(const QModelIndex &index);
     void on_artistView_doubleClicked(const QModelIndex &index);
@@ -54,6 +54,8 @@ private:
     QString ip_address;
     QString port;
 
+    int current_song = -1;
+
     char* songProgressText;
     char* songLengthText;
     char* connectionText;
@@ -62,10 +64,17 @@ private:
 
     FMOD_RESULT result;
     FMOD::System *system = NULL;
-    FMOD::Sound* song_to_play;
-    FMOD::Channel* song_channel;
+    FMOD::Sound* song_to_play = NULL;
+    FMOD::Channel* song_channel = NULL;
+
+    ArtistModel* artist_model;
+    AlbumModel* album_model;
+    GenreModel* genre_model;
+    SongModel* song_model;
 
     void configureTableView(QTableView* view);
     void initializeFMOD();
+    void clearModels();
+    void stopAndReadyUpFMOD();
 };
 #endif // MUSEWINDOW_H

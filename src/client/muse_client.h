@@ -57,15 +57,15 @@ struct songlst{
 #ifdef __cplusplus
 extern "C" {
 #endif
-    int connectToServ(char* port, char* ip);
+    int connectToServ(const char* port, const char* ip);
     int getSong(unsigned long song_id, char* filepath);
     int querySongs(struct songinfolst** song_info);
     int queryAlbums(struct albuminfolst** album_info);
     int queryAlbumSongs(unsigned long album_id, struct songinfolst** song_info);
     int queryArtists(struct artistinfolst** artist_info);
     int queryArtistAlbums(unsigned long artist_id, struct albuminfolst** album_info);
-    int queryGenre(struct genreinfolst** genre_info);
-    int queryGenreSongs(char* genre, struct songinfolst** song_info);
+    int queryGenres(struct genreinfolst** genre_info);
+    int queryGenreSongs(const char* genre, struct songinfolst** song_info);
 
 	void parseSongs(char* resp, struct songinfolst** song_info);
 	void parseAlbums(char* resp, struct albuminfolst** album_info);
