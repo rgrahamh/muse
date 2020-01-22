@@ -44,7 +44,7 @@ int main(int argc, char** argv){
 	//char* test[] = {"/home/rhouck/Documents/music_iso"};
 	FILE* log_file = fopen("/tmp/muse_server.log", "w");
 
-	char* test[] = {"/home/dfletch/Documents/School/muse/assets/music"};
+	char* test[] = {"/home/rhouck/Music"};
  	scan(test, 1, log_file);
 
 	printf("Done scanning!\n");
@@ -150,7 +150,6 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	//Holds the amount of bytes recieved
 	int amnt_recv = 0;
 
-
 	do{
 		sqlite3* db;
 		//Open the database connection
@@ -233,7 +232,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				result_str_len += strlen(cursor->str);
 				cursor = cursor->prev;
 			}
-			char* result_str = (char*)calloc(20000, sizeof(char));
+			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long) + 1, 1);
 			//Send the returned size as the first byte grouping
 			*((unsigned long*)result_str) = result_str_len + sizeof(unsigned long);
 			char* str_cursor = result_str+sizeof(unsigned long);
@@ -252,7 +251,6 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			int status = sqlite3_close(db);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
-
 
 	free(query);
 	free(incoming);
@@ -284,7 +282,7 @@ int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column
 
 	//I'm pulling a block at a time on my system (block size is 4096)
 	char* tmp_buff = file_buff + sizeof(unsigned long);
-	for(unsigned long i = 0; i < file_size; i += BLK_SIZE){
+	for(unsigned long i = 0; i < file_size - BLK_SIZE; i += BLK_SIZE){
 		fread(tmp_buff, 1, BLK_SIZE, file);
 		tmp_buff += BLK_SIZE;
 	}
@@ -518,6 +516,7 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 				}
 			}
 			free(file_info);
+			closedir(dir);
 		}
 		//Go back to original directory in case there's relative filepaths
 		chdir(curr_path);
@@ -528,7 +527,6 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 	}
 
 	//Free somme memory
-	free(dir);
 	free(song_info);
 	free(query);
 	free(curr_path);

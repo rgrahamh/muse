@@ -4,19 +4,18 @@ int sockfd;
 
 #ifdef TEST
 int main(int argc, char** argv){
-	//connectToServ("2442", "127.0.0.1");
-/*	struct songinfolst* song_info;
+	connectToServ("2442", "127.0.0.1");
+	struct songinfolst* song_info;
 	struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
-	struct playlistlst* playlists;
 
     getSong(14, "/tmp/muse_download_14.mp3");
     getSong(13, "/tmp/muse_download_13.mp3");
 	queryAlbumSongs(25, &song_info);
 	queryArtistAlbums(25, &album_info);
 	queryGenreSongs("Rock", &song_info);
-	queryGenre(&genre_info);
+	queryGenres(&genre_info);
 	querySongs(&song_info);
 	queryAlbums(&album_info);
 	queryArtists(&artist_info);
@@ -60,12 +59,11 @@ int main(int argc, char** argv){
 	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
-	free_genreinfolst(genre_info);*/
+	free_genreinfolst(genre_info);
 
-	/*
 	//Playlist testing
 	struct playlist* playlists = NULL;
-	char* buff = (char*)calloc(1, 42);
+	/*char* buff = (char*)calloc(1, 42);
 	strcpy(buff, "My Playlist");
 	addPlaylist(buff, &playlists);
 	addSongToPlaylist(50, playlists);
@@ -83,24 +81,23 @@ int main(int argc, char** argv){
 	addSongToPlaylist(165, playlists);
 	addSongToPlaylist(3885, playlists);
 	addSongToPlaylist(987, playlists);
-	savePlaylist(playlists, "./my_playlist2.pl");
+	savePlaylist(playlists, "./my_playlist2.pl");*/
 	
-	loadPlaylist(&playlists, "./my_playlist.pl");
+	//loadPlaylist(&playlists, "./my_playlist.pl");
+	scanPlaylists(&playlists);
 	printf("Song 1: %lu\n", playlists->first_song->id);
 	printf("Song 2: %lu\n", playlists->first_song->next->id);
 	printf("Song 3: %lu\n", playlists->first_song->next->next->id);
 	printf("Song 4: %lu\n", playlists->first_song->next->next->next->id);
 	printf("Song 5: %lu\n", playlists->first_song->next->next->next->next->id);
 
-	loadPlaylist(&playlists, "./my_playlist2.pl");
-	printf("Song 1: %lu\n", playlists->first_song->id);
-	printf("Song 2: %lu\n", playlists->first_song->next->id);
-	printf("Song 3: %lu\n", playlists->first_song->next->next->id);
-	printf("Song 4: %lu\n", playlists->first_song->next->next->next->id);
-	printf("Song 5: %lu\n", playlists->first_song->next->next->next->next->id);
+	printf("Song 1: %lu\n", playlists->prev->first_song->id);
+	printf("Song 2: %lu\n", playlists->prev->first_song->next->id);
+	printf("Song 3: %lu\n", playlists->prev->first_song->next->next->id);
+	printf("Song 4: %lu\n", playlists->prev->first_song->next->next->next->id);
+	printf("Song 5: %lu\n", playlists->prev->first_song->next->next->next->next->id);
 
 	free_playlist(playlists);
-	*/
 
 	return 0;
 }
@@ -708,6 +705,26 @@ int loadPlaylist(struct playlist** list, char* filepath){
 	play_list->prev = *list;
 	*list = play_list;
 
+	return 0;
+}
+
+/** Scans the current directory for playlists and attempts to load them as they're found
+ * @param list The address of the playlist that will be populated
+ * @return The current number of playlists
+ */
+int scanPlaylists(struct playlist** list){
+	DIR* dir;
+	struct dirent* file_info;
+	struct stat stat_info;
+	if((dir = opendir(".")) != NULL){
+		while((file_info = readdir(dir)) != NULL){
+			lstat(file_info->d_name, &stat_info);
+			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){
+				loadPlaylist(list, file_info->d_name);
+			}
+		}
+	}
+	closedir(dir);
 	return 0;
 }
 

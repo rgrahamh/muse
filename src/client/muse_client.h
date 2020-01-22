@@ -1,16 +1,19 @@
 #ifndef MUSE_CLIENT_H
 #define MUSE_CLIENT_H
 
+#include <dirent.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <signal.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/stat.h>
+
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
 #include "../shared.h"
 
@@ -88,6 +91,7 @@ extern "C" {
 	void addSongToPlaylist(unsigned long song_id, struct playlist* list);
 	int savePlaylist(struct playlist* list, char* filepath);
 	int loadPlaylist(struct playlist** list, char* filepath);
+	int scanPlaylists(struct playlist** list);
 
 	void free_playlist(struct playlist* list);
     void free_songinfolst(struct songinfolst* song_info);
