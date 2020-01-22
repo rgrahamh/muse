@@ -2,11 +2,12 @@
 
 #ifdef TEST
 int main(int argc, char** argv){
-	connectToServ("2442", "10.117.200.17");
-	struct songinfolst* song_info;
+	//connectToServ("2442", "127.0.0.1");
+/*	struct songinfolst* song_info;
 	struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
+	struct playlistlst* playlists;
 	queryAlbumSongs(25, &song_info);
 	queryArtistAlbums(25, &album_info);
 	queryGenreSongs("Rock", &song_info);
@@ -15,7 +16,22 @@ int main(int argc, char** argv){
 	queryAlbums(&album_info);
 	queryArtists(&artist_info);
 	getSong(1, "./Green_Grass_And_High_Tides.mp3");
-	struct albuminfolst* album_cursor = album_info;
+	struct albuminfolst* album_cursor = album_info;*/
+	struct playlist* playlists = NULL;
+	addPlaylist("My Playlist", &playlists);
+	addSongToPlaylist(50, playlists);
+	addSongToPlaylist(1877, playlists);
+	addSongToPlaylist(850, playlists);
+	addSongToPlaylist(956, playlists);
+	addSongToPlaylist(1158, playlists);
+	savePlaylist(playlists, "./my_playlist.pl");
+	/*loadPlaylist(&playlists, "./my_playlist.pl");
+	printf("Song 1: %lu\n", playlists->last_song->id);
+	printf("Song 2: %lu\n", playlists->last_song->prev->id);
+	printf("Song 3: %lu\n", playlists->last_song->prev->prev->id);
+	printf("Song 4: %lu\n", playlists->last_song->prev->prev->prev->id);
+	printf("Song 5: %lu\n", playlists->last_song->prev->prev->prev->prev->id);*/
+	//free_playlist(playlists);
 	/*while(album_cursor != NULL){
 	printf("Album:\n");
 		printf("%lu\n", album_cursor->id);
@@ -46,10 +62,10 @@ int main(int argc, char** argv){
 		printf("Genre: %s\n", genre_cursor->genre);
 		genre_cursor = genre_cursor->next;
 	}*/
-	free_songinfolst(song_info);
+	/*free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
-	free_genreinfolst(genre_info);
+	free_genreinfolst(genre_info);*/
 	return 0;
 }
 #endif
@@ -514,6 +530,7 @@ void initGenre(struct genreinfolst** genre_info){
 
 /** Receives the response of the server and loads it into a char*
  * @param resp The address of the char* you wish to store the response in
+ * @return 0 if successful, 1 otherwise
  */
 int receiveResponse(char** resp){
 	char* resp_size_str = (char*)malloc(sizeof(unsigned long));
@@ -533,6 +550,127 @@ int receiveResponse(char** resp){
 	(*resp)[resp_size] = '\0';
 	free(resp_size_str);
 	return 0;
+}
+
+/** Adds a new playlist
+ * @param name The name of the new playlist
+ * @param list The address of the start of the list of playlists
+ */
+void addPlaylist(char* name, struct playlist** list){
+	struct playlist* new_playlist = (struct playlist*)calloc(1, sizeof(struct songlst));
+	new_playlist->name = name;
+	new_playlist->last_song = NULL;
+	new_playlist->prev = *list;
+	*list = new_playlist;
+}
+
+/** Adds a song to the playlist
+ * @param song_id The id of the song that you wish to add to the playlist
+ * @param list The list that you wish to add a song to
+ */
+void addSongToPlaylist(unsigned long song_id, struct playlist* list){
+	struct songlst* new_song = (struct songlst*)calloc(1, sizeof(struct songlst));
+	new_song->id = song_id;
+	new_song->prev = list->last_song;
+	list->last_song = new_song;
+}
+
+/** Adds a song to the playlist
+ * @param song_id The id of the song that you wish to add to the playlist
+ * @param list The list that you wish to add a song to
+ * @return 0 if successful, 1 if the file could not be written
+ */
+int savePlaylist(struct playlist* list, char* filepath){
+	unsigned int song_count = 0;
+	struct songlst* cursor = list->last_song;
+	while(cursor != NULL){
+		song_count++;
+		cursor = cursor->prev;
+	}
+
+	FILE* file = fopen(filepath, "w");
+	if(file == NULL){
+		printf("Can't save playlist at %s!\n", filepath);
+		return 1;
+	}
+	
+	//Print the playlist name to the file
+	fwrite(list->name, 1, strlen(list->name) + 1, file);
+
+	//Print the song IDs to the file
+	char* str = (char*)calloc(song_count, sizeof(unsigned long));
+	char* str_cursor = str;
+	cursor = list->last_song;
+	while(cursor != NULL){
+		*((unsigned long*)str_cursor) = cursor->id;
+		str_cursor += sizeof(unsigned long);
+		cursor = cursor->prev;
+	}
+	fwrite(str, sizeof(unsigned long), song_count, file);
+	fclose(file);
+
+	return 0;
+}
+
+/**
+ * @param list The address of the list that you want to load the playlist info into
+ * @param filepath The filepath to the playlist
+ * @return 0 if successful, 1 if the file can't be opened
+ */
+int loadPlaylist(struct playlist** list, char* filepath){
+	*list = (struct playlist*)calloc(1, sizeof(struct playlist));
+	
+	FILE* file = fopen(filepath, "r");
+	if(file == NULL){
+		printf("Can't open playlist at %s!\n", filepath);
+		return 1;
+	}
+
+	unsigned int name_len = 0;
+	char c;
+	while((c = getc(file)) != '\0'){
+		name_len++;
+	}
+	rewind(file);
+	(*list)->name = (char*)calloc(1, name_len+1);
+	fread((*list)->name, name_len + 1, 1, file);
+	fseek(file, name_len + 1, SEEK_SET);
+
+	//Parse the song IDs
+	char* id_str = (char*)calloc(1, sizeof(unsigned long) + 1);
+	struct songlst* last_song = (struct songlst*)calloc(1, sizeof(struct songlst));
+	fread(id_str, 1, sizeof(unsigned long), file);
+	last_song->id = strtoul(id_str, 0, 10);
+	last_song->prev = NULL;
+	while(!feof(file)){
+		struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
+		fread(id_str, 1, sizeof(unsigned long), file);
+		song->id = strtoul(id_str, 0, 10);
+		song->prev = last_song;
+		last_song = song;
+	}
+	(*list)->last_song = last_song;
+
+	return 0;
+}
+
+/** Frees the playlist
+ * @param list The playlist that you want to be freed
+ */
+void free_playlist(struct playlist* plist){
+	struct playlist* playlist_cursor = plist;
+	while(playlist_cursor != NULL){
+		free(playlist_cursor->name);
+		struct songlst* songlst_cursor = playlist_cursor->last_song;
+		while(songlst_cursor != NULL){
+			struct songlst* death_row = songlst_cursor;
+			songlst_cursor = songlst_cursor->prev;
+			free(death_row);
+		}
+		struct playlist* death_row = playlist_cursor;
+		playlist_cursor = playlist_cursor->prev;
+		free(death_row);
+	}
 }
 
 /** Frees a given songinfolst
@@ -636,8 +774,6 @@ void disconnect(){
 	send(sockfd, "\0", 1, 0);
 	close(sockfd);
 }
-
-//TODO: Remove circularly linked list in server, change out w/ normal list. I dunno why I thought circularly linked was the right implementation for that :P
 
 /** The function that safely closes the socket upon exiting the application
  * @param sig The signal received
