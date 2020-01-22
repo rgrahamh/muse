@@ -43,6 +43,17 @@ struct genreinfolst{
     struct genreinfolst* next;
 };
 
+struct playlist{
+	char* name;
+	struct songlst* last_song;
+	struct playlist* prev;
+};
+
+struct songlst{
+	unsigned long id;
+	struct songlst* prev;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -69,12 +80,19 @@ extern "C" {
 	void initArtist(struct artistinfolst** artist_info);
 	void initGenre(struct genreinfolst** genre_info);
 
+	int substrsize(char* str, char until);
+	int substr(char* base, char until, char* cpy, int cpySize);
+
+	void addSongToPlaylist(unsigned long song_id, struct playlist* list);
+	void addPlaylist(char* name, struct playlist** list);
+	int savePlaylist(struct playlist* list, char* filepath);
+	int loadPlaylist(struct playlist** list, char* filepath);
+
+	void free_playlist(struct playlist* list);
     void free_songinfolst(struct songinfolst* song_info);
     void free_albuminfolst(struct albuminfolst* album_info);
     void free_artistinfolst(struct artistinfolst* artist_info);
     void free_genreinfolst(struct genreinfolst* genre_info);
-	int substrsize(char* str, char until);
-	int substr(char* base, char until, char* cpy, int cpySize);
 
     int queryEntity(unsigned long entity_id, char flags);
     int receiveResponse(char** resp);
