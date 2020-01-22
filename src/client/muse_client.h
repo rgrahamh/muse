@@ -45,13 +45,14 @@ struct genreinfolst{
 
 struct playlist{
 	char* name;
+	struct songlst* first_song;
 	struct songlst* last_song;
 	struct playlist* prev;
 };
 
 struct songlst{
 	unsigned long id;
-	struct songlst* prev;
+	struct songlst* next;
 };
 
 #ifdef __cplusplus
@@ -83,8 +84,8 @@ extern "C" {
 	int substrsize(char* str, char until);
 	int substr(char* base, char until, char* cpy, int cpySize);
 
-	void addSongToPlaylist(unsigned long song_id, struct playlist* list);
 	void addPlaylist(char* name, struct playlist** list);
+	void addSongToPlaylist(unsigned long song_id, struct playlist* list);
 	int savePlaylist(struct playlist* list, char* filepath);
 	int loadPlaylist(struct playlist** list, char* filepath);
 

@@ -22,22 +22,6 @@ int main(int argc, char** argv){
 	queryArtists(&artist_info);
 	getSong(1, "./Green_Grass_And_High_Tides.mp3");
 
-	struct playlist* playlists = NULL;
-	addPlaylist("My Playlist", &playlists);
-	addSongToPlaylist(50, playlists);
-	addSongToPlaylist(1877, playlists);
-	addSongToPlaylist(850, playlists);
-	addSongToPlaylist(956, playlists);
-	addSongToPlaylist(1158, playlists);
-	savePlaylist(playlists, "./my_playlist.pl");
-	loadPlaylist(&playlists, "./my_playlist.pl");
-	printf("Song 1: %lu\n", playlists->last_song->id);
-	printf("Song 2: %lu\n", playlists->last_song->prev->id);
-	printf("Song 3: %lu\n", playlists->last_song->prev->prev->id);
-	printf("Song 4: %lu\n", playlists->last_song->prev->prev->prev->id);
-	printf("Song 5: %lu\n", playlists->last_song->prev->prev->prev->prev->id);
-	free_playlist(playlists);
-
 	struct albuminfolst* album_cursor = album_info;
 	while(album_cursor != NULL){
 	printf("Album:\n");
@@ -77,6 +61,46 @@ int main(int argc, char** argv){
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
 	free_genreinfolst(genre_info);*/
+
+	/*
+	//Playlist testing
+	struct playlist* playlists = NULL;
+	char* buff = (char*)calloc(1, 42);
+	strcpy(buff, "My Playlist");
+	addPlaylist(buff, &playlists);
+	addSongToPlaylist(50, playlists);
+	addSongToPlaylist(1877, playlists);
+	addSongToPlaylist(850, playlists);
+	addSongToPlaylist(956, playlists);
+	addSongToPlaylist(1158, playlists);
+	savePlaylist(playlists, "./my_playlist.pl");
+
+	buff = (char*)calloc(1, 42);
+	strcpy(buff, "Playlist Two: Electric Boogaloo");
+	addPlaylist(buff, &playlists);
+	addSongToPlaylist(2222, playlists);
+	addSongToPlaylist(1, playlists);
+	addSongToPlaylist(165, playlists);
+	addSongToPlaylist(3885, playlists);
+	addSongToPlaylist(987, playlists);
+	savePlaylist(playlists, "./my_playlist2.pl");
+	
+	loadPlaylist(&playlists, "./my_playlist.pl");
+	printf("Song 1: %lu\n", playlists->first_song->id);
+	printf("Song 2: %lu\n", playlists->first_song->next->id);
+	printf("Song 3: %lu\n", playlists->first_song->next->next->id);
+	printf("Song 4: %lu\n", playlists->first_song->next->next->next->id);
+	printf("Song 5: %lu\n", playlists->first_song->next->next->next->next->id);
+
+	loadPlaylist(&playlists, "./my_playlist2.pl");
+	printf("Song 1: %lu\n", playlists->first_song->id);
+	printf("Song 2: %lu\n", playlists->first_song->next->id);
+	printf("Song 3: %lu\n", playlists->first_song->next->next->id);
+	printf("Song 4: %lu\n", playlists->first_song->next->next->next->id);
+	printf("Song 5: %lu\n", playlists->first_song->next->next->next->next->id);
+
+	free_playlist(playlists);
+	*/
 
 	return 0;
 }
@@ -578,8 +602,9 @@ int receiveResponse(char** resp){
  * @param list The address of the start of the list of playlists
  */
 void addPlaylist(char* name, struct playlist** list){
-	struct playlist* new_playlist = (struct playlist*)calloc(1, sizeof(struct songlst));
+	struct playlist* new_playlist = (struct playlist*)calloc(1, sizeof(struct playlist));
 	new_playlist->name = name;
+	new_playlist->first_song = NULL;
 	new_playlist->last_song = NULL;
 	new_playlist->prev = *list;
 	*list = new_playlist;
@@ -590,10 +615,17 @@ void addPlaylist(char* name, struct playlist** list){
  * @param list The list that you wish to add a song to
  */
 void addSongToPlaylist(unsigned long song_id, struct playlist* list){
-	struct songlst* new_song = (struct songlst*)calloc(1, sizeof(struct songlst));
+	struct songlst* new_song = (struct songlst*)malloc(sizeof(struct songlst));
 	new_song->id = song_id;
-	new_song->prev = list->last_song;
+	new_song->next = NULL;
+	if(list->first_song == NULL){
+		list->first_song = new_song;
+		list->last_song = new_song;
+	}
+	else{
+	list->last_song->next = new_song;
 	list->last_song = new_song;
+	}
 }
 
 /** Adds a song to the playlist
@@ -603,10 +635,10 @@ void addSongToPlaylist(unsigned long song_id, struct playlist* list){
  */
 int savePlaylist(struct playlist* list, char* filepath){
 	unsigned int song_count = 0;
-	struct songlst* cursor = list->last_song;
+	struct songlst* cursor = list->first_song;
 	while(cursor != NULL){
 		song_count++;
-		cursor = cursor->prev;
+		cursor = cursor->next;
 	}
 
 	FILE* file = fopen(filepath, "w");
@@ -621,11 +653,11 @@ int savePlaylist(struct playlist* list, char* filepath){
 	//Print the song IDs to the file
 	char* str = (char*)calloc(song_count, sizeof(unsigned long));
 	char* str_cursor = str;
-	cursor = list->last_song;
+	cursor = list->first_song;
 	while(cursor != NULL){
 		*((unsigned long*)str_cursor) = cursor->id;
 		str_cursor += sizeof(unsigned long);
-		cursor = cursor->prev;
+		cursor = cursor->next;
 	}
 	fwrite(str, sizeof(unsigned long), song_count, file);
 	fclose(file);
@@ -639,11 +671,11 @@ int savePlaylist(struct playlist* list, char* filepath){
  * @return 0 if successful, 1 if the file can't be opened
  */
 int loadPlaylist(struct playlist** list, char* filepath){
-	*list = (struct playlist*)calloc(1, sizeof(struct playlist));
+	struct playlist* play_list = (struct playlist*)calloc(1, sizeof(struct playlist));
 	
 	FILE* file = fopen(filepath, "r");
 	if(file == NULL){
-		printf("Can't open playlist at %s!\n", filepath);
+		printf("Can't open playplay_list at %s!\n", filepath);
 		return 1;
 	}
 
@@ -653,25 +685,28 @@ int loadPlaylist(struct playlist** list, char* filepath){
 		name_len++;
 	}
 	rewind(file);
-	(*list)->name = (char*)calloc(1, name_len+1);
-	fread((*list)->name, name_len + 1, 1, file);
-	//fseek(file, name_len + 1, SEEK_SET);
+	play_list->name = (char*)calloc(1, name_len+1);
+	fread(play_list->name, name_len + 1, 1, file);
 
 	//Parse the song IDs
 	char* id_str = (char*)calloc(1, sizeof(unsigned long) + 1);
-	struct songlst* last_song = (struct songlst*)calloc(1, sizeof(struct songlst));
+	struct songlst* prev_song = (struct songlst*)calloc(1, sizeof(struct songlst));
 	fread(id_str, 1, sizeof(unsigned long), file);
-	last_song->id = *((unsigned long*)id_str);
-	last_song->prev = NULL;
+	prev_song->id = *((unsigned long*)id_str);
+	prev_song->next = NULL;
+	play_list->first_song = prev_song;
 	fread(id_str, 1, sizeof(unsigned long), file);
 	while(!feof(file)){
 		struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
 		song->id = *((unsigned long*)id_str);
-		song->prev = last_song;
-		last_song = song;
+		song->next = NULL;
+		prev_song->next = song;
+		play_list->last_song = song;
+		prev_song = song;
 		fread(id_str, 1, sizeof(unsigned long), file);
 	}
-	(*list)->last_song = last_song;
+	play_list->prev = *list;
+	*list = play_list;
 
 	return 0;
 }
@@ -682,13 +717,15 @@ int loadPlaylist(struct playlist** list, char* filepath){
 void free_playlist(struct playlist* plist){
 	struct playlist* playlist_cursor = plist;
 	while(playlist_cursor != NULL){
-		free(playlist_cursor->name);
-		struct songlst* songlst_cursor = playlist_cursor->last_song;
+		//Free the songs in the playlist
+		struct songlst* songlst_cursor = playlist_cursor->first_song;
 		while(songlst_cursor != NULL){
 			struct songlst* death_row = songlst_cursor;
-			songlst_cursor = songlst_cursor->prev;
+			songlst_cursor = songlst_cursor->next;
 			free(death_row);
 		}
+		//Free the playlist
+		free(playlist_cursor->name);
 		struct playlist* death_row = playlist_cursor;
 		playlist_cursor = playlist_cursor->prev;
 		free(death_row);
