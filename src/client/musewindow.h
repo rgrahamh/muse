@@ -11,6 +11,7 @@
 #include <fmod.hpp>
 #include <fmod_errors.h>
 #include <fmod_common.h>
+#include <algorithm>
 
 #include "songmodel.h"
 #include "artistmodel.h"
@@ -23,6 +24,16 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MuseWindow; }
 QT_END_NAMESPACE
 
+struct songinfo {
+    QString info;
+    int song_id;
+};
+
+enum RepeatMode {
+    NO_REPEAT,
+    REPEAT,
+    REPEAT_ONE
+};
 
 class MuseWindow : public QMainWindow
 {
@@ -42,19 +53,26 @@ private slots:
 
     void on_playButton_clicked();
     void on_rewindButton_clicked();
+    void on_skipButton_clicked();
+    void on_repeatButton_clicked();
     void on_connectButton_clicked();
 
     void on_timeout();
+
+    void on_shuffleButton_toggled(bool checked);
 
 private:
     Ui::MuseWindow *ui;
     bool play_state = false;
     bool connection_state = false;
+    int repeat_mode = NO_REPEAT;
+    bool shuffle = false;
 
     QString ip_address;
     QString port;
 
-    int current_song = -1;
+    std::vector<struct songinfo> history;
+    std::vector<struct songinfo> queue;
 
     char* songProgressText;
     char* songLengthText;

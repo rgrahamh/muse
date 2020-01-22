@@ -19,7 +19,7 @@
   <widget class="QWidget" name="mainwindow">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QVBoxLayout" name="songwindow">
+     <layout class="QVBoxLayout" name="songselectwindow">
       <item>
        <widget class="QLabel" name="titleLabel">
         <property name="text">
@@ -99,7 +99,57 @@
      </layout>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="songinfowindow">
+      <item>
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="songInfoLabel">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_4">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="actionwindow">
+      <item>
+       <widget class="QPushButton" name="repeatButton">
+        <property name="text">
+         <string>No Repeat</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QPushButton" name="rewindButton">
         <property name="text">
@@ -118,6 +168,16 @@
        <widget class="QPushButton" name="skipButton">
         <property name="text">
          <string>Skip</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="shuffleButton">
+        <property name="text">
+         <string>No Shuffle</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
         </property>
        </widget>
       </item>

@@ -172,17 +172,25 @@ void MuseWindow::on_songView_doubleClicked(const QModelIndex &index)
 
     qDebug() << "Song id selected is: " << song_id << endl;
 
-    char* new_song_path = (char*)  calloc(100, sizeof(char));
-    sprintf(new_song_path, "/tmp/muse_download_%d.mp3", song_id);
-    if( int err = getSong(song_id, new_song_path) ) {
-        qDebug() << "Unable to retrieve song" << endl;
-    } else {
-        current_song = song_id;
+    stopAndReadyUpFMOD();
+
+    if( !queue.empty() && queue.front().song_id != song_id ) {  // prevent duplicates of songs double-clicked from entering history
+        history.insert(history.begin(), queue.front());
     }
 
-    free(new_song_path);
+    queue.clear();
+    // insert the rest of the songs in order
+    for( int i = index.row(); i < song_model->rowCount(); i++ ) {
+        struct songinfo info;
+        info.song_id = song_model->data(index.siblingAtRow(i), Qt::UserRole).value<int>();
+        info.info = song_model->data(index.sibling(i, 1)).value<QString>() + " - " + song_model->data(index.sibling(i, 2)).value<QString>();
+        queue.push_back(info);
+    }
 
-    stopAndReadyUpFMOD();
+    // shuffle the queue
+    if( shuffle ) {
+        std::random_shuffle( queue.begin()+1, queue.end() );
+    }
 
     on_playButton_clicked();
 }
@@ -261,30 +269,38 @@ void MuseWindow::on_playButton_clicked()
         if( is_playing ) {
             song_channel->setPaused(false);
         } else {
-            if( current_song > -1 ) {
+            if( !queue.empty() ) {
                 char* new_song_path = (char*)  calloc(100, sizeof(char));
-                sprintf(new_song_path, "/tmp/muse_download_%d.mp3", current_song);
+                sprintf(new_song_path, "/home/dfletch/muse_download_%d.mp3", queue.front().song_id);
+                if( int err = getSong(queue.front().song_id, new_song_path) ) { // download the next song
+                    qDebug() << "Unable to retrieve song" << endl;
+                } else {
+                    // try playing a song
+                    FMOD_RESULT result = system->createStream(new_song_path, FMOD_CREATESTREAM, NULL, &song_to_play);
+                    if( result == FMOD_RESULT::FMOD_OK ) {
+                        unsigned int song_length;
+                        song_to_play->getLength(&song_length, FMOD_TIMEUNIT_MS);
 
-                // try playing a song
-                FMOD_RESULT result = system->createStream(new_song_path, FMOD_CREATESTREAM, NULL, &song_to_play);
-                if( result == FMOD_RESULT::FMOD_OK ) {
-                    unsigned int song_length;
-                    song_to_play->getLength(&song_length, FMOD_TIMEUNIT_MS);
+                        unsigned int song_length_s = song_length / 1000;
 
-                    unsigned int song_length_s = song_length / 1000;
+                        memset(songLengthText, 0, 10);
+                        sprintf(songLengthText, "%d:%02d", song_length_s / 60, song_length_s % 60);
+                        ui->songLengthLabel->setText(songLengthText);
 
-                    memset(songLengthText, 0, 10);
-                    sprintf(songLengthText, "%d:%02d", song_length_s / 60, song_length_s % 60);
-                    ui->songLengthLabel->setText(songLengthText);
+                        ui->songProgressSlider->setMinimum(0);
+                        ui->songProgressSlider->setMaximum(song_length);
+                        ui->songProgressSlider->setValue(0);
 
-                    ui->songProgressSlider->setMinimum(0);
-                    ui->songProgressSlider->setMaximum(song_length);
-                    ui->songProgressSlider->setValue(0);
+                        system->playSound(song_to_play, NULL, false, &song_channel);
 
-                    system->playSound(song_to_play, NULL, false, &song_channel);
+                        // set information up
+                        ui->songInfoLabel->setText(queue.front().info);
+                    }
                 }
 
                 free(new_song_path);
+            } else { // queue is empty, stop and reset
+                stopAndReadyUpFMOD();
             }
         }
 
@@ -309,9 +325,101 @@ void MuseWindow::on_rewindButton_clicked()
     bool is_playing = false;
     song_channel->isPlaying(&is_playing);
     if( is_playing ) {
-        song_channel->setPosition(0, FMOD_TIMEUNIT_MS);
-        ui->songProgressLabel->setText("0:00");
-        ui->songProgressSlider->setValue(0);
+        unsigned int position;
+        song_channel->getPosition(&position, FMOD_TIMEUNIT_MS);
+        if( !history.empty() && position < 1500 ) { // go back in history
+            stopAndReadyUpFMOD();
+            queue.insert(queue.begin(), history.front());
+            history.erase(history.begin());
+
+            on_playButton_clicked();
+        } else { // rewind the song
+            song_channel->setPosition(0, FMOD_TIMEUNIT_MS);
+            ui->songProgressLabel->setText("0:00");
+            ui->songProgressSlider->setValue(0);
+        }
+    } else if( !history.empty() ) {
+        stopAndReadyUpFMOD();
+        queue.insert(queue.begin(), history.front());
+        history.erase(history.begin());
+
+        on_playButton_clicked();
+    }
+}
+
+void MuseWindow::on_skipButton_clicked()
+{
+    stopAndReadyUpFMOD();
+    if( !queue.empty() ) {
+        history.insert(history.begin(), queue.front());
+        queue.erase(queue.begin());
+
+        on_playButton_clicked();
+    }
+}
+
+void MuseWindow::on_repeatButton_clicked()
+{
+    switch(repeat_mode) {
+        case NO_REPEAT:
+            repeat_mode = REPEAT;
+            ui->repeatButton->setText("Repeat");
+            ui->repeatButton->setChecked(true);
+            break;
+        case REPEAT:
+            repeat_mode = REPEAT_ONE;
+            ui->repeatButton->setText("Repeat One");
+            ui->repeatButton->setChecked(true);
+            break;
+        case REPEAT_ONE:
+            repeat_mode = NO_REPEAT;
+            ui->repeatButton->setText("No Repeat");
+            ui->repeatButton->setChecked(false);
+            break;
+    }
+}
+
+void MuseWindow::on_shuffleButton_toggled(bool checked)
+{
+    shuffle = checked;
+    if( checked ) {
+        ui->shuffleButton->setText("Shuffle");
+        if( !queue.empty() ) {
+            QModelIndex index  = song_model->index(0, 0);
+
+            queue.clear();
+            // insert the songs again but in shuffled order
+            for( int i = 0; i < song_model->rowCount(); i++ ) {
+                struct songinfo info;
+                info.song_id = song_model->data(index.siblingAtRow(i), Qt::UserRole).value<int>();
+                info.info = song_model->data(index.sibling(i, 1)).value<QString>() + " - " + song_model->data(index.sibling(i, 2)).value<QString>();
+                queue.push_back(info);
+            }
+
+            std::random_shuffle( queue.begin()+1, queue.end() );
+        }
+    } else {
+        ui->shuffleButton->setText("No Shuffle");
+        if( !queue.empty() ) { // put the queue back in order
+            QModelIndex index;
+            // find the song currently playing
+            int find_me = queue.front().song_id;
+            for( int i = 0; i < song_model->rowCount(); i++ ) {
+                if( song_model->data(song_model->index(i, 0), Qt::UserRole).value<int>() == find_me ) {
+                    index = song_model->index(i, 0);
+                    break;
+                }
+            }
+
+            queue.clear();
+            // insert the rest of the songs in order
+            for( int i = index.row(); i < song_model->rowCount(); i++ ) {
+                struct songinfo info;
+                info.song_id = song_model->data(index.siblingAtRow(i), Qt::UserRole).value<int>();
+                info.info = song_model->data(index.sibling(i, 1)).value<QString>() + " - " + song_model->data(index.sibling(i, 2)).value<QString>();
+                queue.push_back(info);
+            }
+        }
     }
 }
 
@@ -335,13 +443,14 @@ void MuseWindow::on_connectButton_clicked()
                 ui->connectButton->setText("Disconnect");
                 connection_state = true;
 
-                on_tabWidget_tabBarClicked(0);
+                on_tabWidget_tabBarClicked(ui->tabWidget->currentIndex());
             }
         }
     } else {
         disconnect();
         clearModels();
         connection_state = false;
+        stopAndReadyUpFMOD();
         ui->serverInfoLabel->setText("Not connected to server.");
         ui->connectButton->setText("Connect to...");
     }
@@ -365,11 +474,14 @@ void MuseWindow::on_timeout() {
         ui->songProgressSlider->setValue(position);
     } else {
         // song has finished playback
-        ui->songProgressSlider->setValue(0);
-        ui->songProgressLabel->setText("0:00");
-        ui->songLengthLabel->setText("-:--");
-        play_state = false;
-        ui->playButton->setText("Play");
+        stopAndReadyUpFMOD();
+
+        if( !queue.empty() ) {
+            history.insert(history.begin(), queue.front());
+            queue.erase(queue.begin());
+
+            on_playButton_clicked();
+        }
     }
 }
 
@@ -385,6 +497,7 @@ void MuseWindow::stopAndReadyUpFMOD() {
     play_state = false;
     ui->songProgressLabel->setText("0:00");
     ui->songProgressSlider->setValue(0);
+    ui->songInfoLabel->setText("");
 
     song_channel->stop();
     song_to_play->release();
@@ -392,5 +505,3 @@ void MuseWindow::stopAndReadyUpFMOD() {
     song_channel = NULL;
     song_to_play = NULL;
 }
-
-
