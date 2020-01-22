@@ -1,5 +1,7 @@
 #include "muse_client.h"
 
+int sockfd;
+
 #ifdef TEST
 int main(int argc, char** argv){
 	//connectToServ("2442", "127.0.0.1");
@@ -8,6 +10,7 @@ int main(int argc, char** argv){
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
 	struct playlistlst* playlists;
+
     getSong(14, "/tmp/muse_download_14.mp3");
     getSong(13, "/tmp/muse_download_13.mp3");
 	queryAlbumSongs(25, &song_info);
@@ -18,7 +21,7 @@ int main(int argc, char** argv){
 	queryAlbums(&album_info);
 	queryArtists(&artist_info);
 	getSong(1, "./Green_Grass_And_High_Tides.mp3");
-	struct albuminfolst* album_cursor = album_info;*/
+
 	struct playlist* playlists = NULL;
 	addPlaylist("My Playlist", &playlists);
 	addSongToPlaylist(50, playlists);
@@ -27,20 +30,23 @@ int main(int argc, char** argv){
 	addSongToPlaylist(956, playlists);
 	addSongToPlaylist(1158, playlists);
 	savePlaylist(playlists, "./my_playlist.pl");
-	/*loadPlaylist(&playlists, "./my_playlist.pl");
+	loadPlaylist(&playlists, "./my_playlist.pl");
 	printf("Song 1: %lu\n", playlists->last_song->id);
 	printf("Song 2: %lu\n", playlists->last_song->prev->id);
 	printf("Song 3: %lu\n", playlists->last_song->prev->prev->id);
 	printf("Song 4: %lu\n", playlists->last_song->prev->prev->prev->id);
-	printf("Song 5: %lu\n", playlists->last_song->prev->prev->prev->prev->id);*/
-	//free_playlist(playlists);
-	/*while(album_cursor != NULL){
+	printf("Song 5: %lu\n", playlists->last_song->prev->prev->prev->prev->id);
+	free_playlist(playlists);
+
+	struct albuminfolst* album_cursor = album_info;
+	while(album_cursor != NULL){
 	printf("Album:\n");
 		printf("%lu\n", album_cursor->id);
 		printf("%s\n", album_cursor->title);
 		printf("%lu\n\n", album_cursor->year);
 		album_cursor = album_cursor->next;
 	}
+
 	struct songinfolst* song_cursor = song_info;
 	while(song_cursor != NULL){
 	printf("Song:\n");
@@ -53,18 +59,21 @@ int main(int argc, char** argv){
 		printf("%s\n\n", song_cursor->genre);
 		song_cursor = song_cursor->next;
 	}
+
 	struct artistinfolst* artist_cursor = artist_info;
 	while(artist_cursor != NULL){
 		printf("Artist: %s\n", artist_cursor->name);
 		printf("%lu\n", artist_cursor->id);
 		artist_cursor = artist_cursor->next;
 	}
+
 	struct genreinfolst* genre_cursor = genre_info;
 	while(genre_cursor != NULL){
 		printf("Genre: %s\n", genre_cursor->genre);
 		genre_cursor = genre_cursor->next;
-	}*/
-	/*free_songinfolst(song_info);
+	}
+
+	free_songinfolst(song_info);
 	free_albuminfolst(album_info);
 	free_artistinfolst(artist_info);
 	free_genreinfolst(genre_info);*/
@@ -72,8 +81,6 @@ int main(int argc, char** argv){
 	return 0;
 }
 #endif
-
-int sockfd;
 
 /** Attempts to connect the application to an instance of the muse server on the given port and ip
  * @param server_ip The ip that you wish to connect to
@@ -648,20 +655,21 @@ int loadPlaylist(struct playlist** list, char* filepath){
 	rewind(file);
 	(*list)->name = (char*)calloc(1, name_len+1);
 	fread((*list)->name, name_len + 1, 1, file);
-	fseek(file, name_len + 1, SEEK_SET);
+	//fseek(file, name_len + 1, SEEK_SET);
 
 	//Parse the song IDs
 	char* id_str = (char*)calloc(1, sizeof(unsigned long) + 1);
 	struct songlst* last_song = (struct songlst*)calloc(1, sizeof(struct songlst));
 	fread(id_str, 1, sizeof(unsigned long), file);
-	last_song->id = strtoul(id_str, 0, 10);
+	last_song->id = *((unsigned long*)id_str);
 	last_song->prev = NULL;
+	fread(id_str, 1, sizeof(unsigned long), file);
 	while(!feof(file)){
 		struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
-		fread(id_str, 1, sizeof(unsigned long), file);
-		song->id = strtoul(id_str, 0, 10);
+		song->id = *((unsigned long*)id_str);
 		song->prev = last_song;
 		last_song = song;
+		fread(id_str, 1, sizeof(unsigned long), file);
 	}
 	(*list)->last_song = last_song;
 
