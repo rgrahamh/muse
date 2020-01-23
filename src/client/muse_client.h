@@ -99,6 +99,11 @@ extern "C" {
     void free_artistinfolst(struct artistinfolst* artist_info);
     void free_genreinfolst(struct genreinfolst* genre_info);
 
+	void printSongInfo(struct songinfolst* song_info);
+	void printAlbumInfo(struct albuminfolst* album_info);
+	void printArtistInfo(struct artistinfolst* artist_info);
+	void printGenreInfo(struct genreinfolst* genre_info);
+
     int queryEntity(unsigned long long entity_id, char flags);
     int receiveResponse(char** resp);
 	void disconnect();

@@ -13,53 +13,34 @@ int main(int argc, char** argv){
     getSong(14, "/tmp/muse_download_14.mp3");
     getSong(13, "/tmp/muse_download_13.mp3");
 	queryAlbumSongs(25, &song_info);
-	queryArtistAlbums(25, &album_info);
-	queryGenreSongs("Rock", &song_info);
-	queryGenres(&genre_info);
-	querySongs(&song_info);
-	queryAlbums(&album_info);
-	queryArtists(&artist_info);
-	getSong(1, "./Green_Grass_And_High_Tides.mp3");
-
-	struct albuminfolst* album_cursor = album_info;
-	while(album_cursor != NULL){
-	printf("Album:\n");
-		printf("%llu\n", album_cursor->id);
-		printf("%s\n", album_cursor->title);
-		printf("%llu\n\n", album_cursor->year);
-		album_cursor = album_cursor->next;
-	}
-
-	struct songinfolst* song_cursor = song_info;
-	while(song_cursor != NULL){
-	printf("Song:\n");
-		printf("%llu\n", song_cursor->id);
-		printf("%s\n", song_cursor->title);
-		printf("%s\n", song_cursor->artist);
-		printf("%s\n", song_cursor->album);
-		printf("%llu\n", song_cursor->year);
-		printf("%llu\n", song_cursor->track_num);
-		printf("%s\n\n", song_cursor->genre);
-		song_cursor = song_cursor->next;
-	}
-
-	struct artistinfolst* artist_cursor = artist_info;
-	while(artist_cursor != NULL){
-		printf("Artist: %s\n", artist_cursor->name);
-		printf("%llu\n", artist_cursor->id);
-		artist_cursor = artist_cursor->next;
-	}
-
-	struct genreinfolst* genre_cursor = genre_info;
-	while(genre_cursor != NULL){
-		printf("Genre: %s\n", genre_cursor->genre);
-		genre_cursor = genre_cursor->next;
-	}
-
+	printSongInfo(song_info);
 	free_songinfolst(song_info);
+
+	queryArtistAlbums(25, &album_info);
+	printAlbumInfo(album_info);
 	free_albuminfolst(album_info);
-	free_artistinfolst(artist_info);
+
+	queryGenreSongs("Rock", &song_info);
+	printSongInfo(song_info);
+	free_songinfolst(song_info);
+
+	queryGenres(&genre_info);
+	printGenreInfo(genre_info);
 	free_genreinfolst(genre_info);
+
+	querySongs(&song_info);
+	printSongInfo(song_info);
+	free_songinfolst(song_info);
+
+	queryAlbums(&album_info);
+	printAlbumInfo(album_info);
+	free_albuminfolst(album_info);
+
+	queryArtists(&artist_info);
+	printSongInfo(song_info);
+	free_artistinfolst(artist_info);
+
+	getSong(1, "./Green_Grass_And_High_Tides.mp3");
 
 	//Playlist testing
 	struct playlist* playlists = NULL;
@@ -705,6 +686,8 @@ int loadPlaylist(struct playlist** list, char* filepath){
 	play_list->prev = *list;
 	*list = play_list;
 
+	free(id_str);
+
 	return 0;
 }
 
@@ -843,6 +826,46 @@ int substrsize(char* str, char until){
 		continue;
 	}
 	return i;
+}
+
+void printSongInfo(struct songinfolst* song_info){
+	printf("Songs:\n");
+	while(song_info != NULL){
+		printf("%llu\n", song_info->id);
+		printf("%s\n", song_info->title);
+		printf("%s\n", song_info->artist);
+		printf("%s\n", song_info->album);
+		printf("%llu\n", song_info->year);
+		printf("%llu\n", song_info->track_num);
+		printf("%s\n\n", song_info->genre);
+		song_info = song_info->next;
+	}
+}
+
+void printAlbumInfo(struct albuminfolst* album_info){
+	printf("Albums:\n");
+	while(album_info != NULL){
+		printf("%llu\n", album_info->id);
+		printf("%s\n", album_info->title);
+		printf("%llu\n\n", album_info->year);
+		album_info = album_info->next;
+	}
+}
+
+void printArtistInfo(struct artistinfolst* artist_info){
+	printf("Artists:\n");
+	while(artist_info != NULL){
+		printf("%s\n", artist_info->name);
+		printf("%llu\n", artist_info->id);
+		artist_info = artist_info->next;
+	}
+}
+
+void printGenreInfo(struct genreinfolst* genre_info){
+	while(genre_info != NULL){
+		printf("Genre: %s\n", genre_info->genre);
+		genre_info = genre_info->next;
+	}
 }
 
 /** Disconnects from the server */
