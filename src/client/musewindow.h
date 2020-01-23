@@ -29,10 +29,38 @@ struct songinfo {
     int song_id;
 };
 
-enum RepeatMode {
+enum PlayState {
+    NOT_PLAYING,
+    STARTED,
+    RESUMED,
+    PAUSED
+};
+
+enum HistoryState {
+    NO_HISTORY,
+    HAS_HISTORY
+};
+
+enum QueueState {
+    NO_QUEUE,
+    HAS_QUEUE,
+    END_OF_QUEUE
+};
+
+enum RepeatState {
     NO_REPEAT,
     REPEAT,
     REPEAT_ONE
+};
+
+enum ShuffleState {
+    NO_SHUFFLE,
+    SHUFFLE
+};
+
+enum ConnectionState {
+    NOT_CONNECTED,
+    CONNECTED
 };
 
 class MuseWindow : public QMainWindow
@@ -55,18 +83,19 @@ private slots:
     void on_rewindButton_clicked();
     void on_skipButton_clicked();
     void on_repeatButton_clicked();
+    void on_shuffleButton_clicked();
     void on_connectButton_clicked();
 
     void on_timeout();
 
-    void on_shuffleButton_toggled(bool checked);
-
 private:
     Ui::MuseWindow *ui;
-    bool play_state = false;
-    bool connection_state = false;
-    int repeat_mode = NO_REPEAT;
-    bool shuffle = false;
+    PlayState play_state = NOT_PLAYING;
+    HistoryState history_state = NO_HISTORY;
+    QueueState queue_state = NO_QUEUE;
+    ConnectionState connection_state = NOT_CONNECTED;
+    RepeatState repeat_state = NO_REPEAT;
+    ShuffleState shuffle_state = NO_SHUFFLE;
 
     QString ip_address;
     QString port;
@@ -94,5 +123,12 @@ private:
     void initializeFMOD();
     void clearModels();
     void stopAndReadyUpFMOD();
+
+    void changePlayState(PlayState state);
+    void changeHistoryState(HistoryState state);
+    void changeQueueState(QueueState state, const QModelIndex* index = NULL, bool shuffle_all = true);
+    void changeConnectionState(ConnectionState state);
+    void changeRepeatState(RepeatState state);
+    void changeShuffleState(ShuffleState state);
 };
 #endif // MUSEWINDOW_H
