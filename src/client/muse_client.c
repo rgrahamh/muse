@@ -164,7 +164,7 @@ int getSong(unsigned long long song_id, char* filepath){
 		return 1;
 	}
 	unsigned long long resp_size = (*((unsigned long long*)resp_size_str)) - sizeof(unsigned long long);
-	char* resp = (char*)malloc(resp_size);
+	char* resp = (char*)malloc(resp_size+1);
 	char* resp_cursor = resp;
 
 	unsigned long long amnt_recv = 0;
@@ -174,7 +174,7 @@ int getSong(unsigned long long song_id, char* filepath){
 	fwrite(resp, sizeof(char), resp_size, file);
 
 	//Flush the socket of all of the messiness that was sent after the actual song length
-	recv(sockfd, resp_cursor, resp_size, MSG_DONTWAIT);
+	recv(sockfd, resp, resp_size, MSG_DONTWAIT);
 
 	free(resp_size_str);
 	free(request);

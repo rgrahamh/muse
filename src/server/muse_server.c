@@ -75,7 +75,7 @@ int serve(char* port, FILE* log_file){
 
 	struct addrinfo seed;
 	struct addrinfo* host;
-	struct sockaddr_storage* client = (struct sockaddr_storage*)calloc(1, sizeof(struct sockaddr_storage*));
+	struct sockaddr_storage* client = (struct sockaddr_storage*)calloc(1, sizeof(struct sockaddr_storage));
 
 	//Seed the hints
 	memset(&seed, 0, sizeof(struct addrinfo));
@@ -249,6 +249,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 
 	free(query);
 	free(incoming);
+	free(order_dir);
 
 	close(new_sockfd);
 
@@ -298,7 +299,7 @@ int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column
  * @param column The column that each index represents
  */
 int sendInfo(void* result_list, int col_num, char** result, char** column){
-	unsigned int str_size;
+	unsigned int str_size = 0;
 	for(int i = 0; i < col_num; i++){
 		str_size += strlen(result[i]) + 1;
 	}
@@ -428,6 +429,9 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 					if(strcmp(file_info->d_name, ".") != 0 && strcmp(file_info->d_name, "..") != 0){
 						subdirs[subdir_num++] = full_path;
 					}
+					else{
+						free(full_path);
+					}
 				}
 				else{
 					calledback = 0;
@@ -500,14 +504,14 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 								sprintf(query, "INSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %llu, %llu, %i, '%s', '%s');", song_info->title, song_info->album_id, song_info->artist_id, song_info->track_num, song_info->filepath, song_info->genre);
 								sqlite3_exec(db, query, NULL, NULL, NULL);
 							}
-							free(song_info->title);
-							free(song_info->artist);
-							free(song_info->album);
-							free(song_info->comment);
-							free(song_info->genre);
-							free(full_path);
 						}
+						free(song_info->title);
+						free(song_info->artist);
+						free(song_info->album);
+						free(song_info->comment);
+						free(song_info->genre);
 					}
+					free(full_path);
 				}
 			}
 			free(file_info);
