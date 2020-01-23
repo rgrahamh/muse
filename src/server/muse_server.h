@@ -45,8 +45,8 @@ struct linkedstr{
 
 int serve(char* port, FILE* log_file);
 int handleRequest(int new_sockfd, FILE* log_file);
-int sendSongCallback(void* new_sockfd, int col_num, char** column, char** result);
-int sendInfo(void* result_list, int col_num, char** column, char** result);
+int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column);
+int sendInfo(void* result_list, int col_num, char** result, char** column);
 int getAlbumArtist(void* sinfo, int col_num, char** result, char** column);
 int addAllCallback(void* sinfo, int col_num, char** result, char** column);
 int initAlbumID(void* sinfo, int col_num, char** result, char** column);

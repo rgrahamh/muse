@@ -5,8 +5,8 @@ int sockfd;
 #ifdef TEST
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
-	/*struct songinfolst* song_info;
-	struct albuminfolst* album_info;
+	struct songinfolst* song_info;
+	/*struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
 
@@ -35,6 +35,12 @@ int main(int argc, char** argv){
 	querySongs(&song_info);
 	printSongInfo(song_info);
 	free_songinfolst(song_info);
+
+	*/
+	querySongInfo(&song_info, 223);
+	printSongInfo(song_info);
+	free_songinfolst(song_info);
+	/*
 
 	querySongsBurst(&song_info, 0, 25);
 	printSongInfo(song_info);
@@ -205,6 +211,34 @@ int querySongs(struct songinfolst** song_info){
 	return 0;
 }
 
+/** Queries for info about one song
+ * @param song_info The songinfolst struct that is populated with song information
+ * @param song_id The id of the song for which information is being requested
+ * @return 0 if successful, 1 otherwise.
+ */
+int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
+	char* request = (char*)malloc(sizeof(unsigned long long));
+	request[0] = QWRYSNGINFO;
+	*((unsigned long long*)(request+1)) = song_id;
+
+	if(send(sockfd, request, 1 + sizeof(unsigned long long), 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		initSong(song_info);
+		return 1;
+	}
+
+	parseSongs(resp, song_info);
+
+	free(request);
+	free(resp);
+	return 0;
+}
+
 /** Queries a burst of songs and returns them through song_info
  * @param song_info The songinfolst struct that is populated with song information
  * @param start The requested starting index of the burst
@@ -230,6 +264,7 @@ int querySongsBurst(struct songinfolst** song_info, unsigned long long start, un
 
 	parseSongs(resp, song_info);
 
+	free(request);
 	free(resp);
 	return 0;
 }
@@ -283,6 +318,7 @@ int queryAlbumsBurst(struct albuminfolst** album_info, unsigned long long start,
 
 	parseAlbums(resp, album_info);
 
+	free(request);
 	free(resp);
 	return 0;
 }
@@ -360,6 +396,7 @@ int queryArtistsBurst(struct artistinfolst** artist_info, unsigned long long sta
 
 	parseArtists(resp, artist_info);
 
+	free(request);
 	free(resp);
 	return 0;
 }
@@ -436,6 +473,7 @@ int queryGenresBurst(struct genreinfolst** genre_info, unsigned long long start,
 
 	parseGenre(resp, genre_info);
 
+	free(request);
 	free(resp);
 	return 0;
 }
@@ -471,6 +509,7 @@ int queryGenreSongs(const char* genre, struct songinfolst** song_info){
 
 	parseSongs(resp, song_info);
 
+	free(request);
 	free(resp);
 	return 0;
 }

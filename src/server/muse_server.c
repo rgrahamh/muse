@@ -144,7 +144,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	char* order_dir = (char*)calloc(5, 1);
 
 	//Holds the incoming flags
-	unsigned int incoming_flags = 0;
+	unsigned char incoming_flags = 0;
 
 	do{
 		sqlite3* db;
@@ -162,7 +162,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			fprintf(log_file, "Error receiving request!\n");
 			return 1;
 		}
-		incoming_flags = (unsigned char)*incoming;
+		incoming_flags = *incoming;
 		char* incoming_msg = incoming + 1;
 
 		if((incoming_flags & REQ_TYPE_MASK) != TERMCON){
@@ -198,7 +198,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					break;
 
 				case QWRYSNGINFO:
-					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE song.id = %llu;", (*(unsigned long long*)incoming_msg));
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE song.id = %llu;", *((unsigned long long*)incoming_msg));
 					break;
 
 				case QWRYALBM:

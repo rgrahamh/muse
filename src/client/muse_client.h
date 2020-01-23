@@ -64,6 +64,7 @@ extern "C" {
     int connectToServ(const char* port, const char* ip);
     int getSong(unsigned long long song_id, char* filepath);
     int querySongs(struct songinfolst** song_info);
+    int querySongInfo(struct songinfolst** song_info, unsigned long long song_id);
 	int querySongsBurst(struct songinfolst** song_info, unsigned long long start, unsigned long long end);
     int queryAlbums(struct albuminfolst** album_info);
 	int queryAlbumsBurst(struct albuminfolst** album_info, unsigned long long start, unsigned long long end);
