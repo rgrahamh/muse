@@ -8,7 +8,6 @@
 #define ARR_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #define QUERY_SEG_SIZE 4096
-#define FILE_SEG_SIZE 16384
 
 #define ORD_DIR_MASK 0x01
 
@@ -36,12 +35,17 @@ enum REQ_TYPE{
 	TERMCON = 0, /**< Terminates the connection */
 	REQSNG = 8, /**< Requests a song */
 	QWRYSNG = 16, /**< Sends a query for all songs */
-	QWRYALBM = 24, /**< Sends a query for all albums */
-	QWRYALBMSNG = 32, /**< Sends a query for all songs in an album */
-	QWRYART = 40, /**< Sends a query for all artists */
-	QWRYARTALBM = 48, /**< Sends a query for all albums associated with an an artist */
-	QWRYGNR = 56, /**< Sends a query for all genres */
-	QWRYGNRSNG = 64 /**< Sends a query for all songs in a genre */
+	QWRYSNGINFO = 24, /**< Sends a query for a song's information */
+	QWRYSNGBRST = 32, /**< Sends a query for a burst of songs */
+	QWRYALBM = 40, /**< Sends a query for all albums */
+	QWRYALBMSNG = 48, /**< Sends a query for all songs in an album */
+	QWRYALBMBRST = 56, /**< Sends a query for a burst of albums */
+	QWRYART = 64, /**< Sends a query for all artists */
+	QWRYARTALBM = 72, /**< Sends a query for all albums associated with an an artist */
+	QWRYARTBRST = 80, /**< Sends a query for a burst of artists */
+	QWRYGNR = 88, /**< Sends a query for all genres */
+	QWRYGNRSNG = 96, /**< Sends a query for all songs in a genre */
+	QWRYGNRBRST = 104 /**< Sends a query for a burst of genres */
 };
 
 void printASCII(FILE* file, int y, int x);

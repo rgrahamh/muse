@@ -144,7 +144,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	char* order_dir = (char*)calloc(5, 1);
 
 	//Holds the incoming flags
-	unsigned char incoming_flags = 0;
+	unsigned int incoming_flags = 0;
 
 	do{
 		sqlite3* db;
@@ -162,7 +162,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			fprintf(log_file, "Error receiving request!\n");
 			return 1;
 		}
-		incoming_flags = *incoming;
+		incoming_flags = (unsigned char)*incoming;
 		char* incoming_msg = incoming + 1;
 
 		if((incoming_flags & REQ_TYPE_MASK) != TERMCON){
@@ -177,6 +177,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			//(struct linkedstr*)calloc(1, sizeof(struct linkedstr));
 			//results->prev = NULL;
 
+			char burst = 0;
 			//Parse the packet type
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
@@ -191,8 +192,22 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY song.name %s;", order_dir);
 					break;
 
+				case QWRYSNGBRST:
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY song.name %s;", order_dir);
+					burst = 1;
+					break;
+
+				case QWRYSNGINFO:
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE song.id = %llu;", (*(unsigned long long*)incoming_msg));
+					break;
+
 				case QWRYALBM:
 					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
+					break;
+
+				case QWRYALBMBRST:
+					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nORDER BY album.name %s;", order_dir);
+					burst = 1;
 					break;
 
 				case QWRYALBMSNG:
@@ -203,12 +218,22 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					sprintf(query, "SELECT DISTINCT artist.id, artist.name\nFROM artist\nORDER BY artist.name %s;", order_dir);
 					break;
 
+				case QWRYARTBRST:
+					sprintf(query, "SELECT DISTINCT artist.id, artist.name\nFROM artist\nORDER BY artist.name %s;", order_dir);
+					burst = 1;
+					break;
+
 				case QWRYARTALBM:
 					sprintf(query, "SELECT DISTINCT album.id, album.name, album.year\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON artist.id = song.artist_id\nWHERE artist.id = %llu ORDER BY album.year %s;", *((unsigned long long*)incoming_msg), order_dir);
 					break;
 
 				case QWRYGNR:
 					sprintf(query, "SELECT DISTINCT song.genre\nFROM song\nORDER BY song.genre %s;", order_dir);
+					break;
+
+				case QWRYGNRBRST:
+					sprintf(query, "SELECT DISTINCT song.genre\nFROM song\nORDER BY song.genre %s;", order_dir);
+					burst = 1;
 					break;
 
 				case QWRYGNRSNG:
@@ -222,26 +247,51 @@ int handleRequest(int new_sockfd, FILE* log_file){
 
 			struct linkedstr* cursor = results;
 			unsigned result_str_len = 0;
+			char* result_str;
+			if(!burst){
+				while(cursor != NULL){
+					result_str_len += strlen(cursor->str);
+					cursor = cursor->prev;
+				}
+				result_str = (char*)calloc(result_str_len + sizeof(unsigned long long) + 1, 1);
+				//Send the returned size as the first byte grouping
+				*((unsigned long long*)result_str) = result_str_len + sizeof(unsigned long long);
+				char* str_cursor = result_str+sizeof(unsigned long long);
 
-			while(cursor != NULL){
-				result_str_len += strlen(cursor->str);
-				cursor = cursor->prev;
+				cursor = results;
+				while(cursor != NULL){
+					strcat(str_cursor, cursor->str);
+					cursor = cursor->prev;
+				}
 			}
-			char* result_str = (char*)calloc(result_str_len + sizeof(unsigned long long) + 1, 1);
-			//Send the returned size as the first byte grouping
-			*((unsigned long long*)result_str) = result_str_len + sizeof(unsigned long long);
-			char* str_cursor = result_str+sizeof(unsigned long long);
+			else{
+				unsigned long long register start = *((unsigned long long*)incoming_msg);
+				incoming_msg += sizeof(unsigned long long);
+				unsigned long long register end = *((unsigned long long*)incoming_msg);
+				for(unsigned long long i = 0; i < start; i++){
+					cursor = cursor->prev;
+				}
+				struct linkedstr* offset_cursor = cursor;
+				for(unsigned long long i = start; i <= end && offset_cursor != NULL; i++){
+					result_str_len += strlen(offset_cursor->str);
+					offset_cursor = offset_cursor->prev;
+				}
+				result_str = (char*)calloc(result_str_len + sizeof(unsigned long long) + 1, 1);
+				//Send the returned size as the first byte grouping
+				*((unsigned long long*)result_str) = result_str_len + sizeof(unsigned long long);
+				char* str_cursor = result_str+sizeof(unsigned long long);
 
-			cursor = results;
-			while(cursor != NULL){
-				strcat(str_cursor, cursor->str);
-				cursor = cursor->prev;
+				offset_cursor = cursor;
+				for(unsigned long long i = start; i <= end && offset_cursor != NULL; i++){
+					strcat(str_cursor, offset_cursor->str);
+					offset_cursor = offset_cursor->prev;
+				}
 			}
 
 			send(new_sockfd, result_str, result_str_len+sizeof(unsigned long long), 0);
-			
-			freeLinkedStr(results);
+
 			free(result_str);
+			freeLinkedStr(results);
 
 			sqlite3_close(db);
 		}

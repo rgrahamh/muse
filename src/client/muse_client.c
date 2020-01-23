@@ -5,7 +5,7 @@ int sockfd;
 #ifdef TEST
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
-	struct songinfolst* song_info;
+	/*struct songinfolst* song_info;
 	struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
@@ -28,7 +28,15 @@ int main(int argc, char** argv){
 	printGenreInfo(genre_info);
 	free_genreinfolst(genre_info);
 
+	queryGenresBurst(&genre_info, 0, 3);
+	printGenreInfo(genre_info);
+	free_genreinfolst(genre_info);
+
 	querySongs(&song_info);
+	printSongInfo(song_info);
+	free_songinfolst(song_info);
+
+	querySongsBurst(&song_info, 0, 25);
 	printSongInfo(song_info);
 	free_songinfolst(song_info);
 
@@ -36,15 +44,23 @@ int main(int argc, char** argv){
 	printAlbumInfo(album_info);
 	free_albuminfolst(album_info);
 
+	queryAlbumsBurst(&album_info, 0, 25);
+	printAlbumInfo(album_info);
+	free_albuminfolst(album_info);
+
 	queryArtists(&artist_info);
-	printSongInfo(song_info);
+	printArtistInfo(artist_info);
+	free_artistinfolst(artist_info);
+
+	queryArtistsBurst(&artist_info, 0, 25);
+	printArtistInfo(artist_info);
 	free_artistinfolst(artist_info);
 
 	getSong(1, "./Green_Grass_And_High_Tides.mp3");
 
 	//Playlist testing
 	struct playlist* playlists = NULL;
-	/*char* buff = (char*)calloc(1, 42);
+	char* buff = (char*)calloc(1, 42);
 	strcpy(buff, "My Playlist");
 	addPlaylist(buff, &playlists);
 	addSongToPlaylist(50, playlists);
@@ -62,7 +78,7 @@ int main(int argc, char** argv){
 	addSongToPlaylist(165, playlists);
 	addSongToPlaylist(3885, playlists);
 	addSongToPlaylist(987, playlists);
-	savePlaylist(playlists, "./my_playlist2.pl");*/
+	savePlaylist(playlists, "./my_playlist2.pl");
 	
 	//loadPlaylist(&playlists, "./my_playlist.pl");
 	scanPlaylists(&playlists);
@@ -79,6 +95,7 @@ int main(int argc, char** argv){
 	printf("Song 5: %llu\n", playlists->prev->first_song->next->next->next->next->id);
 
 	free_playlist(playlists);
+	*/
 
 	return 0;
 }
@@ -188,6 +205,35 @@ int querySongs(struct songinfolst** song_info){
 	return 0;
 }
 
+/** Queries a burst of songs and returns them through song_info
+ * @param song_info The songinfolst struct that is populated with song information
+ * @param start The requested starting index of the burst
+ * @param end The requested ending index of the burst
+ * @return 0 if successful, 1 otherwise.
+ */
+int querySongsBurst(struct songinfolst** song_info, unsigned long long start, unsigned long long end){
+	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
+	request[0] = QWRYSNGBRST | ASC | ORDSNG;
+	*((unsigned long long*)(request+1)) = start;
+	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+
+	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		initSong(song_info);
+		return 1;
+	}
+
+	parseSongs(resp, song_info);
+
+	free(resp);
+	return 0;
+}
+
 /** Queries all albums and returns them through album_info
  * @param album_info The albuminfolst struct that is populated with album information
  * @return 0 if successful, 1 otherwise.
@@ -196,6 +242,35 @@ int queryAlbums(struct albuminfolst** album_info){
 	char request = QWRYALBM | ASC | ORDSNG;
 
 	if(send(sockfd, &request, 1, 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		initAlbum(album_info);
+		return 1;
+	}
+
+	parseAlbums(resp, album_info);
+
+	free(resp);
+	return 0;
+}
+
+/** Queries a burst of albums and returns them through album_info
+ * @param album_info The albuminfolst struct that is populated with album information
+ * @param start The requested starting index of the burst
+ * @param end The requested ending index of the burst
+ * @return 0 if successful, 1 otherwise.
+ */
+int queryAlbumsBurst(struct albuminfolst** album_info, unsigned long long start, unsigned long long end){
+	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
+	request[0] = QWRYALBMBRST | ASC | ORDSNG;
+	*((unsigned long long*)(request+1)) = start;
+	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+
+	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
 		printf("Could not send request!\n");
 		return 1;
 	}
@@ -235,14 +310,44 @@ int queryAlbumSongs(unsigned long long album_id, struct songinfolst** song_info)
 	return 0;
 }
 
-/** Queries all artists
+/** Queries a burst of artists
  * @param artist_info The artistinfolst struct that is populated with artist information
+ * @param start The requested starting index of the burst
+ * @param end The requested ending index of the burst
  * @return 0 if successful, 1 otherwise.
  */
 int queryArtists(struct artistinfolst** artist_info){
 	char request = QWRYART | ASC | ORDSNG;
 
 	if(send(sockfd, &request, 1, 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		initArtist(artist_info);
+		return 1;
+	}
+
+	parseArtists(resp, artist_info);
+
+	free(resp);
+	return 0;
+}
+
+/** Queries all artists
+ * @param artist_info The artistinfolst struct that is populated with artist information
+ * @return 0 if successful, 1 otherwise.
+ */
+int queryArtistsBurst(struct artistinfolst** artist_info, unsigned long long start, unsigned long long end){
+	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
+	request[0] = QWRYARTBRST | ASC | ORDSNG;
+	*((unsigned long long*)(request+1)) = start;
+	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+
+
+	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
 		printf("Could not send request!\n");
 		return 1;
 	}
@@ -290,6 +395,35 @@ int queryGenres(struct genreinfolst** genre_info){
 	char request = QWRYGNR | ASC | ORDSNG;
 
 	if(send(sockfd, &request, 1, 0) == 0){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		initGenre(genre_info);
+		return 1;
+	}
+
+	parseGenre(resp, genre_info);
+
+	free(resp);
+	return 0;
+}
+
+/** Queries a burst of genres
+ * @param genre_info The genreinfolst struct that is populated with genre information
+ * @param start The requested starting index of the burst
+ * @param end The requested ending index of the burst
+ * @return 0 if successful, 1 otherwise.
+ */
+int queryGenresBurst(struct genreinfolst** genre_info, unsigned long long start, unsigned long long end){
+	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
+	request[0] = QWRYGNRBRST | ASC | ORDSNG;
+	*((unsigned long long*)(request+1)) = start;
+	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+
+	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
 		printf("Could not send request!\n");
 		return 1;
 	}

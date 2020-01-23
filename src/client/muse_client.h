@@ -64,11 +64,15 @@ extern "C" {
     int connectToServ(const char* port, const char* ip);
     int getSong(unsigned long long song_id, char* filepath);
     int querySongs(struct songinfolst** song_info);
+	int querySongsBurst(struct songinfolst** song_info, unsigned long long start, unsigned long long end);
     int queryAlbums(struct albuminfolst** album_info);
+	int queryAlbumsBurst(struct albuminfolst** album_info, unsigned long long start, unsigned long long end);
     int queryAlbumSongs(unsigned long long album_id, struct songinfolst** song_info);
     int queryArtists(struct artistinfolst** artist_info);
+	int queryArtistsBurst(struct artistinfolst** artist_info, unsigned long long start, unsigned long long end);
     int queryArtistAlbums(unsigned long long artist_id, struct albuminfolst** album_info);
     int queryGenres(struct genreinfolst** genre_info);
+	int queryGenresBurst(struct genreinfolst** genre_info, unsigned long long start, unsigned long long end);
     int queryGenreSongs(const char* genre, struct songinfolst** song_info);
 
 	void parseSongs(char* resp, struct songinfolst** song_info);
