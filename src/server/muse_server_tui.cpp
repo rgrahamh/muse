@@ -15,9 +15,18 @@ int main(int argc, char** argv) {
 	curs_set(0);
 	keypad(stdscr, TRUE);
 
-	FILE* ascii = fopen("../assets/banner.ascii", "r");
+	char *art_filepath;
+	char *art_filename = "/Documents/MUSE/assets/banner.ascii";
+
+	art_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(art_filename) + 1); // to account for NULL terminator
+	strcpy(art_filepath, getenv("HOME"));
+	strcat(art_filepath, art_filename);
+
+	FILE* ascii = fopen(art_filepath, "r");
 	ascii_height = getASCIIHeight(ascii);
 	ascii_length = getASCIILength(ascii);
+
+	free(art_filepath);
 
 	/* Create menu */
 	ITEM** empty_item_list = (ITEM**) calloc(1, sizeof(ITEM*));

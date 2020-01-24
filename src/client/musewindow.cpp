@@ -766,6 +766,7 @@ void MuseWindow::changeConnectionState(ConnectionState state) {
     } else if( state == NOT_CONNECTED ) {
         disconnect();
         clearModels();
+        clearSongs();
         ui->serverInfoLabel->setText("Not connected to server.");
         ui->connectButton->setText("Connect to...");
     }
