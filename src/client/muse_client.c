@@ -871,7 +871,7 @@ int scanPlaylists(struct playlist** list){
 	DIR* dir;
 	struct dirent* file_info;
 	struct stat stat_info;
-	if((dir = opendir(".")) != NULL){
+	if((dir = opendir("~/Documents/MUSE")) != NULL){
 		while((file_info = readdir(dir)) != NULL){
 			lstat(file_info->d_name, &stat_info);
 			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){
