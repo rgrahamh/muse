@@ -149,7 +149,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 	do{
 		sqlite3* db;
 		//Open the database connection
-		if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
+		if(sqlite3_open("~/Documents/MUSE/muse.db", &db) != SQLITE_OK){
 			fprintf(log_file, "Could not open the sqlite database!\n");
 			return 1;
 		}
@@ -447,7 +447,7 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 	//SQLite database work
 	sqlite3* db;
 	//Open the database connection
-	if(sqlite3_open("./server/muse.db", &db) != SQLITE_OK){
+	if(sqlite3_open("~/Documents/MUSE/muse.db", &db) != SQLITE_OK){
 		fprintf(log_file, "Could not open the sqlite database!\n");
 		return 1;
 	}
