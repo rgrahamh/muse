@@ -12,6 +12,7 @@
 #include <fmod_errors.h>
 #include <fmod_common.h>
 #include <algorithm>
+#include <dirent.h>
 
 #include "songmodel.h"
 #include "artistmodel.h"
@@ -100,8 +101,9 @@ private:
     QString ip_address;
     QString port;
 
-    std::vector<struct songinfo> history;
     std::vector<struct songinfo> queue;
+    std::vector<struct songinfo> history;
+    std::vector<int> downloaded;
 
     char* songProgressText;
     char* songLengthText;
@@ -123,6 +125,8 @@ private:
     void initializeFMOD();
     void clearModels();
     void stopAndReadyUpFMOD();
+    void clearSongs();
+    int downloadSong(char* song_path, int song_id);
 
     void changePlayState(PlayState state);
     void changeHistoryState(HistoryState state);

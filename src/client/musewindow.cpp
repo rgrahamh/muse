@@ -64,6 +64,7 @@ MuseWindow::MuseWindow(QWidget *parent)
 
     changeConnectionState(NOT_CONNECTED);
 
+    clearSongs();
 }
 
 /**
@@ -549,6 +550,94 @@ void MuseWindow::stopAndReadyUpFMOD() {
     song_to_play = NULL;
 }
 
+void MuseWindow::clearSongs() {
+    DIR* dir;
+    struct dirent* file_info;
+    struct stat stat_info;
+
+    char *mp3_filepath;
+    char *mp3_filename = (char*) malloc(150);
+    strcpy(mp3_filename, "/Documents/MUSE");
+
+    mp3_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(mp3_filename) + 200);
+    strcpy(mp3_filepath, getenv("HOME"));
+    strcat(mp3_filepath, mp3_filename);
+
+    if((dir = opendir(mp3_filepath)) != NULL){
+        while((file_info = readdir(dir)) != NULL){
+            lstat(file_info->d_name, &stat_info);
+            if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 4)), ".mp3") == 0) {
+                char* rm_file = (char*) malloc(strlen(getenv("HOME")) + strlen(mp3_filename) + 200);
+                strcpy(rm_file, mp3_filepath);
+                strcat(rm_file, "/");
+                strcat(rm_file, file_info->d_name);
+
+                remove(rm_file);
+
+                free(rm_file);
+            }
+        }
+    }
+    closedir(dir);
+
+    free(mp3_filename);
+    free(mp3_filepath);
+}
+
+int MuseWindow::downloadSong(char* song_path, int song_id) {
+
+    int download = song_id;
+
+    // see if song is already downloaded
+    int found_dupl = -1;
+    for( unsigned int i = 0; i < downloaded.size(); i++ ) {
+        if( download == downloaded.at(i) ) {
+            found_dupl = i;
+            break;
+        }
+    }
+
+    // song is not on disk
+    if( found_dupl == -1 ) {
+        downloaded.insert(downloaded.begin(), download);
+        // download the song
+        if( getSong(download, song_path) ) {
+            qDebug() << "Error downloading file!" << endl;
+            return 1;
+        }
+
+        // is downloaded too big?
+        if( downloaded.size() > 5 ) {
+            int delete_song = downloaded.back();
+            downloaded.pop_back();
+
+            char *del_song_path;
+            char *del_song_name = (char*) malloc(100);
+            sprintf(del_song_name, "/Documents/MUSE/muse_download_%d.mp3", delete_song);
+
+            del_song_path = (char*) malloc(strlen(getenv("HOME")) + strlen(del_song_name) + 1); // to account for NULL terminator
+            strcpy(del_song_path, getenv("HOME"));
+            strcat(del_song_path, del_song_name);
+
+            if( remove(del_song_path) ) {
+                qDebug() << "Error deleting old file!" << endl;
+            } else {
+                qDebug() << "Song with id: " << delete_song << " deleted." << endl;
+            }
+
+            free(del_song_name);
+            free(del_song_path);
+        }
+
+
+    } else { // song found, move to front of queue
+        downloaded.erase(downloaded.begin() + found_dupl);
+        downloaded.insert(downloaded.begin(), download);
+    }
+
+    return 0;
+}
+
 void MuseWindow::changePlayState(PlayState state) {
     play_state = state;
 
@@ -563,9 +652,15 @@ void MuseWindow::changePlayState(PlayState state) {
         ui->songProgressSlider->setValue(0);
         ui->playButton->setText("Play");
     } else if( state == STARTED ) {
-        char* new_song_path = (char*)  calloc(100, sizeof(char));
-        sprintf(new_song_path, "/home/dfletch/muse_download_%d.mp3", queue.front().song_id);
-        if( getSong(queue.front().song_id, new_song_path) ) { // download the next song
+            char *new_song_path;
+            char *new_song_name = (char*) malloc(100);
+            sprintf(new_song_name, "/Documents/MUSE/muse_download_%d.mp3", queue.front().song_id);
+
+            new_song_path = (char*) malloc(strlen(getenv("HOME")) + strlen(new_song_name) + 1); // to account for NULL terminator
+            strcpy(new_song_path, getenv("HOME"));
+            strcat(new_song_path, new_song_name);
+
+        if( downloadSong(new_song_path, queue.front().song_id) ) { // download the next song
             qDebug() << "Unable to retrieve song" << endl;
             changePlayState(NOT_PLAYING);
         } else {
@@ -598,6 +693,10 @@ void MuseWindow::changePlayState(PlayState state) {
                 changePlayState(NOT_PLAYING);
             }
         }
+
+        free(new_song_name);
+        free(new_song_path);
+
     } else if( state == RESUMED ) {
         song_channel->setPaused(false);
         ui->playButton->setText("Pause");

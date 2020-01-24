@@ -292,7 +292,14 @@ void cleanup(MENU* &menu) {
  */
 void writeStateToFile() {
 	std::ofstream state_file;
-	state_file.open("muse.state");
+	char *state_filepath;
+	char *state_filename = "/Documents/MUSE/muse.state";
+
+	state_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(state_filename) + 1); // to account for NULL terminator
+	strcpy(state_filepath, getenv("HOME"));
+	strcat(state_filepath, state_filename);
+
+	state_file.open(state_filepath);
 	
 	if( state_file.good() ) {
 		/* Write the port information */
@@ -320,7 +327,14 @@ void writeStateToFile() {
  */
 void readStateFromFile() {
 	std::ifstream  state_file;
-	state_file.open("muse.state");
+	char *state_filepath;
+	char *state_filename = "/Documents/MUSE/muse.state";
+
+	state_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(state_filename) + 1); // to account for NULL terminator
+	strcpy(state_filepath, getenv("HOME"));
+	strcat(state_filepath, state_filename);
+
+	state_file.open(state_filepath);
 
 	if( state_file.good() ) {
 		/* Parse based on simple language */

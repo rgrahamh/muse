@@ -871,7 +871,15 @@ int scanPlaylists(struct playlist** list){
 	DIR* dir;
 	struct dirent* file_info;
 	struct stat stat_info;
-	if((dir = opendir("~/Documents/MUSE")) != NULL){
+
+	char *pl_filepath;
+	char *pl_filename = "/Documents/MUSE";
+
+	pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
+	strcpy(pl_filepath, getenv("HOME"));
+	strcat(pl_filepath, pl_filename);
+
+	if((dir = opendir(pl_filepath)) != NULL){
 		while((file_info = readdir(dir)) != NULL){
 			lstat(file_info->d_name, &stat_info);
 			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){

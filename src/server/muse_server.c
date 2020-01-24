@@ -148,9 +148,16 @@ int handleRequest(int new_sockfd, FILE* log_file){
 
 	do{
 		sqlite3* db;
+		char *db_filepath;
+		char *db_filename = "/Documents/MUSE/muse.db";
+
+		db_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(db_filename) + 1); // to account for NULL terminator
+		strcpy(db_filepath, getenv("HOME"));
+		strcat(db_filepath, db_filename);
 		//Open the database connection
-		if(sqlite3_open("~/Documents/MUSE/muse.db", &db) != SQLITE_OK){
+		if(sqlite3_open(db_filepath, &db) != SQLITE_OK){
 			fprintf(log_file, "Could not open the sqlite database!\n");
+			free(db_filepath);
 			return 1;
 		}
 		//Re-clear the memory
@@ -185,6 +192,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					sprintf(query, "SELECT song.filepath\nFROM song\nWHERE song.id = %llu;", *((unsigned long long*)incoming_msg));
 					sqlite3_exec(db, query, sendSongCallback, &new_sockfd, NULL);
 					sqlite3_close(db);
+					free(db_filepath);
 					freeLinkedStr(results);
 					continue;
 
@@ -294,6 +302,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 			freeLinkedStr(results);
 
 			sqlite3_close(db);
+			free(db_filepath);
 		}
 	}while((incoming_flags & REQ_TYPE_MASK) != TERMCON);
 
@@ -447,8 +456,16 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 	//SQLite database work
 	sqlite3* db;
 	//Open the database connection
-	if(sqlite3_open("~/Documents/MUSE/muse.db", &db) != SQLITE_OK){
+	char *db_filepath;
+	char *db_filename = "/Documents/MUSE/muse.db";
+
+	db_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(db_filename) + 1); // to account for NULL terminator
+	strcpy(db_filepath, getenv("HOME"));
+	strcat(db_filepath, db_filename);
+
+	if(sqlite3_open(db_filepath, &db) != SQLITE_OK){
 		fprintf(log_file, "Could not open the sqlite database!\n");
+		free( db_filepath );
 		return 1;
 	}
 	song_info->db = db;
@@ -576,6 +593,7 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 	}
 
 	//Free somme memory
+	free(db_filepath);
 	free(song_info);
 	free(query);
 	free(curr_path);
