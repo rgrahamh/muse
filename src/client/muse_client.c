@@ -6,7 +6,7 @@ int sockfd;
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
 	struct songinfolst* song_info;
-	/*struct albuminfolst* album_info;
+	struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
 
@@ -28,7 +28,7 @@ int main(int argc, char** argv){
 	printGenreInfo(genre_info);
 	free_genreinfolst(genre_info);
 
-	queryGenresBurst(&genre_info, 0, 3);
+	queryGenresBurst(&genre_info, 8, 584);
 	printGenreInfo(genre_info);
 	free_genreinfolst(genre_info);
 
@@ -36,12 +36,10 @@ int main(int argc, char** argv){
 	printSongInfo(song_info);
 	free_songinfolst(song_info);
 
-	*/
 	querySongInfo(&song_info, 223);
 	printSongInfo(song_info);
 	free_songinfolst(song_info);
-	/*
-
+	
 	querySongsBurst(&song_info, 0, 25);
 	printSongInfo(song_info);
 	free_songinfolst(song_info);
@@ -101,7 +99,8 @@ int main(int argc, char** argv){
 	printf("Song 5: %llu\n", playlists->prev->first_song->next->next->next->next->id);
 
 	free_playlist(playlists);
-	*/
+
+	disconnect();
 
 	return 0;
 }
@@ -192,7 +191,7 @@ int getSong(unsigned long long song_id, char* filepath){
  * @return 0 if successful, 1 otherwise.
  */
 int querySongs(struct songinfolst** song_info){
-	char request = QWRYSNG | ASC | ORDSNG;
+	char request = QWRYSNG | ASC | ORDALBM;
 
 	if(send(sockfd, &request, 1, 0) == 0){
 		printf("Could not send request!\n");
@@ -497,8 +496,6 @@ int queryGenreSongs(const char* genre, struct songinfolst** song_info){
 		printf("Could not send request!\n");
 		return 1;
 	}
-
-	free(request);
 
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
@@ -812,6 +809,8 @@ int savePlaylist(struct playlist* list, char* filepath){
 	}
 	fwrite(str, sizeof(unsigned long long), song_count, file);
 	fclose(file);
+
+	free(str);
 
 	return 0;
 }
