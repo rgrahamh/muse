@@ -10,8 +10,8 @@ int main(int argc, char** argv){
 	struct artistinfolst* artist_info;
 	struct genreinfolst* genre_info;
 
-    getSong(14, "/tmp/muse_download_14.mp3");
-    getSong(13, "/tmp/muse_download_13.mp3");
+	getSong(14, "/tmp/muse_download_14.mp3");
+	getSong(13, "/tmp/muse_download_13.mp3");
 	queryAlbumSongs(25, &song_info);
 	printSongInfo(song_info);
 	free_songinfolst(song_info);
@@ -147,10 +147,10 @@ int connectToServ(const  char* port, const char* server_ip){
 int getSong(unsigned long long song_id, char* filepath){
 	FILE* file = fopen(filepath, "w");
 
-    if( file == NULL ) {
-        printf("File could not be opened!\n");
-        return 1;
-    }
+	if( file == NULL ) {
+		printf("File could not be opened!\n");
+		return 1;
+	}
 
 	int request_size = sizeof(char) + sizeof(unsigned long long);
 	char* request = (char*)malloc(request_size);
@@ -725,7 +725,7 @@ void initGenre(struct genreinfolst** genre_info){
  */
 int receiveResponse(char** resp){
 	char* resp_size_str = (char*)malloc(sizeof(unsigned long long));
-    if(recv(sockfd, resp_size_str, sizeof(unsigned long long), 0) == -1){
+	if(recv(sockfd, resp_size_str, sizeof(unsigned long long), 0) == -1){
 		printf("Error receiving data!\n");
 		return 1;
 	}
@@ -771,8 +771,8 @@ void addSongToPlaylist(unsigned long long song_id, struct playlist* list){
 		list->last_song = new_song;
 	}
 	else{
-	list->last_song->next = new_song;
-	list->last_song = new_song;
+		list->last_song->next = new_song;
+		list->last_song = new_song;
 	}
 }
 
@@ -919,14 +919,14 @@ void free_songinfolst(struct songinfolst* song_info){
 	struct songinfolst* cursor = song_info;
 	struct songinfolst* tmp;
 	while(cursor != NULL){
-        free(cursor->title);
-        free(cursor->artist);
-        free(cursor->album);
-        free(cursor->genre);
+		free(cursor->title);
+		free(cursor->artist);
+		free(cursor->album);
+		free(cursor->genre);
 
-        tmp = cursor;
-        cursor = cursor->next;
-        free(tmp);
+		tmp = cursor;
+		cursor = cursor->next;
+		free(tmp);
 	}
 }
 
@@ -937,7 +937,7 @@ void free_albuminfolst(struct albuminfolst* album_info){
 	struct albuminfolst* cursor = album_info;
 	struct albuminfolst* tmp;
 	while(cursor != NULL){
-        free(cursor->title);
+		free(cursor->title);
 
 		tmp = cursor;
 		cursor = cursor->next;
@@ -952,7 +952,7 @@ void free_artistinfolst(struct artistinfolst* artist_info){
 	struct artistinfolst* cursor = artist_info;
 	struct artistinfolst* tmp;
 	while(cursor != NULL){
-        free(cursor->name);
+		free(cursor->name);
 
 		tmp = cursor;
 		cursor = cursor->next;
@@ -964,15 +964,15 @@ void free_artistinfolst(struct artistinfolst* artist_info){
  * @param genre_info The genreinfolst you wish to free
  */
 void free_genreinfolst(struct genreinfolst* genre_info){
-    struct genreinfolst* cursor = genre_info;
-    struct genreinfolst* tmp;
-    while(cursor != NULL){
-        free(cursor->genre);
+	struct genreinfolst* cursor = genre_info;
+	struct genreinfolst* tmp;
+	while(cursor != NULL){
+		free(cursor->genre);
 
-        tmp = cursor;
-        cursor = cursor->next;
-        free(tmp);
-    }
+		tmp = cursor;
+		cursor = cursor->next;
+		free(tmp);
+	}
 }
 
 /** Iterates through a string and does a deep copy until a null byte or specified stopping point is hit
@@ -983,16 +983,16 @@ void free_genreinfolst(struct genreinfolst* genre_info){
  * @return 1 on success, 0 otherwise
  */
 int substr(char* base, char until, char* cpy, int cpySize){
-    //Iterate through until we hit a null byte or the delim
-    int i;
-    for(i = 0; *base != until && i < cpySize; i++){
-        *(cpy++) = *(base++);
-    }
-    if(i == cpySize){
-        return 0;
-    }
-    *cpy = '\0';
-    return 1;
+	//Iterate through until we hit a null byte or the delim
+	int i;
+	for(i = 0; *base != until && i < cpySize; i++){
+		*(cpy++) = *(base++);
+	}
+	if(i == cpySize){
+		return 0;
+	}
+	*cpy = '\0';
+	return 1;
 }
 
 /** Finds the number of characters between the start of str and either a null terminator or the until character
@@ -1008,6 +1008,9 @@ int substrsize(char* str, char until){
 	return i;
 }
 
+/** Prints info about the songs in the songinfolst
+ * @param song_info The songinfolst you wish to print
+ */
 void printSongInfo(struct songinfolst* song_info){
 	printf("Songs:\n");
 	while(song_info != NULL){
@@ -1022,6 +1025,9 @@ void printSongInfo(struct songinfolst* song_info){
 	}
 }
 
+/** Prints info about the albums in the albuminfolst
+ * @param album_info The albuminfolst you wish to print
+ */
 void printAlbumInfo(struct albuminfolst* album_info){
 	printf("Albums:\n");
 	while(album_info != NULL){
@@ -1032,6 +1038,9 @@ void printAlbumInfo(struct albuminfolst* album_info){
 	}
 }
 
+/** Prints info about the artists in the artistinfolst
+ * @param artist_info The artistinfolst you wish to print
+ */
 void printArtistInfo(struct artistinfolst* artist_info){
 	printf("Artists:\n");
 	while(artist_info != NULL){
@@ -1041,6 +1050,9 @@ void printArtistInfo(struct artistinfolst* artist_info){
 	}
 }
 
+/** Prints info about the genres in the genreinfolst
+ * @param genre_info The genreinfolst you sih to print
+ */
 void printGenreInfo(struct genreinfolst* genre_info){
 	while(genre_info != NULL){
 		printf("Genre: %s\n", genre_info->genre);

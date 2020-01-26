@@ -15,12 +15,12 @@ void printASCII(FILE* file, int y, int x) {
   int line_num = 0;
   char c;
   while((c = getc(file)) != EOF) {
-    addch(c);
+	addch(c);
 
-    //Adjusting for the x offset
-    if(c == '\n') {
-      move(y + ++line_num, x);
-    }
+	//Adjusting for the x offset
+	if(c == '\n') {
+	  move(y + ++line_num, x);
+	}
   }
   rewind(file);
 
@@ -44,12 +44,12 @@ void wprintASCII(WINDOW* win, FILE* file, int y, int x) {
   int line_num = 0;
   char c;
   while((c = getc(file)) != EOF) {
-    waddch(win, c);
+	waddch(win, c);
 
-    //Adjusting for the x offset
-    if(c == '\n') {
-      wmove(win, y + ++line_num, x);
-    }
+	//Adjusting for the x offset
+	if(c == '\n') {
+	  wmove(win, y + ++line_num, x);
+	}
   }
   rewind(file);
 
@@ -65,7 +65,7 @@ int getASCIILength(FILE* file) {
   int i = 0;
   char c = getc(file);
   for(; c != '\n' && c != EOF; i++) {
-    c = getc(file);
+	c = getc(file);
   }
 
   rewind(file);
@@ -79,9 +79,9 @@ int getASCIILength(FILE* file) {
 int getASCIIHeight(FILE* file) {
   int i = 0;
   for(char c; (c = getc(file)) != EOF;) {
-    if(c == '\n') {
-      i++;
-    }
+	if(c == '\n') {
+	  i++;
+	}
   }
   
   rewind(file);

@@ -508,7 +508,6 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 					//Checking to see if the file is an mp3
 					if((strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0)){
 						TagLib_File* tag_file = taglib_file_new(file_info->d_name);
-						//TODO: Investigate memory leak?
 						TagLib_Tag* tag = taglib_file_tag(tag_file);
 
 						//Populating the songinfo struct
