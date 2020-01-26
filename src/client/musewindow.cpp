@@ -18,6 +18,7 @@ MuseWindow::MuseWindow(QWidget *parent)
     configureTableView(ui->albumView);
     configureTableView(ui->genreView);
     configureTableView(ui->songView);
+    configureTableView(ui->playlistView);
 
     // initialize audio library
     initializeFMOD();
@@ -39,31 +40,20 @@ MuseWindow::MuseWindow(QWidget *parent)
     album_model = new AlbumModel(this);
     genre_model = new GenreModel(this);
     song_model = new SongModel(this);
-
-//    // allow filtering by use of proxy models
-//    QSortFilterProxyModel *artist_proxy = new QSortFilterProxyModel();
-//    artist_proxy->setSourceModel(artist_model);
-//    ui->artistView->setModel(artist_proxy);
-
-//    QSortFilterProxyModel *album_proxy = new QSortFilterProxyModel();
-//    album_proxy->setSourceModel(album_model);
-//    ui->albumView->setModel(album_proxy);
-
-//    QSortFilterProxyModel *genre_proxy = new QSortFilterProxyModel();
-//    genre_proxy->setSourceModel(genre_model);
-//    ui->genreView->setModel(genre_proxy);
-
-//    QSortFilterProxyModel *song_proxy = new QSortFilterProxyModel();
-//    song_proxy->setSourceModel(song_model);
-//    ui->songView->setModel(song_proxy);
+    playlist_model = new PlaylistModel(this);
 
     ui->artistView->setModel(artist_model);
     ui->albumView->setModel(album_model);
     ui->genreView->setModel(genre_model);
     ui->songView->setModel(song_model);
+    ui->playlistView->setModel(playlist_model);
 
+    // request context menu for right-clicks
+    ui->songView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->songView, SIGNAL(customContextMenuRequested(QPoint)), SLOT(customMenuRequested(QPoint)));
+
+    // last-minute setup
     changeConnectionState(NOT_CONNECTED);
-
     clearSongs();
 }
 
@@ -78,6 +68,7 @@ MuseWindow::~MuseWindow()
     free(songProgressText);
     free(songLengthText);
     free(connectionText);
+    free_playlist(playlists);
 
     delete ui;
 }
@@ -161,6 +152,19 @@ void MuseWindow::on_tabWidget_tabBarClicked(int index)
                 }
                 break;
             }
+            case 4: /* Playlist */  {
+                free_playlist(playlists);
+
+                playlists = NULL;
+
+                scanPlaylists(&playlists);
+                if( playlists == NULL ) {
+                    qDebug() << "Error scanning for playlists!" << endl;
+                } else {
+                    playlist_model->populateData(playlists);
+                }
+                break;
+            }
         }
     }
 }
@@ -240,6 +244,38 @@ void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
     if( queryGenreSongs(genre, &songs) ) {
         qDebug() << "Error retrieving genre songs!" << endl;
         return;
+    }
+
+    song_model->populateData(songs);
+    ui->tabWidget->setCurrentIndex(3);
+}
+
+void MuseWindow::on_playlistView_doubleClicked(const QModelIndex &index)
+{
+    const char* playlist_name = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
+
+    qDebug() << "Playlist selected is: " << playlist_name << endl;
+
+    // find the playlist
+    struct playlist* cursor_pl = playlists;
+    struct playlist* playlist = NULL;
+    while( cursor_pl != NULL ) {
+        if( strcmp(playlist_name, cursor_pl->name) == 0 ) {
+            playlist = cursor_pl;
+            break;
+        }
+
+        cursor_pl = cursor_pl->prev;
+    }
+
+    // get songinfo on all the songs
+    struct songinfolst* songs = NULL;
+
+    struct songlst* cursor_sng = playlist->first_song;
+    while( cursor_sng != NULL ) {
+        querySongInfo(&songs, cursor_sng->id);
+
+        cursor_sng = cursor_sng->next;
     }
 
     song_model->populateData(songs);
@@ -535,6 +571,7 @@ void MuseWindow::clearModels() {
     artist_model->clearModel();
     album_model->clearModel();
     genre_model->clearModel();
+    playlist_model->clearModel();
 }
 
 void MuseWindow::stopAndReadyUpFMOD() {
@@ -767,6 +804,7 @@ void MuseWindow::changeConnectionState(ConnectionState state) {
         disconnect();
         clearModels();
         clearSongs();
+        free_playlist(playlists);
         ui->serverInfoLabel->setText("Not connected to server.");
         ui->connectButton->setText("Connect to...");
     }
@@ -823,5 +861,56 @@ void MuseWindow::changeShuffleState(ShuffleState state) {
             queue.push_back(temp);
             changeQueueState(HAS_QUEUE, &index, false);
         }
+    }
+}
+
+void MuseWindow::on_songView_customContextMenuRequested(const QPoint &pos)
+{
+    QModelIndex index = ui->songView->indexAt(pos);
+    int song_id = index.data(Qt::UserRole).value<int>();
+
+    ui->songView->setCurrentIndex(index);
+
+    if( song_id <= 0 ) { // not an actual song selected
+        return;
+    }
+
+    QAction* addToPlaylistAction = new QAction("Add song to playlist...", this);
+    addToPlaylistAction->setData(song_id);
+    connect(addToPlaylistAction, &QAction::triggered, this, &MuseWindow::on_songView_addSongToPlaylist);
+
+    QMenu* menu = new QMenu(this);
+    menu->addAction(addToPlaylistAction);
+    menu->popup(ui->songView->viewport()->mapToGlobal(pos));
+}
+
+void MuseWindow::on_songView_addSongToPlaylist() {
+    QAction *act = qobject_cast<QAction *>(sender());
+    QVariant v = act->data();
+    int song_id = v.value<int>();
+
+    PlaylistDialog* playlistDialog = new PlaylistDialog(this);
+    if( playlistDialog->exec() == QDialog::Accepted ) {
+        qDebug() << "Accepted!" << endl;
+        struct playlist* selected = playlistDialog->getSelected();
+        if( selected != NULL ) {
+            addSongToPlaylist(song_id, selected);
+
+            char *new_playlist_path;
+            char *new_playlist_name = (char*) malloc(100);
+            sprintf(new_playlist_name, "/Documents/MUSE/%s.pl", selected->name);
+
+            new_playlist_path = (char*) malloc(strlen(getenv("HOME")) + strlen(new_playlist_name) + 1); // to account for NULL terminator
+            strcpy(new_playlist_path, getenv("HOME"));
+            strcat(new_playlist_path, new_playlist_name);
+            savePlaylist(selected, new_playlist_path);
+
+            free(new_playlist_name);
+            free(new_playlist_path);
+
+            free_playlist(playlistDialog->getPlaylists());
+        }
+    } else {
+        qDebug() << "Declined." << endl;
     }
 }

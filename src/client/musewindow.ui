@@ -14,7 +14,7 @@
    <bool>false</bool>
   </property>
   <property name="windowTitle">
-   <string>MuseWindow</string>
+   <string>MUSE</string>
   </property>
   <widget class="QWidget" name="mainwindow">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -33,7 +33,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
-         <number>2</number>
+         <number>4</number>
         </property>
         <widget class="QWidget" name="artistPage">
          <attribute name="title">
@@ -91,6 +91,16 @@
              <bool>false</bool>
             </attribute>
            </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="playlistPage">
+         <attribute name="title">
+          <string>Playlists</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QTableView" name="playlistView"/>
           </item>
          </layout>
         </widget>

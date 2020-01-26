@@ -1,7 +1,5 @@
 #ifndef SHARED_H
 #define SHARED_H
-#include <curses.h>
-#include <menu.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -48,10 +46,6 @@ enum REQ_TYPE{
 	QWRYGNRBRST = 104 /**< Sends a query for a burst of genres */
 };
 
-void printASCII(FILE* file, int y, int x);
-void wprintASCII(WINDOW* win, FILE* file, int y, int x);
-int getASCIILength(FILE* file);
-int getASCIIHeight(FILE* file);
 char* escapeApostrophe(char* str);
 void dummy();
 #endif

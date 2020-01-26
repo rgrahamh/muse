@@ -8,6 +8,7 @@
 #include <QSortFilterProxyModel>
 #include <QTableView>
 #include <QTimer>
+#include <QMenu>
 #include <fmod.hpp>
 #include <fmod_errors.h>
 #include <fmod_common.h>
@@ -19,6 +20,7 @@
 #include "albummodel.h"
 #include "genremodel.h"
 #include "serverdialog.h"
+#include "playlistdialog.h"
 #include "testdata.h"
 
 QT_BEGIN_NAMESPACE
@@ -79,6 +81,7 @@ private slots:
     void on_artistView_doubleClicked(const QModelIndex &index);
     void on_albumView_doubleClicked(const QModelIndex &index);
     void on_genreView_doubleClicked(const QModelIndex &index);
+    void on_playlistView_doubleClicked(const QModelIndex &index);
 
     void on_playButton_clicked();
     void on_rewindButton_clicked();
@@ -88,6 +91,9 @@ private slots:
     void on_connectButton_clicked();
 
     void on_timeout();
+
+    void on_songView_customContextMenuRequested(const QPoint &pos);
+    void on_songView_addSongToPlaylist();
 
 private:
     Ui::MuseWindow *ui;
@@ -111,6 +117,8 @@ private:
 
     QTimer *timer;
 
+    struct playlist* playlists = NULL;
+
     FMOD_RESULT result;
     FMOD::System *system = NULL;
     FMOD::Sound* song_to_play = NULL;
@@ -120,6 +128,7 @@ private:
     AlbumModel* album_model;
     GenreModel* genre_model;
     SongModel* song_model;
+    PlaylistModel* playlist_model;
 
     void configureTableView(QTableView* view);
     void initializeFMOD();

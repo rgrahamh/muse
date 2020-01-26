@@ -92,7 +92,7 @@ extern "C" {
 	int substrsize(char* str, char until);
 	int substr(char* base, char until, char* cpy, int cpySize);
 
-	void addPlaylist(char* name, struct playlist** list);
+    void addPlaylist(char* name, struct playlist** list);
 	void addSongToPlaylist(unsigned long long song_id, struct playlist* list);
 	int savePlaylist(struct playlist* list, char* filepath);
 	int loadPlaylist(struct playlist** list, char* filepath);

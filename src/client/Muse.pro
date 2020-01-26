@@ -22,6 +22,8 @@ SOURCES += \
     genremodel.cpp \
     main.cpp \
     musewindow.cpp \
+    playlistdialog.cpp \
+    playlistmodel.cpp \
     serverdialog.cpp \
     songmodel.cpp \
     muse_client.c \
@@ -32,6 +34,8 @@ HEADERS += \
     artistmodel.h \
     genremodel.h \
     musewindow.h \
+    playlistdialog.h \
+    playlistmodel.h \
     serverdialog.h \
     songmodel.h \
     muse_client.h \
@@ -39,6 +43,7 @@ HEADERS += \
 
 FORMS += \
     musewindow.ui \
+    playlistdialog.ui \
     serverdialog.ui
 
 # Default rules for deployment.

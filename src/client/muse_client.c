@@ -231,7 +231,19 @@ int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
 		return 1;
 	}
 
-	parseSongs(resp, song_info);
+    struct songinfolst* new_song;
+
+    parseSongs(resp, &new_song);
+
+    if(*song_info == NULL){
+        new_song->next = NULL;
+        *song_info = new_song;
+    }
+    else{
+        new_song->next = *song_info;
+        *song_info = new_song;
+    }
+
 
 	free(request);
 	free(resp);
@@ -771,8 +783,8 @@ void addSongToPlaylist(unsigned long long song_id, struct playlist* list){
 		list->last_song = new_song;
 	}
 	else{
-	list->last_song->next = new_song;
-	list->last_song = new_song;
+        list->last_song->next = new_song;
+        list->last_song = new_song;
 	}
 }
 
@@ -838,23 +850,25 @@ int loadPlaylist(struct playlist** list, char* filepath){
 	play_list->name = (char*)calloc(1, name_len+1);
 	fread(play_list->name, name_len + 1, 1, file);
 
-	//Parse the song IDs
-	char* id_str = (char*)calloc(1, sizeof(unsigned long long) + 1);
-	struct songlst* prev_song = (struct songlst*)calloc(1, sizeof(struct songlst));
+    char* id_str = (char*)calloc(1, sizeof(unsigned long long) + 1);
 	fread(id_str, 1, sizeof(unsigned long long), file);
-	prev_song->id = *((unsigned long long*)id_str);
-	prev_song->next = NULL;
-	play_list->first_song = prev_song;
-	fread(id_str, 1, sizeof(unsigned long long), file);
-	while(!feof(file)){
-		struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
-		song->id = *((unsigned long long*)id_str);
-		song->next = NULL;
-		prev_song->next = song;
-		play_list->last_song = song;
-		prev_song = song;
-		fread(id_str, 1, sizeof(unsigned long long), file);
-	}
+    if(!feof(file)){
+        //Parse the song IDs
+        struct songlst* prev_song = (struct songlst*)calloc(1, sizeof(struct songlst));
+        prev_song->id = *((unsigned long long*)id_str);
+        prev_song->next = NULL;
+        play_list->first_song = prev_song;
+        fread(id_str, 1, sizeof(unsigned long long), file);
+        while(!feof(file)){
+            struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
+            song->id = *((unsigned long long*)id_str);
+            song->next = NULL;
+            prev_song->next = song;
+            prev_song = song;
+            fread(id_str, 1, sizeof(unsigned long long), file);
+        }
+        play_list->last_song = prev_song;
+    }
 	play_list->prev = *list;
 	*list = play_list;
 
@@ -875,7 +889,7 @@ int scanPlaylists(struct playlist** list){
 	char *pl_filepath;
 	char *pl_filename = "/Documents/MUSE";
 
-	pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
+    pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
 	strcpy(pl_filepath, getenv("HOME"));
 	strcat(pl_filepath, pl_filename);
 
@@ -883,7 +897,12 @@ int scanPlaylists(struct playlist** list){
 		while((file_info = readdir(dir)) != NULL){
 			lstat(file_info->d_name, &stat_info);
 			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){
-				loadPlaylist(list, file_info->d_name);
+                char* path = (char*) calloc( strlen(pl_filepath) + strlen(file_info->d_name) + 2, sizeof(char) );
+                strcpy(path, pl_filepath);
+                strcat(path, "/");
+                strcat(path, file_info->d_name);
+
+                loadPlaylist(list, path);
 			}
 		}
 	}

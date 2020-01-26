@@ -56,6 +56,11 @@ void writeStateToFile();
 void readStateFromFile();
 void startServer(MENU* &menu);
 
+void printASCII(FILE* file, int y, int x);
+void wprintASCII(WINDOW* win, FILE* file, int y, int x);
+int getASCIILength(FILE* file);
+int getASCIIHeight(FILE* file);
+
 const struct MenuItem main_page[] = {
 	MenuItem("1.", "Network Options", (void*)changePage, NETWORK_PAGE),
 	MenuItem("2.", "Library Locations", (void*)changePage, LIBRARY_PAGE),
