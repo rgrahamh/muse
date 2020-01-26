@@ -5,6 +5,7 @@ int sockfd;
 #ifdef TEST
 int main(int argc, char** argv){
 	connectToServ("2442", "127.0.0.1");
+	/*
 	struct songinfolst* song_info;
 	struct albuminfolst* album_info;
 	struct artistinfolst* artist_info;
@@ -61,6 +62,7 @@ int main(int argc, char** argv){
 	free_artistinfolst(artist_info);
 
 	getSong(1, "./Green_Grass_And_High_Tides.mp3");
+	*/
 
 	//Playlist testing
 	struct playlist* playlists = NULL;
@@ -83,6 +85,8 @@ int main(int argc, char** argv){
 	addSongToPlaylist(3885, playlists);
 	addSongToPlaylist(987, playlists);
 	savePlaylist(playlists, "./my_playlist2.pl");
+
+	deletePlaylist(&playlists, "Playlist Two: Electric Boogaloo");
 	
 	//loadPlaylist(&playlists, "./my_playlist.pl");
 	scanPlaylists(&playlists);
@@ -91,13 +95,13 @@ int main(int argc, char** argv){
 	printf("Song 3: %llu\n", playlists->first_song->next->next->id);
 	printf("Song 4: %llu\n", playlists->first_song->next->next->next->id);
 	printf("Song 5: %llu\n", playlists->first_song->next->next->next->next->id);
-
+/*
 	printf("Song 1: %llu\n", playlists->prev->first_song->id);
 	printf("Song 2: %llu\n", playlists->prev->first_song->next->id);
 	printf("Song 3: %llu\n", playlists->prev->first_song->next->next->id);
 	printf("Song 4: %llu\n", playlists->prev->first_song->next->next->next->id);
 	printf("Song 5: %llu\n", playlists->prev->first_song->next->next->next->next->id);
-
+*/
 	free_playlist(playlists);
 
 	disconnect();
@@ -910,6 +914,35 @@ int scanPlaylists(struct playlist** list){
 	return 0;
 }
 
+/** Deletes a playlist with a given name
+ * @param list The playlist
+ * @param name The name
+ * @return 0 if successful, 1 otherwise
+ */
+int deletePlaylist(struct playlist** list, char* name){
+	struct playlist* cursor = *list;
+	if(strcmp(cursor->name, name) == 0){
+		struct playlist* death_row = cursor;
+		*list = cursor->prev;
+		free_songlst(death_row->first_song);
+		free(death_row->name);
+		return 0;
+	}
+	else{
+		while(cursor->prev != NULL){
+			if(strcmp(cursor->prev->name, name) != 0){
+				struct playlist* death_row = cursor->prev;
+				cursor->prev = cursor->prev->prev;
+				free_songlst(death_row->first_song);
+				free(death_row->name);
+				return 0;
+			}
+			cursor = cursor->prev;
+		}
+	}
+	return 1;
+}
+
 /** Frees the playlist
  * @param list The playlist that you want to be freed
  */
@@ -917,16 +950,23 @@ void free_playlist(struct playlist* plist){
 	struct playlist* playlist_cursor = plist;
 	while(playlist_cursor != NULL){
 		//Free the songs in the playlist
-		struct songlst* songlst_cursor = playlist_cursor->first_song;
-		while(songlst_cursor != NULL){
-			struct songlst* death_row = songlst_cursor;
-			songlst_cursor = songlst_cursor->next;
-			free(death_row);
-		}
+		free_songlst(playlist_cursor->first_song);
 		//Free the playlist
 		free(playlist_cursor->name);
 		struct playlist* death_row = playlist_cursor;
 		playlist_cursor = playlist_cursor->prev;
+		free(death_row);
+	}
+}
+
+/** Frees the songlist
+ * @param list The songlist that you want to be feed
+ */
+void free_songlst(struct songlst* list){
+	struct songlst* songlst_cursor = list;
+	while(songlst_cursor != NULL){
+		struct songlst* death_row = songlst_cursor;
+		songlst_cursor = songlst_cursor->next;
 		free(death_row);
 	}
 }

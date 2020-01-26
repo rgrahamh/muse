@@ -97,8 +97,10 @@ extern "C" {
 	int savePlaylist(struct playlist* list, char* filepath);
 	int loadPlaylist(struct playlist** list, char* filepath);
 	int scanPlaylists(struct playlist** list);
+	int deletePlaylist(struct playlist** list, char* name);
 
 	void free_playlist(struct playlist* list);
+	void free_songlst(struct songlst* list);
 	void free_songinfolst(struct songinfolst* song_info);
 	void free_albuminfolst(struct albuminfolst* album_info);
 	void free_artistinfolst(struct artistinfolst* artist_info);
