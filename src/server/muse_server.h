@@ -39,8 +39,8 @@ struct dbsonginfo {
 };
 
 struct linkedstr{
-    char* str;
-    struct linkedstr* prev;
+	char* str;
+	struct linkedstr* prev;
 };
 
 int serve(char* port, FILE* log_file);

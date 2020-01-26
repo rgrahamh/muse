@@ -42,8 +42,8 @@ struct artistinfolst{
 };
 
 struct genreinfolst{
-    char* genre;
-    struct genreinfolst* next;
+	char* genre;
+	struct genreinfolst* next;
 };
 
 struct playlist{
@@ -61,20 +61,20 @@ struct songlst{
 #ifdef __cplusplus
 extern "C" {
 #endif
-    int connectToServ(const char* port, const char* ip);
-    int getSong(unsigned long long song_id, char* filepath);
-    int querySongs(struct songinfolst** song_info);
-    int querySongInfo(struct songinfolst** song_info, unsigned long long song_id);
+	int connectToServ(const char* port, const char* ip);
+	int getSong(unsigned long long song_id, char* filepath);
+	int querySongs(struct songinfolst** song_info);
+	int querySongInfo(struct songinfolst** song_info, unsigned long long song_id);
 	int querySongsBurst(struct songinfolst** song_info, unsigned long long start, unsigned long long end);
-    int queryAlbums(struct albuminfolst** album_info);
+	int queryAlbums(struct albuminfolst** album_info);
 	int queryAlbumsBurst(struct albuminfolst** album_info, unsigned long long start, unsigned long long end);
-    int queryAlbumSongs(unsigned long long album_id, struct songinfolst** song_info);
-    int queryArtists(struct artistinfolst** artist_info);
+	int queryAlbumSongs(unsigned long long album_id, struct songinfolst** song_info);
+	int queryArtists(struct artistinfolst** artist_info);
 	int queryArtistsBurst(struct artistinfolst** artist_info, unsigned long long start, unsigned long long end);
-    int queryArtistAlbums(unsigned long long artist_id, struct albuminfolst** album_info);
-    int queryGenres(struct genreinfolst** genre_info);
+	int queryArtistAlbums(unsigned long long artist_id, struct albuminfolst** album_info);
+	int queryGenres(struct genreinfolst** genre_info);
 	int queryGenresBurst(struct genreinfolst** genre_info, unsigned long long start, unsigned long long end);
-    int queryGenreSongs(const char* genre, struct songinfolst** song_info);
+	int queryGenreSongs(const char* genre, struct songinfolst** song_info);
 
 	void parseSongs(char* resp, struct songinfolst** song_info);
 	void parseAlbums(char* resp, struct albuminfolst** album_info);
@@ -99,20 +99,20 @@ extern "C" {
 	int scanPlaylists(struct playlist** list);
 
 	void free_playlist(struct playlist* list);
-    void free_songinfolst(struct songinfolst* song_info);
-    void free_albuminfolst(struct albuminfolst* album_info);
-    void free_artistinfolst(struct artistinfolst* artist_info);
-    void free_genreinfolst(struct genreinfolst* genre_info);
+	void free_songinfolst(struct songinfolst* song_info);
+	void free_albuminfolst(struct albuminfolst* album_info);
+	void free_artistinfolst(struct artistinfolst* artist_info);
+	void free_genreinfolst(struct genreinfolst* genre_info);
 
 	void printSongInfo(struct songinfolst* song_info);
 	void printAlbumInfo(struct albuminfolst* album_info);
 	void printArtistInfo(struct artistinfolst* artist_info);
 	void printGenreInfo(struct genreinfolst* genre_info);
 
-    int queryEntity(unsigned long long entity_id, char flags);
-    int receiveResponse(char** resp);
+	int queryEntity(unsigned long long entity_id, char flags);
+	int receiveResponse(char** resp);
 	void disconnect();
-    void stop(int sig);
+	void stop(int sig);
 #ifdef __cplusplus
 }
 #endif
