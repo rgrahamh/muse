@@ -7,7 +7,7 @@
 #include "muse_client.h"
 
 namespace Ui {
-class PlaylistDialog;
+class AddToPlaylistDialog;
 }
 
 class AddToPlaylistDialog : public QDialog
@@ -29,7 +29,7 @@ private slots:
     void on_playlistView_doubleClicked(const QModelIndex &index);
 
 private:
-    Ui::PlaylistDialog *ui;
+    Ui::AddToPlaylistDialog *ui;
     int playlist_id;
 
     struct playlist* playlists = NULL;

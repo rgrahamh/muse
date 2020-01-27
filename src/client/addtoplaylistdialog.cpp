@@ -1,9 +1,9 @@
 #include "addtoplaylistdialog.h"
-#include "ui_playlistdialog.h"
+#include "ui_addtoplaylistdialog.h"
 
 AddToPlaylistDialog::AddToPlaylistDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::PlaylistDialog)
+    ui(new Ui::AddToPlaylistDialog)
 {
     ui->setupUi(this);
 

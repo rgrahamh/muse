@@ -54,7 +54,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-unix:!macx: LIBS += -L$$PWD/../../external-libraries/fmod-core-2.00.07/lib/ -lfmod
+unix: LIBS += -L$$PWD/../../external-libraries/fmod-core-2.00.07/lib/ -lfmod
 
 INCLUDEPATH += $$PWD/../../external-libraries/fmod-core-2.00.07/include
 DEPENDPATH += $$PWD/../../external-libraries/fmod-core-2.00.07/include
