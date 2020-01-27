@@ -52,6 +52,9 @@ MuseWindow::MuseWindow(QWidget *parent)
     ui->songView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->songView, SIGNAL(customContextMenuRequested(QPoint)), SLOT(customMenuRequested(QPoint)));
 
+    ui->playlistView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->playlistView, SIGNAL(customContextMenuRequested(QPoint)), SLOT(customMenuRequested(QPoint)));
+
     // last-minute setup
     changeConnectionState(NOT_CONNECTED);
     clearSongs();
@@ -177,8 +180,6 @@ void MuseWindow::on_songView_doubleClicked(const QModelIndex &index)
 {
     int song_id = index.data(Qt::UserRole).value<int>();
 
-    qDebug() << "Song id selected is: " << song_id << endl;
-
     if( connection_state == CONNECTED ) {
         changePlayState(NOT_PLAYING);
         if( queue_state == HAS_QUEUE ) {  // prevent duplicates of songs double-clicked from entering history
@@ -198,8 +199,6 @@ void MuseWindow::on_artistView_doubleClicked(const QModelIndex &index)
 {
     int artist_id = index.data(Qt::UserRole).value<int>();
 
-    qDebug() << "Artist id selected is: " << artist_id << endl;
-
     struct albuminfolst* albums;
     if( queryArtistAlbums(artist_id, &albums) ) {
         qDebug() << "Error retrieving artist albums!" << endl;
@@ -217,8 +216,6 @@ void MuseWindow::on_artistView_doubleClicked(const QModelIndex &index)
 void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
 {
     int album_id = index.data(Qt::UserRole).value<int>();
-
-    qDebug() << "Album id selected is: " << album_id << endl;
 
     struct songinfolst* songs;
     if( queryAlbumSongs(album_id, &songs) ) {
@@ -238,8 +235,6 @@ void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 {
     const char* genre = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
 
-    qDebug() << "Genre selected is: " << genre << endl;
-
     struct songinfolst* songs;
     if( queryGenreSongs(genre, &songs) ) {
         qDebug() << "Error retrieving genre songs!" << endl;
@@ -253,8 +248,6 @@ void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 void MuseWindow::on_playlistView_doubleClicked(const QModelIndex &index)
 {
     const char* playlist_name = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
-
-    qDebug() << "Playlist selected is: " << playlist_name << endl;
 
     // find the playlist
     struct playlist* cursor_pl = playlists;
@@ -659,7 +652,7 @@ int MuseWindow::downloadSong(char* song_path, int song_id) {
             if( remove(del_song_path) ) {
                 qDebug() << "Error deleting old file!" << endl;
             } else {
-                qDebug() << "Song with id: " << delete_song << " deleted." << endl;
+                // no errors
             }
 
             free(del_song_name);
@@ -884,14 +877,51 @@ void MuseWindow::on_songView_customContextMenuRequested(const QPoint &pos)
     menu->popup(ui->songView->viewport()->mapToGlobal(pos));
 }
 
+void MuseWindow::on_playlistView_customContextMenuRequested(const QPoint &pos)
+{
+    QModelIndex index = ui->playlistView->indexAt(pos);
+    const char* playlist_name = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
+
+    ui->playlistView->setCurrentIndex(index);
+
+    if( strcmp(playlist_name, "") == 0 ) { // not an actual song selected
+        return;
+    }
+
+    struct playlist* cursor = playlists;
+    struct playlist* playlist = NULL;
+    while( cursor != NULL ) {
+        if( strcmp(playlist_name, cursor->name) == 0 ) {
+            playlist = cursor;
+            break;
+        }
+
+        cursor = cursor->prev;
+    }
+
+    QVariant pl_ptr(QVariant::fromValue(static_cast<void*>(playlist)));
+
+    QAction* removeFromPlaylistAction = new QAction("Remove songs from playlist...", this);
+    removeFromPlaylistAction->setData(pl_ptr);
+    connect(removeFromPlaylistAction, &QAction::triggered, this, &MuseWindow::on_playlistView_removeSongsFromPlaylist);
+
+    QAction* deletePlaylist = new QAction("Delete this playlist", this);
+    deletePlaylist->setData(QString(playlist_name));
+    connect(deletePlaylist, &QAction::triggered, this, &MuseWindow::on_playlistView_deletePlaylist);
+
+    QMenu* menu = new QMenu(this);
+    menu->addAction(removeFromPlaylistAction);
+    menu->addAction(deletePlaylist);
+    menu->popup(ui->playlistView->viewport()->mapToGlobal(pos));
+}
+
 void MuseWindow::on_songView_addSongToPlaylist() {
     QAction *act = qobject_cast<QAction *>(sender());
     QVariant v = act->data();
     int song_id = v.value<int>();
 
-    PlaylistDialog* playlistDialog = new PlaylistDialog(this);
+    AddToPlaylistDialog* playlistDialog = new AddToPlaylistDialog(this);
     if( playlistDialog->exec() == QDialog::Accepted ) {
-        qDebug() << "Accepted!" << endl;
         struct playlist* selected = playlistDialog->getSelected();
         if( selected != NULL ) {
             addSongToPlaylist(song_id, selected);
@@ -911,6 +941,50 @@ void MuseWindow::on_songView_addSongToPlaylist() {
             free_playlist(playlistDialog->getPlaylists());
         }
     } else {
-        qDebug() << "Declined." << endl;
+
     }
+}
+
+void MuseWindow::on_playlistView_removeSongsFromPlaylist() {
+    QAction *act = qobject_cast<QAction *>(sender());
+    QVariant v = act->data();
+    struct playlist* playlist = static_cast<struct playlist*>(v.value<void*>());
+
+    RemoveFromPlaylistDialog* playlistDialog = new RemoveFromPlaylistDialog(this, playlist);
+    if( playlistDialog->exec() == QDialog::Accepted ) {
+        int row = playlistDialog->getSelected();
+
+        char *playlist_path;
+        char *playlist_name = (char*) malloc(100);
+        sprintf(playlist_name, "/Documents/MUSE/%s.pl", playlist->name);
+
+        playlist_path = (char*) malloc(strlen(getenv("HOME")) + strlen(playlist_name) + 1); // to account for NULL terminator
+        strcpy(playlist_path, getenv("HOME"));
+        strcat(playlist_path, playlist_name);
+
+        deleteSongFromPlaylist(playlist, row);
+        savePlaylist(playlist, playlist_path);
+
+        free(playlist_name);
+        free(playlist_path);
+
+    } else {
+
+    }
+}
+
+void MuseWindow::on_playlistView_deletePlaylist() {
+    QAction *act = qobject_cast<QAction *>(sender());
+    QVariant v = act->data();
+    QString playlist_name = v.value<QString>();
+
+    const char* name = playlist_name.toStdString().c_str();
+
+    deletePlaylist(&playlists, name);
+    free_playlist(playlists);
+    playlists = NULL;
+    scanPlaylists(&playlists);
+
+    playlist_model->clearModel();
+    playlist_model->populateData(playlists);
 }

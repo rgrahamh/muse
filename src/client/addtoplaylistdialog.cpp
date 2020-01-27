@@ -1,7 +1,7 @@
-#include "playlistdialog.h"
+#include "addtoplaylistdialog.h"
 #include "ui_playlistdialog.h"
 
-PlaylistDialog::PlaylistDialog(QWidget *parent) :
+AddToPlaylistDialog::AddToPlaylistDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::PlaylistDialog)
 {
@@ -27,12 +27,12 @@ PlaylistDialog::PlaylistDialog(QWidget *parent) :
     ui->playlistView->setVisible(true);
 }
 
-PlaylistDialog::~PlaylistDialog()
+AddToPlaylistDialog::~AddToPlaylistDialog()
 {
     delete ui;
 }
 
-void PlaylistDialog::done(int status) {
+void AddToPlaylistDialog::done(int status) {
     if( status == QDialog::Accepted ) {
         struct playlist* cursor = playlists;
 
@@ -65,15 +65,15 @@ void PlaylistDialog::done(int status) {
 
 }
 
-struct playlist* PlaylistDialog::getPlaylists() {
+struct playlist* AddToPlaylistDialog::getPlaylists() {
     return playlists;
 }
 
-struct playlist* PlaylistDialog::getSelected() {
+struct playlist* AddToPlaylistDialog::getSelected() {
     return selected;
 }
 
-void PlaylistDialog::on_createNewButton_clicked()
+void AddToPlaylistDialog::on_createNewButton_clicked()
 {
     if( strcmp(ui->newPlaylistName->text().toStdString().c_str(), "") != 0 ) {
         char* name = (char*) calloc(ui->newPlaylistName->text().length(), sizeof(char));
@@ -86,7 +86,7 @@ void PlaylistDialog::on_createNewButton_clicked()
     ui->newPlaylistName->setText("");
 }
 
-void PlaylistDialog::on_playlistView_doubleClicked(const QModelIndex &index)
+void AddToPlaylistDialog::on_playlistView_doubleClicked(const QModelIndex &index)
 {
     ui->playlistView->setCurrentIndex(index);
     this->done(QDialog::Accepted);

@@ -10,18 +10,18 @@ namespace Ui {
 class PlaylistDialog;
 }
 
-class PlaylistDialog : public QDialog
+class AddToPlaylistDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit PlaylistDialog(QWidget *parent = nullptr);
+    explicit AddToPlaylistDialog(QWidget *parent = nullptr);
     void done(int status) override;
 
     struct playlist* getPlaylists();
     struct playlist* getSelected();
 
-    ~PlaylistDialog();
+    ~AddToPlaylistDialog();
 
 private slots:
     void on_createNewButton_clicked();

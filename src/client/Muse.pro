@@ -17,33 +17,36 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    addtoplaylistdialog.cpp \
     albummodel.cpp \
     artistmodel.cpp \
     genremodel.cpp \
     main.cpp \
     musewindow.cpp \
-    playlistdialog.cpp \
     playlistmodel.cpp \
+    removefromplaylistdialog.cpp \
     serverdialog.cpp \
     songmodel.cpp \
     muse_client.c \
     testdata.cpp
 
 HEADERS += \
+    addtoplaylistdialog.h \
     albummodel.h \
     artistmodel.h \
     genremodel.h \
     musewindow.h \
-    playlistdialog.h \
     playlistmodel.h \
+    removefromplaylistdialog.h \
     serverdialog.h \
     songmodel.h \
     muse_client.h \
     testdata.h
 
 FORMS += \
+    addtoplaylistdialog.ui \
     musewindow.ui \
-    playlistdialog.ui \
+    removefromplaylistdialog.ui \
     serverdialog.ui
 
 # Default rules for deployment.

@@ -20,7 +20,8 @@
 #include "albummodel.h"
 #include "genremodel.h"
 #include "serverdialog.h"
-#include "playlistdialog.h"
+#include "addtoplaylistdialog.h"
+#include "removefromplaylistdialog.h"
 #include "testdata.h"
 
 QT_BEGIN_NAMESPACE
@@ -93,7 +94,11 @@ private slots:
     void on_timeout();
 
     void on_songView_customContextMenuRequested(const QPoint &pos);
+    void on_playlistView_customContextMenuRequested(const QPoint &pos);
+
     void on_songView_addSongToPlaylist();
+    void on_playlistView_removeSongsFromPlaylist();
+    void on_playlistView_deletePlaylist();
 
 private:
     Ui::MuseWindow *ui;

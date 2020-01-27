@@ -244,10 +244,14 @@ int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
         *song_info = new_song;
     }
     else{
-        new_song->next = *song_info;
-        *song_info = new_song;
-    }
+        struct songinfolst* cur = *song_info;
+        while( cur->next != NULL ) {
+            cur = cur->next;
+        }
 
+        new_song->next = NULL;
+        cur->next = new_song;
+    }
 
 	free(request);
 	free(resp);
@@ -919,28 +923,44 @@ int scanPlaylists(struct playlist** list){
  * @param name The name
  * @return 0 if successful, 1 otherwise
  */
-int deletePlaylist(struct playlist** list, char* name){
-	struct playlist* cursor = *list;
-	if(strcmp(cursor->name, name) == 0){
-		struct playlist* death_row = cursor;
-		*list = cursor->prev;
-		free_songlst(death_row->first_song);
-		free(death_row->name);
-		return 0;
-	}
-	else{
-		while(cursor->prev != NULL){
-			if(strcmp(cursor->prev->name, name) != 0){
-				struct playlist* death_row = cursor->prev;
-				cursor->prev = cursor->prev->prev;
-				free_songlst(death_row->first_song);
-				free(death_row->name);
-				return 0;
-			}
-			cursor = cursor->prev;
-		}
-	}
-	return 1;
+int deletePlaylist(struct playlist** list, const char* name){
+    char *pl_filepath;
+    char *pl_filename = malloc(strlen(name) + 20);
+    sprintf(pl_filename, "/Documents/MUSE/%s.pl", name);
+
+    pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
+    strcpy(pl_filepath, getenv("HOME"));
+    strcat(pl_filepath, pl_filename);
+
+    remove(pl_filepath);
+
+    free(pl_filepath);
+    free(pl_filename);
+
+    return 0;
+}
+
+int deleteSongFromPlaylist(struct playlist* list, unsigned long row_id){
+    if(row_id == 0){
+        struct songlst* tmp = list->first_song->next;
+        free(list->first_song);
+        list->first_song = tmp;
+    }
+    else{
+        struct songlst* iter = list->first_song;
+        for(unsigned long row = 0; row < row_id - 1 && iter != NULL; row++){
+            iter = iter->next;
+        }
+        if(iter != NULL){
+            struct songlst* tmp = iter->next;
+            iter->next = iter->next->next;
+            free(tmp);
+        }
+        else{
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /** Frees the playlist
