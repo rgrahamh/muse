@@ -276,7 +276,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				unsigned long long register start = *((unsigned long long*)incoming_msg);
 				incoming_msg += sizeof(unsigned long long);
 				unsigned long long register end = *((unsigned long long*)incoming_msg);
-				for(unsigned long long i = 0; i < start; i++){
+				for(unsigned long long i = 0; i < start && cursor != NULL; i++){
 					cursor = cursor->prev;
 				}
 				struct linkedstr* offset_cursor = cursor;

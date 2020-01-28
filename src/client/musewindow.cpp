@@ -119,10 +119,6 @@ void MuseWindow::initializeFMOD() {
 
 void MuseWindow::on_tabWidget_tabBarClicked(int index)
 {
-    while(sbthread->isRunning()){
-        sbthread->terminate();
-    }
-
     /* The tab has changed, so we need to update the view with new data */
     if( connection_state )  {
         switch(index) {
@@ -1030,22 +1026,15 @@ void DownloadThread::setSongID(int song_id){
 SongBurstThread::SongBurstThread(MuseWindow* window, int iter){
     this->window = window;
     this->iter = iter;
-    this->base_list = NULL;
-}
-
-struct songinfolst* SongBurstThread::getBaseList(){
-    return base_list;
-}
-
-void SongBurstThread::setBaseList(struct songinfolst* base_list){
-    this->base_list = base_list;
 }
 
 void SongBurstThread::run(){
+    struct songinfolst* base_list;
     querySongsBurst(&base_list, start_id, end_id);
+    window->song_model->clearModel();
+    window->song_model->populateData(base_list);
     start_id += iter+1;
     end_id += iter;
-    window->song_model->clearModel();
 
     struct songinfolst* new_lst = NULL;
     struct songinfolst* base_list_cur = base_list;
@@ -1056,7 +1045,7 @@ void SongBurstThread::run(){
         }
         base_list_cur->next = new_lst;
 
-        window->song_model->populateData(base_list);
+        window->song_model->addData(new_lst);
         start_id += iter;
         end_id += iter;
         new_lst = NULL;

@@ -15,6 +15,7 @@ public:
     SongModel(QObject *parent = 0);
 
     void populateData(struct songinfolst* songs);
+    void addData(struct songinfolst* songs);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
@@ -32,7 +33,6 @@ private:
     QList<QString> years;
     QList<QString> track_nums;
     QList<QString> genres;
-
 };
 
 #endif // SONGMODEL_H

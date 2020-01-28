@@ -178,13 +178,8 @@ private:
 
         MuseWindow* window;
 
-        struct songinfolst* base_list = NULL;
-
     public:
         SongBurstThread(MuseWindow* window, int iter);
-        struct songinfolst* getBaseList();
-        struct songinfolst* setBaseList();
-        void setBaseList(struct songinfolst* base_list);
     };
 
     class DownloadThread: public QThread{
