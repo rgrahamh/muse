@@ -178,8 +178,6 @@ void MuseWindow::on_tabWidget_tabBarClicked(int index)
  */
 void MuseWindow::on_songView_doubleClicked(const QModelIndex &index)
 {
-    int song_id = index.data(Qt::UserRole).value<int>();
-
     if( connection_state == CONNECTED ) {
         changePlayState(NOT_PLAYING);
         if( queue_state == HAS_QUEUE ) {  // prevent duplicates of songs double-clicked from entering history
@@ -638,25 +636,8 @@ int MuseWindow::downloadSong(char* song_path, int song_id) {
 
         // is downloaded too big?
         if( downloaded.size() > 5 ) {
-            int delete_song = downloaded.back();
+            deleteSong(downloaded.back());
             downloaded.pop_back();
-
-            char *del_song_path;
-            char *del_song_name = (char*) malloc(100);
-            sprintf(del_song_name, "/Documents/MUSE/muse_download_%d.mp3", delete_song);
-
-            del_song_path = (char*) malloc(strlen(getenv("HOME")) + strlen(del_song_name) + 1); // to account for NULL terminator
-            strcpy(del_song_path, getenv("HOME"));
-            strcat(del_song_path, del_song_name);
-
-            if( remove(del_song_path) ) {
-                qDebug() << "Error deleting old file!" << endl;
-            } else {
-                // no errors
-            }
-
-            free(del_song_name);
-            free(del_song_path);
         }
 
 
@@ -666,6 +647,25 @@ int MuseWindow::downloadSong(char* song_path, int song_id) {
     }
 
     return 0;
+}
+
+void MuseWindow::deleteSong(int delete_song){
+    char *del_song_path;
+    char *del_song_name = (char*) malloc(100);
+    sprintf(del_song_name, "/Documents/MUSE/muse_download_%d.mp3", delete_song);
+
+    del_song_path = (char*) malloc(strlen(getenv("HOME")) + strlen(del_song_name) + 1); // to account for NULL terminator
+    strcpy(del_song_path, getenv("HOME"));
+    strcat(del_song_path, del_song_name);
+
+    if( remove(del_song_path) ) {
+        qDebug() << "Error deleting old file!" << endl;
+    } else {
+        // no errors
+    }
+
+    free(del_song_name);
+    free(del_song_path);
 }
 
 void MuseWindow::changePlayState(PlayState state) {
@@ -689,6 +689,12 @@ void MuseWindow::changePlayState(PlayState state) {
             new_song_path = (char*) malloc(strlen(getenv("HOME")) + strlen(new_song_name) + 1); // to account for NULL terminator
             strcpy(new_song_path, getenv("HOME"));
             strcat(new_song_path, new_song_name);
+
+            if(dlthread != NULL){
+                while(dlthread->isRunning()){
+                    continue;
+                }
+            }
 
         if( downloadSong(new_song_path, queue.front().song_id) ) { // download the next song
             qDebug() << "Unable to retrieve song" << endl;
@@ -719,6 +725,13 @@ void MuseWindow::changePlayState(PlayState state) {
 
                 // start the update timer
                 timer->start(75);
+
+                //Try downloading the next song in the queue
+                if(queue.size() > 1){
+                    //Create threads
+                    dlthread = new DownloadThread(this, queue[1].song_id);
+                    dlthread->start();
+                }
             } else {
                 changePlayState(NOT_PLAYING);
             }
@@ -980,11 +993,30 @@ void MuseWindow::on_playlistView_deletePlaylist() {
 
     const char* name = playlist_name.toStdString().c_str();
 
-    deletePlaylist(&playlists, name);
+    deletePlaylist(name);
     free_playlist(playlists);
     playlists = NULL;
     scanPlaylists(&playlists);
 
     playlist_model->clearModel();
     playlist_model->populateData(playlists);
+}
+
+DownloadThread::DownloadThread(MuseWindow* window, int song_id){
+    this->window = window;
+    this->song_id = song_id;
+}
+
+void DownloadThread::run(){
+    char* next_song_path;
+    char* next_song_name = (char*)malloc(100);
+    sprintf(next_song_name, "/Documents/MUSE/muse_download_%d.mp3", song_id);
+
+    next_song_path = (char*)malloc(strlen(getenv("HOME")) + strlen(next_song_name) + 1);
+    strcpy(next_song_path, getenv("HOME"));
+    strcat(next_song_path, next_song_name);
+    window->downloadSong(next_song_path, song_id);
+
+    free(next_song_name);
+    free(next_song_path);
 }

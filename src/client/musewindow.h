@@ -8,12 +8,15 @@
 #include <QSortFilterProxyModel>
 #include <QTableView>
 #include <QTimer>
+#include <QThread>
 #include <QMenu>
 #include <fmod.hpp>
 #include <fmod_errors.h>
 #include <fmod_common.h>
 #include <algorithm>
 #include <dirent.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "songmodel.h"
 #include "artistmodel.h"
@@ -67,13 +70,20 @@ enum ConnectionState {
     CONNECTED
 };
 
+    class BurstThread;
+    class DownloadThread;
+
 class MuseWindow : public QMainWindow
 {
     Q_OBJECT
 
+
 public:
     MuseWindow(QWidget *parent = nullptr);
     ~MuseWindow();
+
+    //This also has to be public in order to call it from the DownloadWorker
+    int downloadSong(char* song_path, int song_id);
 
 private slots:
     void on_tabWidget_tabBarClicked(int index);
@@ -108,6 +118,7 @@ private:
     ConnectionState connection_state = NOT_CONNECTED;
     RepeatState repeat_state = NO_REPEAT;
     ShuffleState shuffle_state = NO_SHUFFLE;
+    DownloadThread* dlthread = NULL;
 
     QString ip_address;
     QString port;
@@ -120,7 +131,12 @@ private:
     char* songLengthText;
     char* connectionText;
 
+    pid_t download_pid = 0;
+
     QTimer *timer;
+
+    //If the download is finished, it's set.
+    int download_fin = 1;
 
     struct playlist* playlists = NULL;
 
@@ -140,7 +156,7 @@ private:
     void clearModels();
     void stopAndReadyUpFMOD();
     void clearSongs();
-    int downloadSong(char* song_path, int song_id);
+    void deleteSong(int song_id);
 
     void changePlayState(PlayState state);
     void changeHistoryState(HistoryState state);
@@ -149,4 +165,22 @@ private:
     void changeRepeatState(RepeatState state);
     void changeShuffleState(ShuffleState state);
 };
+
+    /*class BurstThread: public QThread{
+        Q_OBJECT
+    public slots:
+        void burstSong();
+    };*/
+
+    class DownloadThread: public QThread{
+        Q_OBJECT
+        void run();
+
+        int song_id = 0;
+        MuseWindow* window = NULL;
+
+    public:
+        DownloadThread(MuseWindow* window, int song_id);
+    };
+
 #endif // MUSEWINDOW_H

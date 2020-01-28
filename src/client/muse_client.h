@@ -97,7 +97,7 @@ extern "C" {
 	int savePlaylist(struct playlist* list, char* filepath);
 	int loadPlaylist(struct playlist** list, char* filepath);
 	int scanPlaylists(struct playlist** list);
-    int deletePlaylist(struct playlist** list, const char* name);
+    int deletePlaylist(const char* name);
 
     int deleteSongFromPlaylist(struct playlist* list, unsigned long row_id);
 

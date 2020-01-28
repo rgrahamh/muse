@@ -86,7 +86,7 @@ int main(int argc, char** argv){
 	addSongToPlaylist(987, playlists);
 	savePlaylist(playlists, "./my_playlist2.pl");
 
-	deletePlaylist(&playlists, "Playlist Two: Electric Boogaloo");
+	deletePlaylist("Playlist Two: Electric Boogaloo");
 	
 	//loadPlaylist(&playlists, "./my_playlist.pl");
 	scanPlaylists(&playlists);
@@ -510,7 +510,7 @@ int queryGenreSongs(const char* genre, struct songinfolst** song_info){
 	int request_size = genre_size + sizeof(char);
 	char* request = (char*)calloc(request_size, 1);
 	request[0] = QWRYGNRSNG | ASC | ORDSNG;
-	strncpy(request+1, genre, genre_size);
+    strncpy(request+1, genre, genre_size+1);
 
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
@@ -923,9 +923,9 @@ int scanPlaylists(struct playlist** list){
  * @param name The name
  * @return 0 if successful, 1 otherwise
  */
-int deletePlaylist(struct playlist** list, const char* name){
+int deletePlaylist(const char* name){
     char *pl_filepath;
-    char *pl_filename = malloc(strlen(name) + 20);
+    char *pl_filename = (char*)malloc(strlen(name) + 20);
     sprintf(pl_filename, "/Documents/MUSE/%s.pl", name);
 
     pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
