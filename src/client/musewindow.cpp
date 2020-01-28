@@ -48,6 +48,9 @@ MuseWindow::MuseWindow(QWidget *parent)
     ui->songView->setModel(song_model);
     ui->playlistView->setModel(playlist_model);
 
+    dlthread = new DownloadThread(this);
+    sbthread = new SongBurstThread(this, 25);
+
     // request context menu for right-clicks
     ui->songView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->songView, SIGNAL(customContextMenuRequested(QPoint)), SLOT(customMenuRequested(QPoint)));
@@ -116,6 +119,10 @@ void MuseWindow::initializeFMOD() {
 
 void MuseWindow::on_tabWidget_tabBarClicked(int index)
 {
+    while(sbthread->isRunning()){
+        sbthread->terminate();
+    }
+
     /* The tab has changed, so we need to update the view with new data */
     if( connection_state )  {
         switch(index) {
@@ -147,12 +154,7 @@ void MuseWindow::on_tabWidget_tabBarClicked(int index)
                 break;
             }
             case 3: /* Song */ {
-                struct songinfolst* songs;
-                if( querySongs(&songs) ) {
-                    qDebug() << "Error fetching songs!" << endl;
-                } else {
-                    song_model->populateData(songs);
-                }
+                sbthread->start();
                 break;
             }
             case 4: /* Playlist */  {
@@ -222,6 +224,7 @@ void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
     }
 
     song_model->populateData(songs);
+    free_songinfolst(songs);
     ui->tabWidget->setCurrentIndex(3);
 }
 
@@ -240,6 +243,7 @@ void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
     }
 
     song_model->populateData(songs);
+    free_songinfolst(songs);
     ui->tabWidget->setCurrentIndex(3);
 }
 
@@ -270,6 +274,7 @@ void MuseWindow::on_playlistView_doubleClicked(const QModelIndex &index)
     }
 
     song_model->populateData(songs);
+    free_songinfolst(songs);
     ui->tabWidget->setCurrentIndex(3);
 }
 
@@ -690,10 +695,8 @@ void MuseWindow::changePlayState(PlayState state) {
             strcpy(new_song_path, getenv("HOME"));
             strcat(new_song_path, new_song_name);
 
-            if(dlthread != NULL){
-                while(dlthread->isRunning()){
-                    continue;
-                }
+            while(dlthread->isRunning()){
+                continue;
             }
 
         if( downloadSong(new_song_path, queue.front().song_id) ) { // download the next song
@@ -729,7 +732,7 @@ void MuseWindow::changePlayState(PlayState state) {
                 //Try downloading the next song in the queue
                 if(queue.size() > 1){
                     //Create threads
-                    dlthread = new DownloadThread(this, queue[1].song_id);
+                    dlthread->setSongID(queue[1].song_id);
                     dlthread->start();
                 }
             } else {
@@ -1002,9 +1005,8 @@ void MuseWindow::on_playlistView_deletePlaylist() {
     playlist_model->populateData(playlists);
 }
 
-DownloadThread::DownloadThread(MuseWindow* window, int song_id){
+DownloadThread::DownloadThread(MuseWindow* window){
     this->window = window;
-    this->song_id = song_id;
 }
 
 void DownloadThread::run(){
@@ -1019,4 +1021,44 @@ void DownloadThread::run(){
 
     free(next_song_name);
     free(next_song_path);
+}
+
+void DownloadThread::setSongID(int song_id){
+    this->song_id = song_id;
+}
+
+SongBurstThread::SongBurstThread(MuseWindow* window, int iter){
+    this->window = window;
+    this->iter = iter;
+    this->base_list = NULL;
+}
+
+struct songinfolst* SongBurstThread::getBaseList(){
+    return base_list;
+}
+
+void SongBurstThread::setBaseList(struct songinfolst* base_list){
+    this->base_list = base_list;
+}
+
+void SongBurstThread::run(){
+    querySongsBurst(&base_list, start_id, end_id);
+    start_id += iter+1;
+    end_id += iter;
+    window->song_model->clearModel();
+
+    struct songinfolst* new_lst = NULL;
+    struct songinfolst* base_list_cur = base_list;
+    while(!querySongsBurst(&new_lst, start_id, end_id)){
+        //Append to the base list
+        while(base_list_cur->next != NULL){
+            base_list_cur = base_list_cur->next;
+        }
+        base_list_cur->next = new_lst;
+
+        window->song_model->populateData(base_list);
+        start_id += iter;
+        end_id += iter;
+        new_lst = NULL;
+    }
 }

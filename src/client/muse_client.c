@@ -265,7 +265,7 @@ int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
  * @return 0 if successful, 1 otherwise.
  */
 int querySongsBurst(struct songinfolst** song_info, unsigned long long start, unsigned long long end){
-	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
+    char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
 	request[0] = QWRYSNGBRST | ASC | ORDSNG;
 	*((unsigned long long*)(request+1)) = start;
 	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
@@ -760,7 +760,7 @@ int receiveResponse(char** resp){
 	while((amnt_recv += recv(sockfd, resp_cursor, resp_size - amnt_recv, 0)) < resp_size){
 		resp_cursor = amnt_recv + *resp;
 	}
-	(*resp)[resp_size] = '\0';
+    (*resp)[resp_size] = '\0';
 	free(resp_size_str);
 	return 0;
 }

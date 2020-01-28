@@ -39,8 +39,6 @@ void SongModel::populateData(struct songinfolst* songs)
         cursor = cursor->next;
     }
 
-    free_songinfolst(songs);
-
     endResetModel();
 
     return;

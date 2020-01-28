@@ -70,7 +70,7 @@ enum ConnectionState {
     CONNECTED
 };
 
-    class BurstThread;
+    class SongBurstThread;
     class DownloadThread;
 
 class MuseWindow : public QMainWindow
@@ -84,6 +84,11 @@ public:
 
     //This also has to be public in order to call it from the DownloadWorker
     int downloadSong(char* song_path, int song_id);
+
+    ArtistModel* artist_model;
+    AlbumModel* album_model;
+    GenreModel* genre_model;
+    SongModel* song_model;
 
 private slots:
     void on_tabWidget_tabBarClicked(int index);
@@ -119,6 +124,7 @@ private:
     RepeatState repeat_state = NO_REPEAT;
     ShuffleState shuffle_state = NO_SHUFFLE;
     DownloadThread* dlthread = NULL;
+    SongBurstThread* sbthread = NULL;
 
     QString ip_address;
     QString port;
@@ -145,10 +151,6 @@ private:
     FMOD::Sound* song_to_play = NULL;
     FMOD::Channel* song_channel = NULL;
 
-    ArtistModel* artist_model;
-    AlbumModel* album_model;
-    GenreModel* genre_model;
-    SongModel* song_model;
     PlaylistModel* playlist_model;
 
     void configureTableView(QTableView* view);
@@ -166,11 +168,24 @@ private:
     void changeShuffleState(ShuffleState state);
 };
 
-    /*class BurstThread: public QThread{
+    class SongBurstThread: public QThread{
         Q_OBJECT
-    public slots:
-        void burstSong();
-    };*/
+        void run();
+
+        int start_id = 0;
+        int end_id = 25;
+        int iter = 25;
+
+        MuseWindow* window;
+
+        struct songinfolst* base_list = NULL;
+
+    public:
+        SongBurstThread(MuseWindow* window, int iter);
+        struct songinfolst* getBaseList();
+        struct songinfolst* setBaseList();
+        void setBaseList(struct songinfolst* base_list);
+    };
 
     class DownloadThread: public QThread{
         Q_OBJECT
@@ -180,7 +195,8 @@ private:
         MuseWindow* window = NULL;
 
     public:
-        DownloadThread(MuseWindow* window, int song_id);
+        DownloadThread(MuseWindow* window);
+        void setSongID(int song_id);
     };
 
 #endif // MUSEWINDOW_H
