@@ -70,8 +70,10 @@ enum ConnectionState {
     CONNECTED
 };
 
-    class SongBurstThread;
-    class DownloadThread;
+class SongBurstThread;
+class DownloadThread;
+class AlbumBurstThread;
+class ArtistBurstThread;
 
 class MuseWindow : public QMainWindow
 {
@@ -123,8 +125,11 @@ private:
     ConnectionState connection_state = NOT_CONNECTED;
     RepeatState repeat_state = NO_REPEAT;
     ShuffleState shuffle_state = NO_SHUFFLE;
+
     DownloadThread* dlthread = NULL;
     SongBurstThread* sbthread = NULL;
+    AlbumBurstThread* albthread = NULL;
+    ArtistBurstThread* arbthread = NULL;
 
     QString ip_address;
     QString port;
@@ -168,30 +173,61 @@ private:
     void changeShuffleState(ShuffleState state);
 };
 
-    class SongBurstThread: public QThread{
-        Q_OBJECT
-        void run();
+class SongBurstThread: public QThread{
+    Q_OBJECT
+    void run();
 
-        int start_id = 0;
-        int end_id = 25;
-        int iter = 25;
+    int start_id = 0;
+    int end_id = 25;
+    int iter = 25;
 
-        MuseWindow* window;
+    MuseWindow* window;
 
-    public:
-        SongBurstThread(MuseWindow* window, int iter);
-    };
+public:
+    SongBurstThread(MuseWindow* window, int iter);
+    void reset();
+};
 
-    class DownloadThread: public QThread{
-        Q_OBJECT
-        void run();
+class AlbumBurstThread: public QThread{
+    Q_OBJECT
+    void run();
 
-        int song_id = 0;
-        MuseWindow* window = NULL;
+    int start_id = 0;
+    int end_id = 25;
+    int iter = 25;
 
-    public:
-        DownloadThread(MuseWindow* window);
-        void setSongID(int song_id);
-    };
+    MuseWindow* window;
+
+public:
+    AlbumBurstThread(MuseWindow* window, int iter);
+    void reset();
+};
+
+class ArtistBurstThread: public QThread{
+    Q_OBJECT
+    void run();
+
+    int start_id = 0;
+    int end_id = 25;
+    int iter = 25;
+
+    MuseWindow* window;
+
+public:
+    ArtistBurstThread(MuseWindow* window, int iter);
+    void reset();
+};
+
+class DownloadThread: public QThread{
+    Q_OBJECT
+    void run();
+
+    int song_id = 0;
+    MuseWindow* window = NULL;
+
+public:
+    DownloadThread(MuseWindow* window);
+    void setSongID(int song_id);
+};
 
 #endif // MUSEWINDOW_H

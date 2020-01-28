@@ -50,6 +50,8 @@ MuseWindow::MuseWindow(QWidget *parent)
 
     dlthread = new DownloadThread(this);
     sbthread = new SongBurstThread(this, 25);
+    albthread = new AlbumBurstThread(this, 25);
+    arbthread = new ArtistBurstThread(this, 25);
 
     // request context menu for right-clicks
     ui->songView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -119,15 +121,20 @@ void MuseWindow::initializeFMOD() {
 
 void MuseWindow::on_tabWidget_tabBarClicked(int index)
 {
+    //Make sure that the messages are received properly so there's not any messy server-side issues.
+    while(sbthread->isRunning()){
+        continue;
+    }
+
     /* The tab has changed, so we need to update the view with new data */
     if( connection_state )  {
         switch(index) {
             case 0: /* Artist */ {
-                struct artistinfolst* artists;
-                if( queryArtists(&artists) ) {
-                    qDebug() << "Error fetching artists!" << endl;
+                struct artistinfolst* artist;
+                if( queryArtists(&artist) ) {
+                    qDebug() << "Error fetching albums!" << endl;
                 } else {
-                    artist_model->populateData(artists);
+                    artist_model->populateData(artist);
                 }
                 break;
             }
@@ -150,6 +157,7 @@ void MuseWindow::on_tabWidget_tabBarClicked(int index)
                 break;
             }
             case 3: /* Song */ {
+                sbthread->reset();
                 sbthread->start();
                 break;
             }
@@ -1050,4 +1058,77 @@ void SongBurstThread::run(){
         end_id += iter;
         new_lst = NULL;
     }
+}
+
+void SongBurstThread::reset(){
+    start_id = 0;
+    end_id = iter;
+}
+
+AlbumBurstThread::AlbumBurstThread(MuseWindow* window, int iter){
+    this->window = window;
+    this->iter = iter;
+}
+
+void AlbumBurstThread::run(){
+    struct albuminfolst* base_list;
+    queryAlbumsBurst(&base_list, start_id, end_id);
+    window->album_model->clearModel();
+    window->album_model->populateData(base_list);
+    start_id += iter+1;
+    end_id += iter;
+
+    struct albuminfolst* new_lst = NULL;
+    struct albuminfolst* base_list_cur = base_list;
+    while(!queryAlbumsBurst(&new_lst, start_id, end_id)){
+        //Append to the base list
+        while(base_list_cur->next != NULL){
+            base_list_cur = base_list_cur->next;
+        }
+        base_list_cur->next = new_lst;
+
+        window->album_model->addData(new_lst);
+        start_id += iter;
+        end_id += iter;
+        new_lst = NULL;
+    }
+}
+
+void AlbumBurstThread::reset(){
+    start_id = 0;
+    end_id = iter;
+}
+
+ArtistBurstThread::ArtistBurstThread(MuseWindow* window, int iter){
+    this->window = window;
+    this->iter = iter;
+}
+
+void ArtistBurstThread::run(){
+    struct artistinfolst* base_list;
+    queryArtistsBurst(&base_list, start_id, end_id);
+    window->artist_model->clearModel();
+    window->artist_model->populateData(base_list);
+    start_id += iter+1;
+    end_id += iter;
+
+    struct artistinfolst* new_lst = NULL;
+    struct artistinfolst* base_list_cur = base_list;
+    while(!queryArtistsBurst(&new_lst, start_id, end_id)){
+        //Append to the base list
+        while(base_list_cur->next != NULL){
+            base_list_cur = base_list_cur->next;
+        }
+        base_list_cur->next = new_lst;
+
+        window->artist_model->addData(new_lst);
+        start_id += iter;
+        end_id += iter;
+        new_lst = NULL;
+    }
+}
+
+void ArtistBurstThread::reset(){
+    start_id = 0;
+    end_id = iter;
 }

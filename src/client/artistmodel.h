@@ -15,6 +15,7 @@ public:
     ArtistModel(QObject *parent = 0);
 
     void populateData(struct artistinfolst* artists);
+    void addData(struct artistinfolst* artists);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;

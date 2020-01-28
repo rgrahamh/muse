@@ -38,6 +38,36 @@ void AlbumModel::populateData(struct albuminfolst* albums)
     return;
 }
 
+
+/**
+ * @brief SongModel::addData Adds data to the model
+ * @param songs An songinfolst linked-list from "muse_client.h"
+ */
+void AlbumModel::addData(struct albuminfolst* albums)
+{
+    struct albuminfolst* cursor = albums;
+    int iter = 0;
+    while(cursor != NULL) {
+        iter++;
+        cursor = cursor->next;
+    }
+    beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter);
+
+    // populate new data
+    cursor = albums;
+    while(cursor != NULL) {
+        this->ids.append(cursor->id);
+        this->titles.append(cursor->title);
+        this->years.append(QString::number(cursor->year));
+
+        cursor = cursor->next;
+    }
+
+    endInsertRows();
+
+    return;
+}
+
 /**
  * @brief AlbumModel::rowCount Returns the number of rows in the model
  * @param parent Overridden from parent class

@@ -37,6 +37,34 @@ void ArtistModel::populateData(struct artistinfolst* artists)
 }
 
 /**
+ * @brief ArtistModel::addData Adds data to the model
+ * @param artists An artistinfolst linked-list from "muse_client.h"
+ */
+void ArtistModel::addData(struct artistinfolst* artists)
+{
+    struct artistinfolst* cursor = artists;
+    int iter = 0;
+    while(cursor != NULL) {
+        iter++;
+        cursor = cursor->next;
+    }
+    beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter);
+
+    // populate new data
+    cursor = artists;
+    while(cursor != NULL) {
+        this->ids.append(cursor->id);
+        this->names.append(cursor->name);
+
+        cursor = cursor->next;
+    }
+
+    endInsertRows();
+
+    return;
+}
+
+/**
  * @brief ArtistModel::rowCount Returns the number of rows in the model
  * @param parent Overridden from parent class
  * @return int The number of rows in the model
