@@ -448,6 +448,9 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 	//Subdirectories that should be scanned
 	char** subdirs = (char**)malloc(65535 * sizeof(char*));
 
+	int stderr_cpy = dup(2);
+	freopen("/dev/null", "w", stderr);
+
 	//Variables that are re-used and are declared in this scope for the purpose of efficiency:
 	char* start_path = (char*)calloc(1, PATH_MAX);
 	char* query = (char*)calloc(1, 4096);
@@ -507,8 +510,15 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 
 					//Checking to see if the file is an mp3
 					if((strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0)){
-						TagLib_File* tag_file = taglib_file_new(file_info->d_name);
-						TagLib_Tag* tag = taglib_file_tag(tag_file);
+						TagLib_File* tag_file;
+						if((tag_file = taglib_file_new(file_info->d_name)) == NULL){
+							continue;
+						}
+						TagLib_Tag* tag;
+						if((tag = taglib_file_tag(tag_file)) == NULL){
+							taglib_file_free(tag_file);
+							continue;
+						}
 
 						//Populating the songinfo struct
 						song_info->title = taglib_tag_title(tag);
@@ -607,6 +617,10 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 	}
 
 	free(subdirs);
+
+	//Return stdout to normal
+	stderr = fdopen(stderr_cpy, "w");
+
 	return 0;
 }
 
