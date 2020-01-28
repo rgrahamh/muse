@@ -125,6 +125,9 @@ void MuseWindow::on_tabWidget_tabBarClicked(int index)
     while(sbthread->isRunning()){
         continue;
     }
+    while(dlthread->isRunning()){
+        continue;
+    }
 
     /* The tab has changed, so we need to update the view with new data */
     if( connection_state )  {
@@ -622,7 +625,6 @@ void MuseWindow::clearSongs() {
 }
 
 int MuseWindow::downloadSong(char* song_path, int song_id) {
-
     int download = song_id;
 
     // see if song is already downloaded
@@ -637,6 +639,10 @@ int MuseWindow::downloadSong(char* song_path, int song_id) {
     // song is not on disk
     if( found_dupl == -1 ) {
         downloaded.insert(downloaded.begin(), download);
+        //Make sure that the messages are received properly so there's not any messy server-side issues.
+        while(sbthread->isRunning()){
+            continue;
+        }
         // download the song
         if( getSong(download, song_path) ) {
             qDebug() << "Error downloading file!" << endl;
