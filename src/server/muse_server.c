@@ -494,8 +494,8 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 				strcpy(full_path, start_path);
 				strcat(full_path, "/");
 				strcat(full_path, file_info->d_name);
-				if(S_ISDIR(stat_info.st_mode)){
 				//If not the previous or current directory
+				if(S_ISDIR(stat_info.st_mode)){
 					if(strcmp(file_info->d_name, ".") != 0 && strcmp(file_info->d_name, "..") != 0){
 						subdirs[subdir_num++] = full_path;
 					}
@@ -506,12 +506,11 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 				else{
 					calledback = 0;
 					int file_name_len = strlen(file_info->d_name);
-					song_info->filepath = full_path;
 
 					//Checking to see if the file is an mp3
 					if((strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0)){
 						TagLib_File* tag_file;
-						if((tag_file = taglib_file_new(file_info->d_name)) == NULL){
+					    	if((tag_file = taglib_file_new(file_info->d_name)) == NULL){
 							continue;
 						}
 						TagLib_Tag* tag;
@@ -539,16 +538,19 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 						char* safe_artist = escapeApostrophe(song_info->artist);
 						char* safe_album = escapeApostrophe(song_info->album);
 						char* safe_genre = escapeApostrophe(song_info->genre);
+						char* safe_filepath = escapeApostrophe(full_path);
 
 						free(song_info->title);
 						free(song_info->artist);
 						free(song_info->album);
 						free(song_info->genre);
+						free(full_path);
 
 						song_info->title = safe_title;
 						song_info->artist = safe_artist;
 						song_info->album = safe_album;
 						song_info->genre = safe_genre;
+						song_info->filepath = safe_filepath;
 
 						sprintf(query, "SELECT song.id\nFROM song\nWHERE song.filepath = '%s';", song_info->filepath);
 						if(!(sqlite3_exec(song_info->db, query, returnOne, song_info, NULL))){
@@ -586,8 +588,11 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 						free(song_info->album);
 						free(song_info->comment);
 						free(song_info->genre);
+						free(safe_filepath);
 					}
-					free(full_path);
+					else{
+						free(full_path);
+					}
 				}
 			}
 			free(file_info);
