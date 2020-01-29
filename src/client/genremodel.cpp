@@ -17,12 +17,13 @@ void GenreModel::populateData(struct genreinfolst* genres)
     beginResetModel();
 
     // clear previous data
-    this->genres.clear();
+   this->clearModel();
 
     // populate new data
     struct genreinfolst* cursor = genres;
     while(cursor != NULL) {
-        this->genres.append(cursor->genre);
+        QString new_genre = QString::fromUtf8(cursor->genre);
+        this->genres.append(new_genre);
 
         cursor = cursor->next;
     }

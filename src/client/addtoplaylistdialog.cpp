@@ -45,7 +45,7 @@ void AddToPlaylistDialog::done(int status) {
         }
 
         int row = item_selection->selectedRows().front().row();
-        const char* playlist_name = playlist_model->data(playlist_model->index(row, 0)).value<QString>().toStdString().c_str();
+        const char* playlist_name = playlist_model->data(playlist_model->index(row, 0)).value<QString>().toUtf8();
 
         while(cursor != NULL) {
             // try to find playlist
@@ -75,9 +75,9 @@ struct playlist* AddToPlaylistDialog::getSelected() {
 
 void AddToPlaylistDialog::on_createNewButton_clicked()
 {
-    if( strcmp(ui->newPlaylistName->text().toStdString().c_str(), "") != 0 ) {
+    if( strcmp(ui->newPlaylistName->text().toUtf8(), "") != 0 ) {
         char* name = (char*) calloc(ui->newPlaylistName->text().length(), sizeof(char));
-        strcpy(name, ui->newPlaylistName->text().toStdString().c_str());
+        strcpy(name, ui->newPlaylistName->text().toUtf8());
         addPlaylist(name, &playlists);
     }
 

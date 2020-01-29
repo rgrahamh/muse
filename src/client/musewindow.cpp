@@ -241,8 +241,9 @@ void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
  */
 void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 {
-    const char* genre = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
+    const char* genre = genre_model->data(index).value<QString>().toUtf8();
 
+    qDebug() << "Genre is: " << genre << endl;
     struct songinfolst* songs;
     if( queryGenreSongs(genre, &songs) ) {
         qDebug() << "Error retrieving genre songs!" << endl;
@@ -256,7 +257,7 @@ void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 
 void MuseWindow::on_playlistView_doubleClicked(const QModelIndex &index)
 {
-    const char* playlist_name = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
+    const char* playlist_name = index.data(Qt::DisplayRole).value<QString>().toUtf8();
 
     // find the playlist
     struct playlist* cursor_pl = playlists;
@@ -475,7 +476,7 @@ void MuseWindow::on_connectButton_clicked()
                 ip_address = serverDialog->getServerIP();
                 port = serverDialog->getServerPort();
 
-                if( connectToServ(port.toStdString().c_str(), ip_address.toStdString().c_str()) ) {
+                if( connectToServ(port.toUtf8(), ip_address.toUtf8()) ) {
                     qDebug() << "Error connecting to server!" << endl;
                 } else {
                     // handle state
@@ -906,7 +907,7 @@ void MuseWindow::on_songView_customContextMenuRequested(const QPoint &pos)
 void MuseWindow::on_playlistView_customContextMenuRequested(const QPoint &pos)
 {
     QModelIndex index = ui->playlistView->indexAt(pos);
-    const char* playlist_name = index.data(Qt::DisplayRole).value<QString>().toStdString().c_str();
+    const char* playlist_name = index.data(Qt::DisplayRole).value<QString>().toUtf8();
 
     ui->playlistView->setCurrentIndex(index);
 
@@ -1004,7 +1005,7 @@ void MuseWindow::on_playlistView_deletePlaylist() {
     QVariant v = act->data();
     QString playlist_name = v.value<QString>();
 
-    const char* name = playlist_name.toStdString().c_str();
+    const char* name = playlist_name.toUtf8();
 
     deletePlaylist(name);
     free_playlist(playlists);

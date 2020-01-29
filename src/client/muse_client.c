@@ -506,11 +506,12 @@ int queryGenreSongs(const char* genre, struct songinfolst** song_info){
 	if(genre == NULL){
 		return 1;
 	}
+
 	int genre_size = strlen(genre);
-	int request_size = genre_size + sizeof(char);
-	char* request = (char*)calloc(request_size, 1);
+	int request_size = genre_size + 2;
+	char* request = (char*)malloc(request_size);
 	request[0] = QWRYGNRSNG | ASC | ORDSNG;
-    strncpy(request+1, genre, genre_size+1);
+	strcpy(request+1, genre);
 
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
