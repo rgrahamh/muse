@@ -31,8 +31,6 @@ void AlbumModel::populateData(struct albuminfolst* albums)
         cursor = cursor->next;
     }
 
-    free_albuminfolst(albums);
-
     endResetModel();
 
     return;

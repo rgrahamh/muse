@@ -29,8 +29,6 @@ void ArtistModel::populateData(struct artistinfolst* artists)
         cursor = cursor->next;
     }
 
-    free_artistinfolst(artists);
-
     endResetModel();
 
     return;

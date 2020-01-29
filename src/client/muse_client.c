@@ -62,7 +62,6 @@ int main(int argc, char** argv){
 	free_artistinfolst(artist_info);
 
 	getSong(1, "./Green_Grass_And_High_Tides.mp3");
-	*/
 
 	//Playlist testing
 	struct playlist* playlists = NULL;
@@ -95,14 +94,15 @@ int main(int argc, char** argv){
 	printf("Song 3: %llu\n", playlists->first_song->next->next->id);
 	printf("Song 4: %llu\n", playlists->first_song->next->next->next->id);
 	printf("Song 5: %llu\n", playlists->first_song->next->next->next->next->id);
-/*
+
 	printf("Song 1: %llu\n", playlists->prev->first_song->id);
 	printf("Song 2: %llu\n", playlists->prev->first_song->next->id);
 	printf("Song 3: %llu\n", playlists->prev->first_song->next->next->id);
 	printf("Song 4: %llu\n", playlists->prev->first_song->next->next->next->id);
 	printf("Song 5: %llu\n", playlists->prev->first_song->next->next->next->next->id);
+
+    free_playlist(playlists);
 */
-	free_playlist(playlists);
 
 	disconnect();
 
@@ -181,7 +181,7 @@ int getSong(unsigned long long song_id, char* filepath){
 	fwrite(resp, sizeof(char), resp_size, file);
 
 	//Flush the socket of all of the messiness that was sent after the actual song length
-	recv(sockfd, resp, resp_size, MSG_DONTWAIT);
+    clearSock(1);
 
 	free(resp_size_str);
 	free(request);
@@ -941,6 +941,11 @@ int deletePlaylist(const char* name){
     return 0;
 }
 
+/** Deletes a slong from the playlist struct (based on row id)
+ * @param list The playlist you wish to take a song out of
+ * @param row_id The song number in the playlist
+ * @return If the song is deleted properly
+ */
 int deleteSongFromPlaylist(struct playlist* list, unsigned long row_id){
     if(row_id == 0){
         struct songlst* tmp = list->first_song->next;
@@ -1144,6 +1149,22 @@ void printGenreInfo(struct genreinfolst* genre_info){
 void disconnect(){
 	send(sockfd, "\0", 1, 0);
 	close(sockfd);
+}
+
+/** Clears out the socket (so that you can cleanly clear async queries)
+ * @param blocking If you want the operation to be blocking or not (1 if you want to wait for a response, 0 if you just want to clear out the buffer).
+ */
+void clearSock(int blocking){
+    char* clear_buff = (char*)malloc(4096);
+    if(blocking){
+        recv(sockfd, clear_buff, 4096, 0);
+    }
+    else{
+        while(recv(sockfd, clear_buff, 4096, MSG_DONTWAIT) != 0){
+            continue;
+        }
+    }
+    free(clear_buff);
 }
 
 /** The function that safely closes the socket upon exiting the application

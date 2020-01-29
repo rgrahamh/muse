@@ -117,6 +117,7 @@ extern "C" {
 	int receiveResponse(char** resp);
 	void disconnect();
 	void stop(int sig);
+    void clearSock(int blocking);
 #ifdef __cplusplus
 }
 #endif

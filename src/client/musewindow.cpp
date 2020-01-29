@@ -122,8 +122,17 @@ void MuseWindow::initializeFMOD() {
 void MuseWindow::on_tabWidget_tabBarClicked(int index)
 {
     //Make sure that the messages are received properly so there's not any messy server-side issues.
-    while(sbthread->isRunning()){
-        continue;
+    if(sbthread->isRunning()){
+        sbthread->terminate();
+        clearSock(1);
+    }
+    if(albthread->isRunning()){
+        albthread->terminate();
+        clearSock(1);
+    }
+    if(arbthread->isRunning()){
+        arbthread->terminate();
+        clearSock(1);
     }
     while(dlthread->isRunning()){
         continue;
@@ -133,21 +142,13 @@ void MuseWindow::on_tabWidget_tabBarClicked(int index)
     if( connection_state )  {
         switch(index) {
             case 0: /* Artist */ {
-                struct artistinfolst* artist;
-                if( queryArtists(&artist) ) {
-                    qDebug() << "Error fetching albums!" << endl;
-                } else {
-                    artist_model->populateData(artist);
-                }
+                arbthread->reset();
+                arbthread->start();
                 break;
             }
             case 1: /* Album */ {
-                struct albuminfolst* albums;
-                if( queryAlbums(&albums) ) {
-                    qDebug() << "Error fetching albums!" << endl;
-                } else {
-                    album_model->populateData(albums);
-                }
+                albthread->reset();
+                albthread->start();
                 break;
             }
             case 2: /* Genre */ {
@@ -213,6 +214,7 @@ void MuseWindow::on_artistView_doubleClicked(const QModelIndex &index)
     }
 
     album_model->populateData(albums);
+    free_albuminfolst(albums);
     ui->tabWidget->setCurrentIndex(1);
 }
 
