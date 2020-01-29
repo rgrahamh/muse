@@ -92,14 +92,14 @@ extern "C" {
 	int substrsize(char* str, char until);
 	int substr(char* base, char until, char* cpy, int cpySize);
 
-    void addPlaylist(char* name, struct playlist** list);
+	void addPlaylist(char* name, struct playlist** list);
 	void addSongToPlaylist(unsigned long long song_id, struct playlist* list);
 	int savePlaylist(struct playlist* list, char* filepath);
 	int loadPlaylist(struct playlist** list, char* filepath);
 	int scanPlaylists(struct playlist** list);
-    int deletePlaylist(const char* name);
+	int deletePlaylist(const char* name);
 
-    int deleteSongFromPlaylist(struct playlist* list, unsigned long row_id);
+	int deleteSongFromPlaylist(struct playlist* list, unsigned long row_id);
 
 	void free_playlist(struct playlist* list);
 	void free_songlst(struct songlst* list);
@@ -117,7 +117,7 @@ extern "C" {
 	int receiveResponse(char** resp);
 	void disconnect();
 	void stop(int sig);
-    void clearSock(int blocking);
+	void clearSock(int blocking);
 #ifdef __cplusplus
 }
 #endif

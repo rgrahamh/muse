@@ -535,8 +535,8 @@ void addLibPath(WINDOW* win) {
 	new_lib_path[index] = '\0';
 
 	if( last_char == 27 ) { /* If the last character was the ESC key, just exit without committing anything */
-	    free(new_lib_path);
-    } else if( (last_char == 10 || index >= PATH_MAX-1) && strlen(new_lib_path) > 0 ) { /* If the last character was the ENTER key, add it to the list of library paths */
+		free(new_lib_path);
+	} else if( (last_char == 10 || index >= PATH_MAX-1) && strlen(new_lib_path) > 0 ) { /* If the last character was the ENTER key, add it to the list of library paths */
 		lib_paths.push_back(new_lib_path);
 	}
 
@@ -581,7 +581,7 @@ void removeLibPath(WINDOW* win) {
 				break;
 			}
 		}
-		mvwaddstr(win, LINES - 2, 1, "                             ");
+		mvwaddstr(win, LINES - 2, 1, "							 ");
 		return;
 	}
 
@@ -771,12 +771,12 @@ void printASCII(FILE* file, int y, int x) {
   int line_num = 0;
   char c;
   while((c = getc(file)) != EOF) {
-    addch(c);
+	addch(c);
 
-    //Adjusting for the x offset
-    if(c == '\n') {
-      move(y + ++line_num, x);
-    }
+	//Adjusting for the x offset
+	if(c == '\n') {
+	  move(y + ++line_num, x);
+	}
   }
   rewind(file);
 
@@ -800,12 +800,12 @@ void wprintASCII(WINDOW* win, FILE* file, int y, int x) {
   int line_num = 0;
   char c;
   while((c = getc(file)) != EOF) {
-    waddch(win, c);
+	waddch(win, c);
 
-    //Adjusting for the x offset
-    if(c == '\n') {
-      wmove(win, y + ++line_num, x);
-    }
+	//Adjusting for the x offset
+	if(c == '\n') {
+	  wmove(win, y + ++line_num, x);
+	}
   }
   rewind(file);
 
@@ -821,7 +821,7 @@ int getASCIILength(FILE* file) {
   int i = 0;
   char c = getc(file);
   for(; c != '\n' && c != EOF; i++) {
-    c = getc(file);
+	c = getc(file);
   }
 
   rewind(file);
@@ -835,9 +835,9 @@ int getASCIILength(FILE* file) {
 int getASCIIHeight(FILE* file) {
   int i = 0;
   for(char c; (c = getc(file)) != EOF;) {
-    if(c == '\n') {
-      i++;
-    }
+	if(c == '\n') {
+	  i++;
+	}
   }
   
   rewind(file);

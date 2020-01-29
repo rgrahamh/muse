@@ -101,7 +101,7 @@ int main(int argc, char** argv){
 	printf("Song 4: %llu\n", playlists->prev->first_song->next->next->next->id);
 	printf("Song 5: %llu\n", playlists->prev->first_song->next->next->next->next->id);
 
-    free_playlist(playlists);
+	free_playlist(playlists);
 */
 
 	disconnect();
@@ -181,7 +181,7 @@ int getSong(unsigned long long song_id, char* filepath){
 	fwrite(resp, sizeof(char), resp_size, file);
 
 	//Flush the socket of all of the messiness that was sent after the actual song length
-    clearSock(1);
+	clearSock(1);
 
 	free(resp_size_str);
 	free(request);
@@ -235,23 +235,23 @@ int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
 		return 1;
 	}
 
-    struct songinfolst* new_song;
+	struct songinfolst* new_song;
 
-    parseSongs(resp, &new_song);
+	parseSongs(resp, &new_song);
 
-    if(*song_info == NULL){
-        new_song->next = NULL;
-        *song_info = new_song;
-    }
-    else{
-        struct songinfolst* cur = *song_info;
-        while( cur->next != NULL ) {
-            cur = cur->next;
-        }
+	if(*song_info == NULL){
+		new_song->next = NULL;
+		*song_info = new_song;
+	}
+	else{
+		struct songinfolst* cur = *song_info;
+		while( cur->next != NULL ) {
+			cur = cur->next;
+		}
 
-        new_song->next = NULL;
-        cur->next = new_song;
-    }
+		new_song->next = NULL;
+		cur->next = new_song;
+	}
 
 	free(request);
 	free(resp);
@@ -265,7 +265,7 @@ int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
  * @return 0 if successful, 1 otherwise.
  */
 int querySongsBurst(struct songinfolst** song_info, unsigned long long start, unsigned long long end){
-    char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
+	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
 	request[0] = QWRYSNGBRST | ASC | ORDSNG;
 	*((unsigned long long*)(request+1)) = start;
 	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
@@ -761,7 +761,7 @@ int receiveResponse(char** resp){
 	while((amnt_recv += recv(sockfd, resp_cursor, resp_size - amnt_recv, 0)) < resp_size){
 		resp_cursor = amnt_recv + *resp;
 	}
-    (*resp)[resp_size] = '\0';
+	(*resp)[resp_size] = '\0';
 	free(resp_size_str);
 	return 0;
 }
@@ -859,25 +859,25 @@ int loadPlaylist(struct playlist** list, char* filepath){
 	play_list->name = (char*)calloc(1, name_len+1);
 	fread(play_list->name, name_len + 1, 1, file);
 
-    char* id_str = (char*)calloc(1, sizeof(unsigned long long) + 1);
+	char* id_str = (char*)calloc(1, sizeof(unsigned long long) + 1);
 	fread(id_str, 1, sizeof(unsigned long long), file);
-    if(!feof(file)){
-        //Parse the song IDs
-        struct songlst* prev_song = (struct songlst*)calloc(1, sizeof(struct songlst));
-        prev_song->id = *((unsigned long long*)id_str);
-        prev_song->next = NULL;
-        play_list->first_song = prev_song;
-        fread(id_str, 1, sizeof(unsigned long long), file);
-        while(!feof(file)){
-            struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
-            song->id = *((unsigned long long*)id_str);
-            song->next = NULL;
-            prev_song->next = song;
-            prev_song = song;
-            fread(id_str, 1, sizeof(unsigned long long), file);
-        }
-        play_list->last_song = prev_song;
-    }
+	if(!feof(file)){
+		//Parse the song IDs
+		struct songlst* prev_song = (struct songlst*)calloc(1, sizeof(struct songlst));
+		prev_song->id = *((unsigned long long*)id_str);
+		prev_song->next = NULL;
+		play_list->first_song = prev_song;
+		fread(id_str, 1, sizeof(unsigned long long), file);
+		while(!feof(file)){
+			struct songlst* song = (struct songlst*)calloc(1, sizeof(struct songlst));
+			song->id = *((unsigned long long*)id_str);
+			song->next = NULL;
+			prev_song->next = song;
+			prev_song = song;
+			fread(id_str, 1, sizeof(unsigned long long), file);
+		}
+		play_list->last_song = prev_song;
+	}
 	play_list->prev = *list;
 	*list = play_list;
 
@@ -898,7 +898,7 @@ int scanPlaylists(struct playlist** list){
 	char *pl_filepath;
 	char *pl_filename = "/Documents/MUSE";
 
-    pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
+	pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
 	strcpy(pl_filepath, getenv("HOME"));
 	strcat(pl_filepath, pl_filename);
 
@@ -906,12 +906,12 @@ int scanPlaylists(struct playlist** list){
 		while((file_info = readdir(dir)) != NULL){
 			lstat(file_info->d_name, &stat_info);
 			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){
-                char* path = (char*) calloc( strlen(pl_filepath) + strlen(file_info->d_name) + 2, sizeof(char) );
-                strcpy(path, pl_filepath);
-                strcat(path, "/");
-                strcat(path, file_info->d_name);
+				char* path = (char*) calloc( strlen(pl_filepath) + strlen(file_info->d_name) + 2, sizeof(char) );
+				strcpy(path, pl_filepath);
+				strcat(path, "/");
+				strcat(path, file_info->d_name);
 
-                loadPlaylist(list, path);
+				loadPlaylist(list, path);
 			}
 		}
 	}
@@ -925,20 +925,20 @@ int scanPlaylists(struct playlist** list){
  * @return 0 if successful, 1 otherwise
  */
 int deletePlaylist(const char* name){
-    char *pl_filepath;
-    char *pl_filename = (char*)malloc(strlen(name) + 20);
-    sprintf(pl_filename, "/Documents/MUSE/%s.pl", name);
+	char *pl_filepath;
+	char *pl_filename = (char*)malloc(strlen(name) + 20);
+	sprintf(pl_filename, "/Documents/MUSE/%s.pl", name);
 
-    pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
-    strcpy(pl_filepath, getenv("HOME"));
-    strcat(pl_filepath, pl_filename);
+	pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
+	strcpy(pl_filepath, getenv("HOME"));
+	strcat(pl_filepath, pl_filename);
 
-    remove(pl_filepath);
+	remove(pl_filepath);
 
-    free(pl_filepath);
-    free(pl_filename);
+	free(pl_filepath);
+	free(pl_filename);
 
-    return 0;
+	return 0;
 }
 
 /** Deletes a slong from the playlist struct (based on row id)
@@ -947,26 +947,26 @@ int deletePlaylist(const char* name){
  * @return If the song is deleted properly
  */
 int deleteSongFromPlaylist(struct playlist* list, unsigned long row_id){
-    if(row_id == 0){
-        struct songlst* tmp = list->first_song->next;
-        free(list->first_song);
-        list->first_song = tmp;
-    }
-    else{
-        struct songlst* iter = list->first_song;
-        for(unsigned long row = 0; row < row_id - 1 && iter != NULL; row++){
-            iter = iter->next;
-        }
-        if(iter != NULL){
-            struct songlst* tmp = iter->next;
-            iter->next = iter->next->next;
-            free(tmp);
-        }
-        else{
-            return 1;
-        }
-    }
-    return 0;
+	if(row_id == 0){
+		struct songlst* tmp = list->first_song->next;
+		free(list->first_song);
+		list->first_song = tmp;
+	}
+	else{
+		struct songlst* iter = list->first_song;
+		for(unsigned long row = 0; row < row_id - 1 && iter != NULL; row++){
+			iter = iter->next;
+		}
+		if(iter != NULL){
+			struct songlst* tmp = iter->next;
+			iter->next = iter->next->next;
+			free(tmp);
+		}
+		else{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 /** Frees the playlist
@@ -1155,16 +1155,16 @@ void disconnect(){
  * @param blocking If you want the operation to be blocking or not (1 if you want to wait for a response, 0 if you just want to clear out the buffer).
  */
 void clearSock(int blocking){
-    char* clear_buff = (char*)malloc(4096);
-    if(blocking){
-        recv(sockfd, clear_buff, 4096, 0);
-    }
-    else{
-        while(recv(sockfd, clear_buff, 4096, MSG_DONTWAIT) != 0){
-            continue;
-        }
-    }
-    free(clear_buff);
+	char* clear_buff = (char*)malloc(4096);
+	if(blocking){
+		recv(sockfd, clear_buff, 4096, 0);
+	}
+	else{
+		while(recv(sockfd, clear_buff, 4096, MSG_DONTWAIT) != 0){
+			continue;
+		}
+	}
+	free(clear_buff);
 }
 
 /** The function that safely closes the socket upon exiting the application

@@ -245,9 +245,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					break;
 
 				case QWRYGNRSNG:
-					printf("Incoming genre: %s\n", (char*)incoming_msg);
 					char* safe_genre = escapeApostrophe(incoming_msg);
-					printf("Genre: %s\n", (char*)safe_genre);
 					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
 					break;
@@ -512,7 +510,7 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 					//Checking to see if the file is an mp3
 					if((strcmp((file_info->d_name + (file_name_len - 4)), ".mp3") == 0)){
 						TagLib_File* tag_file;
-					    	if((tag_file = taglib_file_new(file_info->d_name)) == NULL){
+							if((tag_file = taglib_file_new(file_info->d_name)) == NULL){
 							continue;
 						}
 						TagLib_Tag* tag;
