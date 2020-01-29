@@ -245,7 +245,9 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					break;
 
 				case QWRYGNRSNG:
+					printf("Incoming genre: %s\n", (char*)incoming_msg);
 					char* safe_genre = escapeApostrophe(incoming_msg);
+					printf("Genre: %s\n", (char*)safe_genre);
 					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
 					break;
@@ -541,14 +543,10 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 						char* safe_filepath = escapeApostrophe(full_path);
 
 						free(song_info->title);
-						free(song_info->artist);
-						free(song_info->album);
 						free(song_info->genre);
 						free(full_path);
 
 						song_info->title = safe_title;
-						song_info->artist = safe_artist;
-						song_info->album = safe_album;
 						song_info->genre = safe_genre;
 						song_info->filepath = safe_filepath;
 
@@ -556,25 +554,25 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 						if(!(sqlite3_exec(song_info->db, query, returnOne, song_info, NULL))){
 							//Query for the artist and album
 							//printSongInfo(song_info);
-							sprintf(query, "SELECT album.id AS ALBUM_ID, album.name AS ALBUM_NAME, artist.id AS ARTIST_ID, artist.name AS ARTIST_NAME\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON song.artist_id = artist.id\nWHERE album.name = '%s' OR artist.name = '%s'\nORDER BY album.id DESC;", song_info->album, song_info->artist);
+							sprintf(query, "SELECT album.id AS ALBUM_ID, album.name AS ALBUM_NAME, artist.id AS ARTIST_ID, artist.name AS ARTIST_NAME\nFROM album INNER JOIN song ON album.id = song.album_id INNER JOIN artist ON song.artist_id = artist.id\nWHERE album.name LIKE '%s' OR artist.name LIKE '%s'\nORDER BY album.id DESC;", safe_album, safe_artist);
 							sqlite3_exec(db, query, getAlbumArtist, song_info, NULL);
 							//If there were no columns returned
 							if(calledback == 0){
 								//Create new entries for the artist, song, and album
-								sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\nINSERT INTO album(name, year)\nVALUES('%s', %i);\n\nINSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %llu, %llu, %i, '%s', '%s');", song_info->artist, song_info->album, song_info->year, song_info->title, ++(song_info->next_album), ++(song_info->next_artist), song_info->track_num, song_info->filepath, song_info->genre);
+								sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\nINSERT INTO album(name, year)\nVALUES('%s', %i);\n\nINSERT INTO song(name, album_id, artist_id, track_num, filepath, genre)\nVALUES('%s', %llu, %llu, %i, '%s', '%s');", safe_artist, safe_album, song_info->year, song_info->title, ++(song_info->next_album), ++(song_info->next_artist), song_info->track_num, song_info->filepath, song_info->genre);
 
 								sqlite3_exec(db, query, NULL, NULL, NULL);
 							}
 							else{
 								//Create new entry for the song and album, link the artist.
 								if(song_info->album_id == 0){
-									sprintf(query, "INSERT INTO album(name, year)\nVALUES('%s', %i);\n\n", song_info->album, song_info->year);
+									sprintf(query, "INSERT INTO album(name, year)\nVALUES('%s', %i);\n\n", safe_album, song_info->year);
 									sqlite3_exec(db, query, NULL, NULL, NULL);
 									song_info->album_id = ++(song_info->next_album);
 								}
 								//Create new entry for the song and artist, link the album.
 								else if(song_info->artist_id == 0){
-									sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\n", song_info->artist);
+									sprintf(query, "INSERT INTO artist(name)\nVALUES('%s');\n\n", safe_artist);
 									sqlite3_exec(db, query, NULL, NULL, NULL);
 									song_info->artist_id = ++(song_info->next_artist);
 								}
@@ -588,6 +586,8 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 						free(song_info->album);
 						free(song_info->comment);
 						free(song_info->genre);
+						free(safe_album);
+						free(safe_artist);
 						free(safe_filepath);
 					}
 					else{
