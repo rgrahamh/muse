@@ -14,24 +14,24 @@ ArtistModel::ArtistModel(QObject *parent) : QAbstractTableModel(parent)
  */
 void ArtistModel::populateData(struct artistinfolst* artists)
 {
-    beginResetModel();
+	beginResetModel();
 
-    // clear previous data
-    this->ids.clear();
-    this->names.clear();
+	// clear previous data
+	this->ids.clear();
+	this->names.clear();
 
-    // populate new data
-    struct artistinfolst* cursor = artists;
-    while(cursor != NULL) {
-        this->ids.append(cursor->id);
-        this->names.append(cursor->name);
+	// populate new data
+	struct artistinfolst* cursor = artists;
+	while(cursor != NULL) {
+		this->ids.append(cursor->id);
+		this->names.append(cursor->name);
 
-        cursor = cursor->next;
-    }
+		cursor = cursor->next;
+	}
 
-    endResetModel();
+	endResetModel();
 
-    return;
+	return;
 }
 
 /**
@@ -40,26 +40,26 @@ void ArtistModel::populateData(struct artistinfolst* artists)
  */
 void ArtistModel::addData(struct artistinfolst* artists)
 {
-    struct artistinfolst* cursor = artists;
-    int iter = 0;
-    while(cursor != NULL) {
-        iter++;
-        cursor = cursor->next;
-    }
-    beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter);
+	struct artistinfolst* cursor = artists;
+	int iter = 0;
+	while(cursor != NULL) {
+		iter++;
+		cursor = cursor->next;
+	}
+	beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter);
 
-    // populate new data
-    cursor = artists;
-    while(cursor != NULL) {
-        this->ids.append(cursor->id);
-        this->names.append(cursor->name);
+	// populate new data
+	cursor = artists;
+	while(cursor != NULL) {
+		this->ids.append(cursor->id);
+		this->names.append(cursor->name);
 
-        cursor = cursor->next;
-    }
+		cursor = cursor->next;
+	}
 
-    endInsertRows();
+	endInsertRows();
 
-    return;
+	return;
 }
 
 /**
@@ -69,8 +69,8 @@ void ArtistModel::addData(struct artistinfolst* artists)
  */
 int ArtistModel::rowCount(const QModelIndex &parent) const
 {
-    Q_UNUSED(parent);
-    return ids.length();
+	Q_UNUSED(parent);
+	return ids.length();
 }
 
 /**
@@ -80,8 +80,8 @@ int ArtistModel::rowCount(const QModelIndex &parent) const
  */
 int ArtistModel::columnCount(const QModelIndex &parent) const
 {
-    Q_UNUSED(parent);
-    return 1;
+	Q_UNUSED(parent);
+	return 1;
 }
 
 /**
@@ -92,16 +92,16 @@ int ArtistModel::columnCount(const QModelIndex &parent) const
  */
 QVariant ArtistModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::UserRole)) {
-        return QVariant();
-    }
-    else if(role == Qt::UserRole) {
-        return ids[index.row()];
-    }
-    if (index.column() == 0) {
-        return names[index.row()];
-    }
-    return QVariant();
+	if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::UserRole)) {
+		return QVariant();
+	}
+	else if(role == Qt::UserRole) {
+		return ids[index.row()];
+	}
+	if (index.column() == 0) {
+		return names[index.row()];
+	}
+	return QVariant();
 }
 
 /**
@@ -113,20 +113,20 @@ QVariant ArtistModel::data(const QModelIndex &index, int role) const
  */
 QVariant ArtistModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-        if (section == 0) {
-            return QString("Artist");
-        }
-    }
-    return QVariant();
+	if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
+		if (section == 0) {
+			return QString("Artist");
+		}
+	}
+	return QVariant();
 }
 
 void ArtistModel::clearModel() {
-    beginResetModel();
+	beginResetModel();
 
-    // clear previous data
-    this->ids.clear();
-    this->names.clear();
+	// clear previous data
+	this->ids.clear();
+	this->names.clear();
 
-    endResetModel();
+	endResetModel();
 }

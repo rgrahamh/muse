@@ -6,6 +6,7 @@ CURR_PATH=$(pwd)
 if [ ! -d $WORK_PATH ]; then
 	mkdir $WORK_PATH
 	mkdir $WORK_PATH/assets
+	mkdir $WORK_PATH/playlists
 fi
 
 #Installing ncurses and sqlite (best-try for Ubuntu and Fedora, look up your own package manager if you don't have 

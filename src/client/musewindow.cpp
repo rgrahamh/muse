@@ -962,15 +962,13 @@ void MuseWindow::on_songView_addSongToPlaylist() {
             new_playlist_path = (char*) malloc(strlen(getenv("HOME")) + strlen(new_playlist_name) + 1); // to account for NULL terminator
             strcpy(new_playlist_path, getenv("HOME"));
             strcat(new_playlist_path, new_playlist_name);
-            savePlaylist(selected, new_playlist_path);
+            savePlaylist(selected);
 
             free(new_playlist_name);
             free(new_playlist_path);
 
             free_playlist(playlistDialog->getPlaylists());
         }
-    } else {
-
     }
 }
 
@@ -992,7 +990,7 @@ void MuseWindow::on_playlistView_removeSongsFromPlaylist() {
         strcat(playlist_path, playlist_name);
 
         deleteSongFromPlaylist(playlist, row);
-        savePlaylist(playlist, playlist_path);
+        savePlaylist(playlist);
 
         free(playlist_name);
         free(playlist_path);

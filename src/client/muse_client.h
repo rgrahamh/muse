@@ -94,7 +94,9 @@ extern "C" {
 
 	void addPlaylist(char* name, struct playlist** list);
 	void addSongToPlaylist(unsigned long long song_id, struct playlist* list);
-	int savePlaylist(struct playlist* list, char* filepath);
+	int savePlaylist(struct playlist* list);
+	int savePlaylistPath(struct playlist* list, char* filepath);
+	int writePlaylists(struct playlist* list);
 	int loadPlaylist(struct playlist** list, char* filepath);
 	int scanPlaylists(struct playlist** list);
 	int deletePlaylist(const char* name);

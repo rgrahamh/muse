@@ -752,7 +752,6 @@ int receiveResponse(char** resp){
 	}
 	unsigned long long resp_size = (*((unsigned long long*)(resp_size_str))) - sizeof(unsigned long long);
 	if(resp_size == 0){
-		printf("Response has no size!\n");
 		return 1;
 	}
 	*resp = (char*)malloc(resp_size+1);
@@ -797,12 +796,12 @@ void addSongToPlaylist(unsigned long long song_id, struct playlist* list){
 	}
 }
 
-/** Adds a song to the playlist
- * @param song_id The id of the song that you wish to add to the playlist
- * @param list The list that you wish to add a song to
+/** Saves the specified playlist to a given path
+ * @param list The playlist you wish to save
+ * @param filepath The path you wish the playlist to be saved to
  * @return 0 if successful, 1 if the file could not be written
  */
-int savePlaylist(struct playlist* list, char* filepath){
+int savePlaylistPath(struct playlist* list, char* filepath){
 	unsigned int song_count = 0;
 	struct songlst* cursor = list->first_song;
 	while(cursor != NULL){
@@ -834,6 +833,55 @@ int savePlaylist(struct playlist* list, char* filepath){
 	free(str);
 
 	return 0;
+}
+
+/** Saves the specified playlist to a generic path
+ * @param list The playlist you wish to save
+ * @param filepath The path you wish the playlist to be saved to
+ * @return 0 if successful, 1 if the file could not be written
+ */
+int savePlaylist(struct playlist* list){
+	//Get the ip address of the server
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof(struct sockaddr_in);
+	getpeername(sockfd, (struct sockaddr*)&addr, &addrlen);
+	char* peer_name = (char*)malloc(INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &addr.sin_addr, peer_name, INET_ADDRSTRLEN);
+
+	//Concatinate that on the filepath to complete it
+    char* new_playlist_dir = (char*)malloc(strlen(getenv("HOME")) + 45);
+	strcpy(new_playlist_dir, getenv("HOME"));
+    char* new_playlist_end_path = (char*)malloc(45);
+    sprintf(new_playlist_end_path, "/Documents/MUSE/playlists/%s", peer_name);
+    strcat(new_playlist_dir, new_playlist_end_path);
+
+	//Make the ip directory if it doesn't already exist
+	DIR* dir = opendir(new_playlist_dir);
+	if(dir == NULL){
+        mkdir(new_playlist_dir, 0777);
+	}
+	else{
+        closedir(dir);
+    }
+
+	char* new_playlist_name = (char*)malloc(4096);
+	strcpy(new_playlist_name, list->name);
+
+    char* new_playlist_path = (char*)malloc(strlen(new_playlist_dir) + strlen(new_playlist_name) + 4);
+	
+    strcpy(new_playlist_path, new_playlist_dir);
+	strcat(new_playlist_path, "/");
+	strcat(new_playlist_path, new_playlist_name);
+    strcat(new_playlist_path, ".pl");
+
+	int err = savePlaylistPath(list, new_playlist_path);
+
+	free(new_playlist_path);
+	free(new_playlist_name);
+	free(new_playlist_dir);
+	free(peer_name);
+
+	return err;
 }
 
 /**
@@ -895,27 +943,35 @@ int scanPlaylists(struct playlist** list){
 	struct dirent* file_info;
 	struct stat stat_info;
 
-	char *pl_filepath;
-	char *pl_filename = "/Documents/MUSE";
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof(struct sockaddr_in);
+	getpeername(sockfd, (struct sockaddr*)&addr, &addrlen);
 
-	pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(pl_filename) + 1); // to account for NULL terminator
-	strcpy(pl_filepath, getenv("HOME"));
-	strcat(pl_filepath, pl_filename);
+	char* peer_name = (char*)malloc(INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &addr.sin_addr, peer_name, INET_ADDRSTRLEN);
+	char* pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(peer_name) + 4096 + 1);
+    strcpy(pl_filepath, getenv("HOME"));
+    strcat(pl_filepath, "/Documents/MUSE/playlists/");
+    strcat(pl_filepath, peer_name);
 
 	if((dir = opendir(pl_filepath)) != NULL){
 		while((file_info = readdir(dir)) != NULL){
-			lstat(file_info->d_name, &stat_info);
-			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){
-				char* path = (char*) calloc( strlen(pl_filepath) + strlen(file_info->d_name) + 2, sizeof(char) );
-				strcpy(path, pl_filepath);
-				strcat(path, "/");
-				strcat(path, file_info->d_name);
+            lstat(file_info->d_name, &stat_info);
 
-				loadPlaylist(list, path);
+			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){
+				strcpy(pl_filepath, getenv("HOME"));
+                strcat(pl_filepath, "/Documents/MUSE/playlists/");
+				strcat(pl_filepath, peer_name);
+				strcat(pl_filepath, "/");
+				strcat(pl_filepath, file_info->d_name);
+				loadPlaylist(list, pl_filepath);
 			}
 		}
 	}
 	closedir(dir);
+
+	free(peer_name);
+	free(pl_filepath);
 	return 0;
 }
 
