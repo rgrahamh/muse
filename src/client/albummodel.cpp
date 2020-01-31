@@ -49,7 +49,7 @@ void AlbumModel::addData(struct albuminfolst* albums)
         iter++;
         cursor = cursor->next;
     }
-    beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter);
+    beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter - 1);
 
     // populate new data
     cursor = albums;

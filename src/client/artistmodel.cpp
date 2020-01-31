@@ -46,7 +46,7 @@ void ArtistModel::addData(struct artistinfolst* artists)
 		iter++;
 		cursor = cursor->next;
 	}
-	beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter);
+    beginInsertRows(QModelIndex(), rowCount(), rowCount() + iter - 1);
 
 	// populate new data
 	cursor = artists;
