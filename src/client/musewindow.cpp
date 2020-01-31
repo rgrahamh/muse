@@ -243,11 +243,8 @@ void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
  */
 void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 {
-    const char* genre = genre_model->data(index).value<QString>().toUtf8();
-
-    qDebug() << "Genre is: " << genre << endl;
     struct songinfolst* songs;
-    if( queryGenreSongs(genre, &songs) ) {
+    if( queryGenreSongs(genre_model->data(index).value<QString>().toUtf8(), &songs) ) {
         qDebug() << "Error retrieving genre songs!" << endl;
         return;
     }
