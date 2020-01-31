@@ -532,6 +532,44 @@ int queryGenreSongs(const char* genre, struct songinfolst** song_info){
 	return 0;
 }
 
+/** Queries a burst of genre songs
+ * @param genre_info The songinfolst struct that is populated with song information
+ * @param start The requested starting index of the burst
+ * @param end The requested ending index of the burst
+ * @return 0 if successful, 1 otherwise.
+ */
+int queryGenreSongsBurst(const char* genre, struct songinfolst** song_info, unsigned long long start, unsigned long long end){
+	if(genre == NULL){
+		return 1;
+	}
+
+	int genre_size = strlen(genre);
+	int request_size = genre_size + 2 + sizeof(unsigned long long) * 2;
+	char* request = (char*)malloc(request_size);
+	request[0] = QWRYGNRSNG | ASC | ORDSNG;
+	*((unsigned long long*)(request+1)) = start;
+	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+	strcpy(request+1+sizeof(unsigned long long)*2, genre);
+
+	if(send(sockfd, request, request_size, 0) == -1){
+		printf("Could not send request!\n");
+		return 1;
+	}
+
+	char* resp = NULL;
+	if(receiveResponse(&resp)){
+		initSong(song_info);
+		free(request);
+		return 1;
+	}
+
+	parseSongs(resp, song_info);
+
+	free(request);
+	free(resp);
+	return 0;
+}
+
 /** A function that queries for an entity id with given flags (a generalized function to minimize repeated code)
  * @param entity_id The id of the entity being queried
  * @param flags The request flags that are being sent

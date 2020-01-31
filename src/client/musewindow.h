@@ -74,6 +74,7 @@ class SongBurstThread;
 class DownloadThread;
 class AlbumBurstThread;
 class ArtistBurstThread;
+class GenreSongBurstThread;
 
 class MuseWindow : public QMainWindow
 {
@@ -130,6 +131,7 @@ private:
     SongBurstThread* sbthread = NULL;
     AlbumBurstThread* albthread = NULL;
     ArtistBurstThread* arbthread = NULL;
+    GenreSongBurstThread* gsbthread = NULL;
 
     QString ip_address;
     QString port;
@@ -216,6 +218,23 @@ class ArtistBurstThread: public QThread{
 public:
     ArtistBurstThread(MuseWindow* window, int iter);
     void reset();
+};
+
+class GenreSongBurstThread: public QThread{
+    Q_OBJECT
+    void run();
+
+    int start_id = 0;
+    int end_id = 25;
+    int iter = 25;
+    const char* str = NULL;
+
+    MuseWindow* window;
+
+public:
+    GenreSongBurstThread(MuseWindow* window, int iter);
+    void reset();
+    void setStr(const char* str);
 };
 
 class DownloadThread: public QThread{

@@ -186,6 +186,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 
 			char burst = 0;
 			//Parse the packet type
+			char* safe_genre;
 			switch(incoming_flags & REQ_TYPE_MASK){
 				case REQSNG:
 					//Read everything past the flags as a 
@@ -245,7 +246,13 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					break;
 
 				case QWRYGNRSNG:
-					char* safe_genre = escapeApostrophe(incoming_msg);
+					safe_genre = escapeApostrophe(incoming_msg);
+					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
+					free(safe_genre);
+					break;
+
+				case QWRYGNRSNGBRST:
+					safe_genre = escapeApostrophe(incoming_msg+sizeof(unsigned long long) * 2);
 					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
 					break;

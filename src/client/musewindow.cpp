@@ -52,6 +52,7 @@ MuseWindow::MuseWindow(QWidget *parent)
     sbthread = new SongBurstThread(this, 25);
     albthread = new AlbumBurstThread(this, 25);
     arbthread = new ArtistBurstThread(this, 25);
+    gsbthread = new GenreSongBurstThread(this, 25);
 
     // request context menu for right-clicks
     ui->songView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -132,6 +133,10 @@ void MuseWindow::on_tabWidget_tabBarClicked(int index)
     }
     if(arbthread->isRunning()){
         arbthread->terminate();
+        clearSock(1);
+    }
+    if(gsbthread->isRunning()){
+        gsbthread->terminate();
         clearSock(1);
     }
     while(dlthread->isRunning()){
@@ -243,14 +248,10 @@ void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
  */
 void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 {
-    struct songinfolst* songs;
-    if( queryGenreSongs(genre_model->data(index).value<QString>().toUtf8(), &songs) ) {
-        qDebug() << "Error retrieving genre songs!" << endl;
-        return;
-    }
+    gsbthread->setStr(genre_model->data(index).value<QString>().toUtf8());
+    gsbthread->reset();
+    gsbthread->start();
 
-    song_model->populateData(songs);
-    free_songinfolst(songs);
     ui->tabWidget->setCurrentIndex(3);
 }
 
@@ -1133,6 +1134,44 @@ void ArtistBurstThread::run(){
 }
 
 void ArtistBurstThread::reset(){
+    start_id = 0;
+    end_id = iter;
+}
+
+GenreSongBurstThread::GenreSongBurstThread(MuseWindow* window, int iter){
+    this->window = window;
+    this->iter = iter;
+}
+
+void GenreSongBurstThread::run(){
+    struct songinfolst* base_list;
+    queryGenreSongsBurst(str, &base_list, start_id, end_id);
+    window->song_model->clearModel();
+    window->song_model->populateData(base_list);
+    start_id += iter+1;
+    end_id += iter;
+
+    struct songinfolst* new_lst = NULL;
+    struct songinfolst* base_list_cur = base_list;
+    while(!queryGenreSongsBurst(str, &new_lst, start_id, end_id)){
+        //Append to the base list
+        while(base_list_cur->next != NULL){
+            base_list_cur = base_list_cur->next;
+        }
+        base_list_cur->next = new_lst;
+
+        window->song_model->addData(new_lst);
+        start_id += iter;
+        end_id += iter;
+        new_lst = NULL;
+    }
+}
+
+void GenreSongBurstThread::setStr(const char* str){
+    this->str = str;
+}
+
+void GenreSongBurstThread::reset(){
     start_id = 0;
     end_id = iter;
 }

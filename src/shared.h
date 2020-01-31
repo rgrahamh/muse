@@ -43,7 +43,8 @@ enum REQ_TYPE{
 	QWRYARTBRST = 80, /**< Sends a query for a burst of artists */
 	QWRYGNR = 88, /**< Sends a query for all genres */
 	QWRYGNRSNG = 96, /**< Sends a query for all songs in a genre */
-	QWRYGNRBRST = 104 /**< Sends a query for a burst of genres */
+	QWRYGNRBRST = 104, /**< Sends a query for a burst of genres */
+	QWRYGNRSNGBRST = 112 /**< Sends a query for all songs in a genre */
 };
 
 char* escapeApostrophe(char* str);
