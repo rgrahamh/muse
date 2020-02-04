@@ -698,17 +698,23 @@ void MuseWindow::changePlayState(PlayState state) {
         ui->songProgressSlider->setValue(0);
         ui->playButton->setText("Play");
     } else if( state == STARTED ) {
-            char *new_song_path;
-            char *new_song_name = (char*) malloc(100);
-            sprintf(new_song_name, "/Documents/MUSE/muse_download_%d.mp3", queue.front().song_id);
+        char *new_song_path;
+        char *new_song_name = (char*) malloc(100);
+        sprintf(new_song_name, "/Documents/MUSE/muse_download_%d.mp3", queue.front().song_id);
 
-            new_song_path = (char*) malloc(strlen(getenv("HOME")) + strlen(new_song_name) + 1); // to account for NULL terminator
-            strcpy(new_song_path, getenv("HOME"));
-            strcat(new_song_path, new_song_name);
+        new_song_path = (char*) malloc(strlen(getenv("HOME")) + strlen(new_song_name) + 1); // to account for NULL terminator
+        strcpy(new_song_path, getenv("HOME"));
+        strcat(new_song_path, new_song_name);
 
+        if(dlthread->isRunning()){
+            this->setEnabled(false);
+            QApplication::processEvents();
             while(dlthread->isRunning()){
                 continue;
             }
+            this->setEnabled(true);
+            QApplication::processEvents();
+        }
 
         if( downloadSong(new_song_path, queue.front().song_id) ) { // download the next song
             qDebug() << "Unable to retrieve song" << endl;
