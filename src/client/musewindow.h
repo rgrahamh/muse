@@ -86,7 +86,7 @@ public:
     ~MuseWindow();
 
     //This also has to be public in order to call it from the DownloadWorker
-    int downloadSong(char* song_path, int song_id);
+    int downloadSong(char* song_path, int song_id, bool blocking);
 
     ArtistModel* artist_model;
     AlbumModel* album_model;

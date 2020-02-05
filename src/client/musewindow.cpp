@@ -625,7 +625,7 @@ void MuseWindow::clearSongs() {
     free(mp3_filepath);
 }
 
-int MuseWindow::downloadSong(char* song_path, int song_id) {
+int MuseWindow::downloadSong(char* song_path, int song_id, bool blocking) {
     int download = song_id;
 
     // see if song is already downloaded
@@ -639,6 +639,10 @@ int MuseWindow::downloadSong(char* song_path, int song_id) {
 
     // song is not on disk
     if( found_dupl == -1 ) {
+        if(blocking){
+            this->setEnabled(false);
+            QApplication::processEvents();
+        }
         downloaded.insert(downloaded.begin(), download);
         //Make sure that the messages are received properly so there's not any messy server-side issues.
         while(sbthread->isRunning()){
@@ -706,17 +710,16 @@ void MuseWindow::changePlayState(PlayState state) {
         strcpy(new_song_path, getenv("HOME"));
         strcat(new_song_path, new_song_name);
 
+        //While downloading next song, wait
         if(dlthread->isRunning()){
             this->setEnabled(false);
             QApplication::processEvents();
             while(dlthread->isRunning()){
                 continue;
             }
-            this->setEnabled(true);
-            QApplication::processEvents();
         }
 
-        if( downloadSong(new_song_path, queue.front().song_id) ) { // download the next song
+        if( downloadSong(new_song_path, queue.front().song_id, true) ) { // download the next song
             qDebug() << "Unable to retrieve song" << endl;
             changePlayState(NOT_PLAYING);
         } else {
@@ -755,6 +758,11 @@ void MuseWindow::changePlayState(PlayState state) {
             } else {
                 changePlayState(NOT_PLAYING);
             }
+        }
+        //Enable if disabled by download wait
+        if(!this->isEnabled()){
+            this->setEnabled(true);
+            QApplication::processEvents();
         }
 
         free(new_song_name);
@@ -1032,7 +1040,7 @@ void DownloadThread::run(){
     next_song_path = (char*)malloc(strlen(getenv("HOME")) + strlen(next_song_name) + 1);
     strcpy(next_song_path, getenv("HOME"));
     strcat(next_song_path, next_song_name);
-    window->downloadSong(next_song_path, song_id);
+    window->downloadSong(next_song_path, song_id, false);
 
     free(next_song_name);
     free(next_song_path);
