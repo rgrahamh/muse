@@ -10,16 +10,14 @@ if [ ! -d $WORK_PATH ]; then
 fi
 
 #Installing ncurses and sqlite (best-try for Ubuntu and Fedora, look up your own package manager if you don't have 
-which apt# >/dev/null 2>&1
-if [ -z $? ]; then
-    sudo apt-get install libncurses5-dev libncurses5-dev
-    sudo apt-get install sqlite3 libsqlite3-dev
+which apt >/dev/null 2>&1
+if [ $? = 0 ]; then
+    sudo apt-get install -y libncurses5-dev libncurses5-dev sqlite3 libsqlite3-dev
 fi
 
 which dnf >/dev/null 2>&1
-if [ -z $? ]; then
-    sudo dnf install ncurses-devel
-    sudo dnf install sqlite sqlite-devel
+if [ $? = 0 ]; then
+    sudo dnf install ncurses-devel sqlite sqlite-devel
 fi
 
 set -e
