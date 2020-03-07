@@ -248,8 +248,11 @@ void MuseWindow::on_albumView_doubleClicked(const QModelIndex &index)
  */
 void MuseWindow::on_genreView_doubleClicked(const QModelIndex &index)
 {
-    gsbthread->setStr(genre_model->data(index).value<QString>().toUtf8());
+    char* str = (char*)malloc(genre_model->data(index).TextLength);
+    strcpy(str, genre_model->data(index).value<QString>().toUtf8());
     gsbthread->reset();
+    printf("%s\n", str);
+    gsbthread->setStr(str);
     gsbthread->start();
 
     ui->tabWidget->setCurrentIndex(3);
@@ -1188,4 +1191,7 @@ void GenreSongBurstThread::setStr(const char* str){
 void GenreSongBurstThread::reset(){
     start_id = 0;
     end_id = iter;
+    if(str != NULL){
+        free((void*)str);
+    }
 }

@@ -12,7 +12,7 @@ fi
 #Installing ncurses and sqlite (best-try for Ubuntu and Fedora, look up your own package manager if you don't have 
 which apt >/dev/null 2>&1
 if [ $? = 0 ]; then
-    sudo apt-get install -y libncurses5-dev libncurses5-dev sqlite3 libsqlite3-dev
+    sudo apt-get install -y libncurses5-dev libncurses5-dev sqlite3 libsqlite3-dev libgl1-mesa-dev
 fi
 
 which dnf >/dev/null 2>&1

@@ -543,10 +543,10 @@ int queryGenreSongsBurst(const char* genre, struct songinfolst** song_info, unsi
 		return 1;
 	}
 
-	int genre_size = strlen(genre);
-	int request_size = genre_size + 2 + sizeof(unsigned long long) * 2;
+    int genre_size = strlen(genre);
+    int request_size = genre_size + 3 + sizeof(unsigned long long) * 2;
 	char* request = (char*)malloc(request_size);
-	request[0] = QWRYGNRSNG | ASC | ORDSNG;
+    request[0] = QWRYGNRSNGBRST | ASC | ORDSNG;
 	*((unsigned long long*)(request+1)) = start;
 	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
 	strcpy(request+1+sizeof(unsigned long long)*2, genre);
