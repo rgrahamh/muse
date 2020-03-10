@@ -1,5 +1,5 @@
 # MUSE *(Musical Universal Serving Environment)* Planning
-
+***Ryan Houck & David Fletcher's Senior Project***
 ## ***Milestones:***
 
 - *1/06*: Set up repository, begin discussing what kind of the network-layer
