@@ -255,6 +255,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 					safe_genre = escapeApostrophe(incoming_msg+sizeof(unsigned long long) * 2);
 					sprintf(query, "SELECT song.id, song.name, artist.name, album.name, album.year, song.track_num, song.genre\nFROM artist INNER JOIN song ON artist.id = song.artist_id INNER JOIN album ON album.id = song.album_id\nWHERE song.genre LIKE '%s'\nORDER BY song.name %s;", safe_genre, order_dir);
 					free(safe_genre);
+					burst = 1;
 					break;
 			}
 
@@ -611,7 +612,7 @@ int scan(char** lib_paths, int num_paths, FILE* log_file){
 		continue;
 	}
 
-	//Free somme memory
+	//Free some memory
 	free(db_filepath);
 	free(song_info);
 	free(query);

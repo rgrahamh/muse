@@ -232,6 +232,7 @@ int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
 		initSong(song_info);
+		free(request);
 		return 1;
 	}
 
@@ -278,6 +279,7 @@ int querySongsBurst(struct songinfolst** song_info, unsigned long long start, un
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
 		initSong(song_info);
+		free(request);
 		return 1;
 	}
 
@@ -332,6 +334,7 @@ int queryAlbumsBurst(struct albuminfolst** album_info, unsigned long long start,
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
 		initAlbum(album_info);
+		free(request);
 		return 1;
 	}
 
@@ -410,6 +413,7 @@ int queryArtistsBurst(struct artistinfolst** artist_info, unsigned long long sta
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
 		initArtist(artist_info);
+		free(request);
 		return 1;
 	}
 
@@ -487,6 +491,7 @@ int queryGenresBurst(struct genreinfolst** genre_info, unsigned long long start,
 	char* resp = NULL;
 	if(receiveResponse(&resp)){
 		initGenre(genre_info);
+		free(request);
 		return 1;
 	}
 
@@ -543,10 +548,10 @@ int queryGenreSongsBurst(const char* genre, struct songinfolst** song_info, unsi
 		return 1;
 	}
 
-    int genre_size = strlen(genre);
-    int request_size = genre_size + 3 + sizeof(unsigned long long) * 2;
+	int genre_size = strlen(genre);
+	int request_size = genre_size + 3 + sizeof(unsigned long long) * 2;
 	char* request = (char*)malloc(request_size);
-    request[0] = QWRYGNRSNGBRST | ASC | ORDSNG;
+	request[0] = QWRYGNRSNGBRST | ASC | ORDSNG;
 	*((unsigned long long*)(request+1)) = start;
 	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
 	strcpy(request+1+sizeof(unsigned long long)*2, genre);
@@ -887,30 +892,30 @@ int savePlaylist(struct playlist* list){
 	inet_ntop(AF_INET, &addr.sin_addr, peer_name, INET_ADDRSTRLEN);
 
 	//Concatinate that on the filepath to complete it
-    char* new_playlist_dir = (char*)malloc(strlen(getenv("HOME")) + 45);
+	char* new_playlist_dir = (char*)malloc(strlen(getenv("HOME")) + 45);
 	strcpy(new_playlist_dir, getenv("HOME"));
-    char* new_playlist_end_path = (char*)malloc(45);
-    sprintf(new_playlist_end_path, "/Documents/MUSE/playlists/%s", peer_name);
-    strcat(new_playlist_dir, new_playlist_end_path);
+	char* new_playlist_end_path = (char*)malloc(45);
+	sprintf(new_playlist_end_path, "/Documents/MUSE/playlists/%s", peer_name);
+	strcat(new_playlist_dir, new_playlist_end_path);
 
 	//Make the ip directory if it doesn't already exist
 	DIR* dir = opendir(new_playlist_dir);
 	if(dir == NULL){
-        mkdir(new_playlist_dir, 0777);
+		mkdir(new_playlist_dir, 0777);
 	}
 	else{
-        closedir(dir);
-    }
+		closedir(dir);
+	}
 
 	char* new_playlist_name = (char*)malloc(4096);
 	strcpy(new_playlist_name, list->name);
 
-    char* new_playlist_path = (char*)malloc(strlen(new_playlist_dir) + strlen(new_playlist_name) + 4);
+	char* new_playlist_path = (char*)malloc(strlen(new_playlist_dir) + strlen(new_playlist_name) + 4);
 	
-    strcpy(new_playlist_path, new_playlist_dir);
+	strcpy(new_playlist_path, new_playlist_dir);
 	strcat(new_playlist_path, "/");
 	strcat(new_playlist_path, new_playlist_name);
-    strcat(new_playlist_path, ".pl");
+	strcat(new_playlist_path, ".pl");
 
 	int err = savePlaylistPath(list, new_playlist_path);
 
@@ -988,17 +993,17 @@ int scanPlaylists(struct playlist** list){
 	char* peer_name = (char*)malloc(INET_ADDRSTRLEN);
 	inet_ntop(AF_INET, &addr.sin_addr, peer_name, INET_ADDRSTRLEN);
 	char* pl_filepath = (char*) malloc(strlen(getenv("HOME")) + strlen(peer_name) + 4096 + 1);
-    strcpy(pl_filepath, getenv("HOME"));
-    strcat(pl_filepath, "/Documents/MUSE/playlists/");
-    strcat(pl_filepath, peer_name);
+	strcpy(pl_filepath, getenv("HOME"));
+	strcat(pl_filepath, "/Documents/MUSE/playlists/");
+	strcat(pl_filepath, peer_name);
 
 	if((dir = opendir(pl_filepath)) != NULL){
 		while((file_info = readdir(dir)) != NULL){
-            lstat(file_info->d_name, &stat_info);
+			lstat(file_info->d_name, &stat_info);
 
 			if(strcmp((file_info->d_name + (strlen(file_info->d_name) - 3)), ".pl") == 0){
 				strcpy(pl_filepath, getenv("HOME"));
-                strcat(pl_filepath, "/Documents/MUSE/playlists/");
+				strcat(pl_filepath, "/Documents/MUSE/playlists/");
 				strcat(pl_filepath, peer_name);
 				strcat(pl_filepath, "/");
 				strcat(pl_filepath, file_info->d_name);
