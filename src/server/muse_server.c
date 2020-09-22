@@ -1,11 +1,9 @@
 #include "muse_server.h"
 
-//This is here because we were having linker issues when it was in the hpp
-//Socket file descriptor
 int sockfd;
-
 int calledback = 0;
 
+//Server testing suite
 #ifdef TEST
 int main(int argc, char** argv){
 
@@ -271,7 +269,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				}
 				result_str = (char*)calloc(result_str_len + sizeof(unsigned long long) + 1, 1);
 				//Send the returned size as the first byte grouping
-				*((unsigned long long*)result_str) = result_str_len + sizeof(unsigned long long);
+				*((unsigned long long*)result_str) = htonl(result_str_len + sizeof(unsigned long long));
 				char* str_cursor = result_str+sizeof(unsigned long long);
 
 				cursor = results;
@@ -281,9 +279,9 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				}
 			}
 			else{
-				unsigned long long register start = *((unsigned long long*)incoming_msg);
+				unsigned long long register start = ntohl(*((unsigned long long*)incoming_msg));
 				incoming_msg += sizeof(unsigned long long);
-				unsigned long long register end = *((unsigned long long*)incoming_msg);
+				unsigned long long register end = ntohl(*((unsigned long long*)incoming_msg));
 				for(unsigned long long i = 0; i < start && cursor != NULL; i++){
 					cursor = cursor->prev;
 				}
@@ -294,7 +292,7 @@ int handleRequest(int new_sockfd, FILE* log_file){
 				}
 				result_str = (char*)calloc(result_str_len + sizeof(unsigned long long) + 1, 1);
 				//Send the returned size as the first byte grouping
-				*((unsigned long long*)result_str) = result_str_len + sizeof(unsigned long long);
+				*((unsigned long long*)result_str) = htonl(result_str_len + sizeof(unsigned long long));
 				char* str_cursor = result_str+sizeof(unsigned long long);
 
 				offset_cursor = cursor;
@@ -341,7 +339,7 @@ int sendSongCallback(void* new_sockfd, int col_num, char** result, char** column
 
 	char* file_buff = (char*)malloc(file_size + sizeof(unsigned long long));
 
-	*((unsigned long long*)file_buff) = file_size;
+	*((unsigned long long*)file_buff) = htonl(file_size);
 
 	//I'm pulling a block at a time on my system (block size is 4096)
 	char* tmp_buff = file_buff + sizeof(unsigned long long);

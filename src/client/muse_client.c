@@ -159,7 +159,7 @@ int getSong(unsigned long long song_id, char* filepath){
 	int request_size = sizeof(char) + sizeof(unsigned long long);
 	char* request = (char*)malloc(request_size);
 	request[0] = REQSNG;
-	*((unsigned long long *)(request+1)) = song_id;
+    *((unsigned long long *)(request+1)) = song_id;
 	
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
@@ -170,7 +170,7 @@ int getSong(unsigned long long song_id, char* filepath){
 	if(recv(sockfd, resp_size_str, sizeof(unsigned long long), 0) == -1){
 		return 1;
 	}
-	unsigned long long resp_size = (*((unsigned long long*)resp_size_str)) - sizeof(unsigned long long);
+	unsigned long long resp_size = ntohl((*((unsigned long long*)resp_size_str))) - sizeof(unsigned long long);
 	char* resp = (char*)malloc(resp_size+1);
 	char* resp_cursor = resp;
 
@@ -222,7 +222,7 @@ int querySongs(struct songinfolst** song_info){
 int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
 	char* request = (char*)malloc(sizeof(unsigned long long));
 	request[0] = QWRYSNGINFO;
-	*((unsigned long long*)(request+1)) = song_id;
+    *((unsigned long long*)(request+1)) = song_id;
 
 	if(send(sockfd, request, 1 + sizeof(unsigned long long), 0) == 0){
 		printf("Could not send request!\n");
@@ -268,8 +268,8 @@ int querySongInfo(struct songinfolst** song_info, unsigned long long song_id){
 int querySongsBurst(struct songinfolst** song_info, unsigned long long start, unsigned long long end){
 	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
 	request[0] = QWRYSNGBRST | ASC | ORDSNG;
-	*((unsigned long long*)(request+1)) = start;
-	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+	*((unsigned long long*)(request+1)) = htonl(start);
+    *((unsigned long long*)(request+1+sizeof(unsigned long long))) = htonl(end);
 
 	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
 		printf("Could not send request!\n");
@@ -323,8 +323,8 @@ int queryAlbums(struct albuminfolst** album_info){
 int queryAlbumsBurst(struct albuminfolst** album_info, unsigned long long start, unsigned long long end){
 	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
 	request[0] = QWRYALBMBRST | ASC | ORDSNG;
-	*((unsigned long long*)(request+1)) = start;
-	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+	*((unsigned long long*)(request+1)) = htonl(start);
+    *((unsigned long long*)(request+1+sizeof(unsigned long long))) = htonl(end);
 
 	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
 		printf("Could not send request!\n");
@@ -401,8 +401,8 @@ int queryArtists(struct artistinfolst** artist_info){
 int queryArtistsBurst(struct artistinfolst** artist_info, unsigned long long start, unsigned long long end){
 	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
 	request[0] = QWRYARTBRST | ASC | ORDSNG;
-	*((unsigned long long*)(request+1)) = start;
-	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+	*((unsigned long long*)(request+1)) = htonl(start);
+    *((unsigned long long*)(request+1+sizeof(unsigned long long))) = htonl(end);
 
 
 	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
@@ -480,8 +480,8 @@ int queryGenres(struct genreinfolst** genre_info){
 int queryGenresBurst(struct genreinfolst** genre_info, unsigned long long start, unsigned long long end){
 	char* request = (char*)malloc(1 + (sizeof(unsigned long long) * 2));
 	request[0] = QWRYGNRBRST | ASC | ORDSNG;
-	*((unsigned long long*)(request+1)) = start;
-	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+	*((unsigned long long*)(request+1)) = htonl(start);
+    *((unsigned long long*)(request+1+sizeof(unsigned long long))) = htonl(end);
 
 	if(send(sockfd, request, 1 + (sizeof(unsigned long long) * 2), 0) == 0){
 		printf("Could not send request!\n");
@@ -552,8 +552,8 @@ int queryGenreSongsBurst(const char* genre, struct songinfolst** song_info, unsi
 	int request_size = genre_size + 3 + sizeof(unsigned long long) * 2;
 	char* request = (char*)malloc(request_size);
 	request[0] = QWRYGNRSNGBRST | ASC | ORDSNG;
-	*((unsigned long long*)(request+1)) = start;
-	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = end;
+	*((unsigned long long*)(request+1)) = htonl(start);
+	*((unsigned long long*)(request+1+sizeof(unsigned long long))) = htonl(end);
 	strcpy(request+1+sizeof(unsigned long long)*2, genre);
 
 	if(send(sockfd, request, request_size, 0) == -1){
@@ -587,7 +587,7 @@ int queryEntity(unsigned long long entity_id, char flags){
 	int request_size = sizeof(unsigned long long) + sizeof(char);
 	char* request = (char*)calloc(request_size, 1);
 	request[0] = flags;
-	*((unsigned long long*)(request+1)) = entity_id;
+    *((unsigned long long*)(request+1)) = entity_id;
 
 	if(send(sockfd, request, request_size, 0) == -1){
 		printf("Could not send request!\n");
@@ -722,7 +722,7 @@ char* parseFieldLong(unsigned long long* dest, char* base, char endchar){
 	char* num_str = (char*)malloc(str_size + 1);
 	substr(base, '\t', num_str, str_size);
 	num_str[str_size] = '\0';
-	*dest = strtoul(num_str, NULL, 10);
+    *dest = strtoul(num_str, NULL, 10);
 	free(num_str);
 	return base + str_size + 1;
 }
@@ -793,7 +793,7 @@ int receiveResponse(char** resp){
 		printf("Error receiving data!\n");
 		return 1;
 	}
-	unsigned long long resp_size = (*((unsigned long long*)(resp_size_str))) - sizeof(unsigned long long);
+	unsigned long long resp_size = htonl(*((unsigned long long*)(resp_size_str))) - sizeof(unsigned long long);
 	if(resp_size == 0){
 		return 1;
 	}
