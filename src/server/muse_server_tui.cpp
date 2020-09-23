@@ -769,7 +769,7 @@ void printASCII(FILE* file, int y, int x) {
 
   //Print the ASCII art
   int line_num = 0;
-  char c;
+  int c;
   while((c = getc(file)) != EOF) {
 	addch(c);
 
@@ -798,7 +798,7 @@ void wprintASCII(WINDOW* win, FILE* file, int y, int x) {
 
   //Print the ASCII art
   int line_num = 0;
-  char c;
+  int c;
   while((c = getc(file)) != EOF) {
 	waddch(win, c);
 
@@ -819,7 +819,7 @@ void wprintASCII(WINDOW* win, FILE* file, int y, int x) {
  */
 int getASCIILength(FILE* file) {
   int i = 0;
-  char c = getc(file);
+  int c = getc(file);
   for(; c != '\n' && c != EOF; i++) {
 	c = getc(file);
   }
@@ -834,7 +834,7 @@ int getASCIILength(FILE* file) {
  */
 int getASCIIHeight(FILE* file) {
   int i = 0;
-  for(char c; (c = getc(file)) != EOF;) {
+  for(int c; (c = getc(file)) != EOF;) {
 	if(c == '\n') {
 	  i++;
 	}
