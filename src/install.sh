@@ -12,14 +12,7 @@ fi
 #Installing ncurses and sqlite (best-try for Ubuntu and Fedora, look up your own package manager if you don't have 
 which apt >/dev/null 2>&1
 if [ $? = 0 ]; then
-    sudo apt-get install -y libncurses5-dev libncurses5-dev sqlite3 libsqlite3-dev libgl1-mesa-dev
-
-	#Installing TagLib
-	cd ../external-libraries/taglib-1.11.1
-	cmake .
-	make
-	sudo make install
-	cd $CURR_PATH
+    sudo apt-get install -y libncurses5-dev libncurses5-dev sqlite3 libsqlite3-dev libgl1-mesa-dev libtagc0-dev
 fi
 
 which dnf >/dev/null 2>&1
